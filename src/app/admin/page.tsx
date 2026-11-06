@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { approveCompany, setCompanyStatus } from "./actions";
 
@@ -35,8 +34,7 @@ function daysUntil(date: string) {
 }
 
 export default async function AdminPage() {
-  const { supabase, profile } = await getSession();
-  if (profile?.role !== "admin") redirect("/portal");
+  const { supabase } = await getSession();
 
   const [{ data: companies }, { data: groups }, { data: docs }] = await Promise.all([
     supabase.from("companies").select("*").order("created_at", { ascending: false }).returns<Company[]>(),

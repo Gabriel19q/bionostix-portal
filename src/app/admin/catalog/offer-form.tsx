@@ -1,0 +1,113 @@
+import Link from "next/link";
+import { today } from "@/lib/format";
+import { saveOffer } from "./actions";
+
+export type OfferFormValues = {
+  offer_id?: string;
+  product_id?: string;
+  manufacturer?: string;
+  trade_name?: string;
+  active_ingredient?: string | null;
+  strength?: string | null;
+  dosage_form?: string | null;
+  pack_size?: string | null;
+  pzn?: string | null;
+  is_rx?: boolean;
+  is_cold_chain?: boolean;
+  is_narcotic?: boolean;
+  batch?: string;
+  expiry_date?: string;
+  available_qty?: number;
+  moq?: number;
+  purchase_price?: number;
+  markup_override_pct?: number | null;
+  incoterm?: string;
+  stock_as_of?: string;
+  is_active?: boolean;
+};
+
+function Field({ label, name, defaultValue, required, type = "text", hint, list }: {
+  label: string;
+  name: string;
+  defaultValue?: string | number | null;
+  required?: boolean;
+  type?: string;
+  hint?: string;
+  list?: string;
+}) {
+  return (
+    <div>
+      <label className="label" htmlFor={name}>
+        {label}
+        {required && <span className="text-red-600"> *</span>}
+      </label>
+      <input id={name} name={name} type={type} className="input" required={required} list={list}
+        defaultValue={defaultValue ?? ""} />
+      {hint && <p className="mt-1 text-xs text-slate-500">{hint}</p>}
+    </div>
+  );
+}
+
+export function OfferForm({ values, manufacturers }: { values: OfferFormValues; manufacturers: string[] }) {
+  const v = values;
+  return (
+    <form action={saveOffer} className="space-y-6">
+      <input type="hidden" name="offer_id" value={v.offer_id ?? ""} />
+      <input type="hidden" name="product_id" value={v.product_id ?? ""} />
+      <datalist id="manufacturers">
+        {manufacturers.map((m) => <option key={m} value={m} />)}
+      </datalist>
+
+      <div className="card space-y-4">
+        <h2 className="font-semibold">Product</h2>
+        {v.product_id && (
+          <p className="text-xs text-amber-700">Changes to the product apply to all its batches.</p>
+        )}
+        <div className="grid gap-4 md:grid-cols-3">
+          <Field label="Manufacturer" name="manufacturer" defaultValue={v.manufacturer} required list="manufacturers" />
+          <Field label="Product name" name="trade_name" defaultValue={v.trade_name} required />
+          <Field label="Active ingredient" name="active_ingredient" defaultValue={v.active_ingredient} />
+          <Field label="Strength" name="strength" defaultValue={v.strength} hint="e.g. 500 mg" />
+          <Field label="Dosage form" name="dosage_form" defaultValue={v.dosage_form} hint="e.g. tablets" />
+          <Field label="Pack size" name="pack_size" defaultValue={v.pack_size} hint="e.g. 20 tablets" />
+          <Field label="PZN" name="pzn" defaultValue={v.pzn} />
+        </div>
+        <div className="flex flex-wrap gap-6 text-sm">
+          <label className="flex items-center gap-2">
+            <input type="checkbox" name="is_rx" defaultChecked={v.is_rx ?? true} /> Prescription only (Rx)
+          </label>
+          <label className="flex items-center gap-2">
+            <input type="checkbox" name="is_cold_chain" defaultChecked={v.is_cold_chain ?? false} /> Cold chain
+          </label>
+          <label className="flex items-center gap-2">
+            <input type="checkbox" name="is_narcotic" defaultChecked={v.is_narcotic ?? false} /> Narcotic (BtM)
+          </label>
+        </div>
+      </div>
+
+      <div className="card space-y-4">
+        <h2 className="font-semibold">Batch and price</h2>
+        <div className="grid gap-4 md:grid-cols-3">
+          <Field label="Batch" name="batch" defaultValue={v.batch} required />
+          <Field label="Expiry date" name="expiry_date" type="date" defaultValue={v.expiry_date} required />
+          <Field label="Stock checked on" name="stock_as_of" type="date" defaultValue={v.stock_as_of ?? today()} />
+          <Field label="Available quantity (packs)" name="available_qty" type="number" defaultValue={v.available_qty} required />
+          <Field label="Minimum order quantity" name="moq" type="number" defaultValue={v.moq ?? 1} />
+          <Field label="Incoterm" name="incoterm" defaultValue={v.incoterm ?? "EXW"} />
+          <Field label="Purchase price per pack (EUR)" name="purchase_price" defaultValue={v.purchase_price} required
+            hint="Only visible to admins." />
+          <Field label="Own markup % (optional)" name="markup_override_pct" defaultValue={v.markup_override_pct}
+            hint="Leave empty to use the customer group's markup." />
+        </div>
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" name="is_active" defaultChecked={v.is_active ?? true} /> Visible to customers
+        </label>
+      </div>
+
+      <div className="flex gap-3">
+        <button className="btn-primary">Save</button>
+        <Link href="/admin/catalog" className="btn-secondary">Cancel</Link>
+      </div>
+    </form>
+  );
+}

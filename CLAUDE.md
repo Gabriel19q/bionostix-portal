@@ -23,4 +23,5 @@ Next.js 15 (App Router, `src/`), TypeScript, Tailwind v4, Supabase (`@supabase/s
 - `npm run dev` – lokal starten
 - `npm run build` – Produktionsbuild prüfen
 - `npm run lint` – Codeprüfung
-- `bash scripts/test-db.sh` – Migrationen gegen lokales Postgres mit Supabase-Stubs testen
+- `npm test` – alle Tests: Datenbank-Sicherheit (lokales Postgres), Excel-Parser, Import-Logik
+- Die Arbeitsumgebung von Claude kann Supabase/Vercel nicht direkt per HTTP erreichen: Datenbank über den Supabase-Connector, Deployments über den Vercel-Connector

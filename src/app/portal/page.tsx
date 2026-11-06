@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { ApplicationForm } from "./application-form";
 import { DocumentUpload } from "./document-upload";
+import { CatalogTable, type CatalogItem } from "./catalog-table";
 
 const DOC_LABELS: Record<string, string> = {
   license: "Licence",
@@ -62,21 +63,21 @@ export default async function PortalPage() {
     );
   }
 
+  const { data: catalog } = await supabase.rpc("get_catalog");
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">Welcome, {company.name}</h1>
-        <p className="text-sm text-slate-600">Your access is active.</p>
+        <h1 className="text-2xl font-semibold">Available products</h1>
+        <p className="text-sm text-slate-600">{company.name}</p>
       </div>
       {!company.can_request && (
         <div className="card border-amber-300 bg-amber-50 text-sm text-amber-900">
-          Your licence on file expired on {company.license_expires_on}. Please send us the renewed licence to continue
-          requesting products.
+          Your licence on file expired on {company.license_expires_on}. Please send us the renewed licence to see current
+          stock and to request products.
         </div>
       )}
-      <div className="card text-sm text-slate-600">
-        The product catalog will appear here in the next stage.
-      </div>
+      <CatalogTable items={(catalog ?? []) as CatalogItem[]} />
     </div>
   );
 }

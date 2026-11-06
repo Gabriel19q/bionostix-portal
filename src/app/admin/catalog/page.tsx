@@ -1,0 +1,161 @@
+import Link from "next/link";
+import { getSession } from "@/lib/session";
+import { displayDate, eur, monthsUntil, sellPrice } from "@/lib/format";
+import { setOfferActive } from "./actions";
+
+type Row = {
+  id: string;
+  batch: string;
+  expiry_date: string;
+  available_qty: number;
+  moq: number;
+  purchase_price: number;
+  markup_override_pct: number | null;
+  incoterm: string;
+  stock_as_of: string;
+  is_active: boolean;
+  products: {
+    trade_name: string;
+    strength: string | null;
+    pack_size: string | null;
+    pzn: string | null;
+    is_cold_chain: boolean;
+    is_narcotic: boolean;
+    manufacturers: { name: string } | null;
+  };
+};
+
+export default async function AdminCatalogPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; m?: string; inactive?: string }>;
+}) {
+  const { q = "", m = "", inactive } = await searchParams;
+  const { supabase } = await getSession();
+  const [{ data: offers }, { data: groups }, { data: manufacturers }] = await Promise.all([
+    supabase
+      .from("offers")
+      .select("*, products(trade_name, strength, pack_size, pzn, is_cold_chain, is_narcotic, manufacturers(name))")
+      .order("expiry_date")
+      .returns<Row[]>(),
+    supabase.from("customer_groups").select("id, name, default_markup_pct").order("name"),
+    supabase.from("manufacturers").select("name").order("name"),
+  ]);
+
+  const needle = q.trim().toLowerCase();
+  const rows = (offers ?? []).filter((o) => {
+    if (!inactive && !o.is_active) return false;
+    if (m && o.products.manufacturers?.name !== m) return false;
+    if (!needle) return true;
+    return [o.products.trade_name, o.products.strength, o.products.pzn, o.batch, o.products.manufacturers?.name]
+      .some((v) => v?.toLowerCase().includes(needle));
+  });
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold">Catalog</h1>
+          <p className="text-sm text-slate-600">{rows.length} batch(es) shown. Purchase prices are visible to admins only.</p>
+        </div>
+        <div className="flex gap-2">
+          <Link href="/admin/import" className="btn-secondary">Import stock list</Link>
+          <Link href="/admin/catalog/new" className="btn-primary">Add batch</Link>
+        </div>
+      </div>
+
+      <form className="flex flex-wrap items-end gap-3">
+        <div className="w-72">
+          <label className="label">Search</label>
+          <input name="q" className="input" defaultValue={q} placeholder="Name, PZN, batch…" />
+        </div>
+        <div className="w-56">
+          <label className="label">Manufacturer</label>
+          <select name="m" className="input" defaultValue={m}>
+            <option value="">All</option>
+            {(manufacturers ?? []).map((x) => <option key={x.name}>{x.name}</option>)}
+          </select>
+        </div>
+        <label className="flex items-center gap-2 pb-2 text-sm">
+          <input type="checkbox" name="inactive" value="1" defaultChecked={!!inactive} /> Show hidden batches
+        </label>
+        <button className="btn-secondary">Filter</button>
+      </form>
+
+      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+        <table className="min-w-full text-sm">
+          <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+            <tr>
+              <th className="px-3 py-2">Product</th>
+              <th className="px-3 py-2">Manufacturer</th>
+              <th className="px-3 py-2">Batch</th>
+              <th className="px-3 py-2">Expiry</th>
+              <th className="px-3 py-2 text-right">Qty</th>
+              <th className="px-3 py-2 text-right">MOQ</th>
+              <th className="px-3 py-2 text-right">Purchase</th>
+              <th className="px-3 py-2 text-right">Markup</th>
+              {(groups ?? []).map((g) => (
+                <th key={g.id} className="px-3 py-2 text-right">{g.name}</th>
+              ))}
+              <th className="px-3 py-2">Stock as of</th>
+              <th className="px-3 py-2"></th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {rows.length === 0 && (
+              <tr>
+                <td colSpan={11 + (groups?.length ?? 0)} className="px-3 py-6 text-center text-slate-500">
+                  No batches yet. Add one or import a manufacturer stock list.
+                </td>
+              </tr>
+            )}
+            {rows.map((o) => {
+              const months = monthsUntil(o.expiry_date);
+              return (
+                <tr key={o.id} className={o.is_active ? "" : "bg-slate-50 text-slate-400"}>
+                  <td className="px-3 py-2">
+                    <Link href={`/admin/catalog/${o.id}`} className="font-medium text-brand-700 hover:underline">
+                      {o.products.trade_name}
+                    </Link>
+                    <div className="text-xs text-slate-500">
+                      {[o.products.strength, o.products.pack_size, o.products.pzn && `PZN ${o.products.pzn}`]
+                        .filter(Boolean).join(" · ")}
+                      {o.products.is_cold_chain && " · cold chain"}
+                      {o.products.is_narcotic && " · BtM"}
+                    </div>
+                  </td>
+                  <td className="px-3 py-2">{o.products.manufacturers?.name}</td>
+                  <td className="px-3 py-2 font-mono text-xs">{o.batch}</td>
+                  <td className={`px-3 py-2 ${months < 6 ? "font-medium text-red-700" : months < 12 ? "text-amber-700" : ""}`}>
+                    {displayDate(o.expiry_date)}
+                  </td>
+                  <td className="px-3 py-2 text-right">{o.available_qty}</td>
+                  <td className="px-3 py-2 text-right">{o.moq}</td>
+                  <td className="px-3 py-2 text-right">{eur(o.purchase_price)}</td>
+                  <td className="px-3 py-2 text-right">
+                    {o.markup_override_pct !== null ? `${o.markup_override_pct}%` : <span className="text-slate-400">group</span>}
+                  </td>
+                  {(groups ?? []).map((g) => (
+                    <td key={g.id} className="px-3 py-2 text-right">
+                      {eur(sellPrice(Number(o.purchase_price), o.markup_override_pct === null ? null : Number(o.markup_override_pct), Number(g.default_markup_pct)))}
+                    </td>
+                  ))}
+                  <td className="px-3 py-2 text-xs">{displayDate(o.stock_as_of)}</td>
+                  <td className="px-3 py-2">
+                    <form action={setOfferActive}>
+                      <input type="hidden" name="offer_id" value={o.id} />
+                      <input type="hidden" name="active" value={o.is_active ? "false" : "true"} />
+                      <button className="text-xs text-slate-600 underline hover:text-brand-700">
+                        {o.is_active ? "Hide" : "Show"}
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}

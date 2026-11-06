@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "bash scripts/test-db.sh && tsx scripts/test-parse.mjs && tsx --conditions=react-server scripts/test-import.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
@@ -14,6 +15,8 @@
     "next": "15.5.29",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "server-only": "^0.0.1",
+    "xlsx": "^0.18.5",
     "zod": "^4.6.7"
   },
   "devDependencies": {
@@ -25,6 +28,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.5.29",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5"
   }
 }
