@@ -18,6 +18,7 @@ Next.js 15 (App Router, `src/`), TypeScript, Tailwind v4, Supabase (`@supabase/s
 - Der Service-Role-Key wird nur serverseitig benutzt (`src/lib/supabase/admin.ts`), nie im Browser.
 - Vor jedem Commit: `npm run build` und `npm run lint` müssen grün sein.
 - Kleine, nachvollziehbare Commits mit deutscher oder englischer Beschreibung.
+- Commit-Autor muss `Gabriel19q <353532907+Gabriel19q@users.noreply.github.com>` sein: Vercel (Hobby-Tarif) baut sonst nicht (Status „BLOCKED“). Nach jedem Push den Deployment-Status prüfen.
 
 ## Wichtige Befehle
 - `npm run dev` – lokal starten
