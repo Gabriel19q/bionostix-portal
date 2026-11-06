@@ -19,10 +19,8 @@ export default async function PortalPage() {
   }
 
   if (company.status === "applied") {
-    const { data: docs } = await supabase
-      .from("my_documents")
-      .select("id, file_name, doc_type, created_at")
-      .order("created_at");
+    const { data } = await supabase.rpc("get_my_documents").select("id, file_name, doc_type, created_at").order("created_at");
+    const docs = data as { id: string; file_name: string; doc_type: string; created_at: string }[] | null;
 
     return (
       <div className="mx-auto max-w-2xl space-y-6">

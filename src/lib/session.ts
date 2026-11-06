@@ -36,7 +36,7 @@ export async function getSession() {
     .eq("id", user.id)
     .single<Profile>();
 
-  const { data: company } = await supabase.from("my_company").select("*").maybeSingle<MyCompany>();
+  const { data: company } = await supabase.rpc("get_my_company").maybeSingle<MyCompany>();
 
   return { supabase, user, profile, company };
 }

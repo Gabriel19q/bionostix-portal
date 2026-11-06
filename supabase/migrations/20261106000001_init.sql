@@ -165,7 +165,7 @@ create table public.documents (
 -- Helpers
 -- ---------------------------------------------------------------------------
 create or replace function public.touch_updated_at() returns trigger
-language plpgsql as $$
+language plpgsql set search_path = public as $$
 begin
   new.updated_at := now();
   return new;
@@ -201,7 +201,7 @@ language sql stable security definer set search_path = public as $$
 $$;
 
 create or replace function public.sell_price(purchase numeric, override_pct numeric, group_pct numeric)
-returns numeric language sql immutable as $$
+returns numeric language sql immutable set search_path = public as $$
   select round(purchase * (1 + coalesce(override_pct, group_pct) / 100.0), 2);
 $$;
 

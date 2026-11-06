@@ -10,7 +10,9 @@ Die Inhaber (Gabriel, Jan) programmieren nicht. Claude Code schreibt den gesamte
 Next.js 15 (App Router, `src/`), TypeScript, Tailwind v4, Supabase (`@supabase/ssr`), Postgres-Migrationen in `supabase/migrations/`.
 
 ## Regeln
-- **Sicherheit zuerst:** Basistabellen sind nur für Admins lesbar (RLS). Kunden lesen ausschließlich über die Views `customer_catalog`, `my_company`, `my_requests`, `my_request_items`, `my_documents`, `my_request_history` und schreiben über RPC-Funktionen (`apply_for_access`, `submit_request`, `customer_respond`, `add_company_document`). Einkaufspreise, Margen und interne Notizen dürfen nie in einer Kunden-View oder Kunden-Seite auftauchen.
+- **Sicherheit zuerst:** Basistabellen sind nur für Admins lesbar (RLS). Kunden lesen ausschließlich über die Funktionen `get_catalog`, `get_my_company`, `get_my_requests`, `get_my_request_items`, `get_my_documents`, `get_my_request_history` (per `supabase.rpc(...)`) und schreiben über `apply_for_access`, `submit_request`, `customer_respond`, `add_company_document`. Einkaufspreise, Margen und interne Notizen dürfen nie in einer Kundenfunktion oder Kunden-Seite auftauchen.
+- Der Supabase-Linter meldet „Signed-In Users Can Execute SECURITY DEFINER Function“ für genau diese Funktionen: gewollt, jede prüft selbst, wer aufruft. Neue Funktionen nur mit derselben Sorgfalt (Aufrufer prüfen, `set search_path = public`, `revoke ... from anon`).
+- Neue Sicherheitsregeln immer in `supabase/tests/security_test.sql` mit testen.
 - Schemaänderungen nur als neue Migrationsdatei, nie bestehende Migrationen ändern, sobald sie live sind.
 - Geheimnisse (Keys, Passwörter) nur in Umgebungsvariablen (`.env.local` lokal, Vercel-Einstellungen live). Nie committen, nie in den Chat.
 - Der Service-Role-Key wird nur serverseitig benutzt (`src/lib/supabase/admin.ts`), nie im Browser.
