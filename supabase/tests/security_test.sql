@@ -142,6 +142,18 @@ select pg_temp.expect_error(
 select pg_temp.expect((select count(*) from public.get_my_documents()) = 1, 'customer sees own document');
 reset role;
 
+-- Request documents: admin uploads a proforma, only the requesting company can read it
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000a');
+insert into storage.objects (bucket_id, name)
+  select 'documents', 'request/' || id || '/proforma.pdf' from public.requests limit 1;
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000c');
+select pg_temp.expect((select count(*) from storage.objects where name like 'request/%') = 1, 'customer reads own request document');
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000d');
+select pg_temp.expect((select count(*) from storage.objects where name like 'request/%') = 0, 'other customer cannot read it');
+select pg_temp.expect((select count(*) from storage.objects where name like 'company/%') = 0, 'other customer cannot read licence');
+reset role;
+
 -- Anonymous visitors ------------------------------------------------------------
 set role anon;
 select pg_temp.expect_error($$select * from public.get_catalog()$$, 'anon reads catalog');
