@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/session";
+import { emails, sendEmail } from "@/lib/email";
 
 async function requireAdmin() {
   const session = await getSession();
@@ -17,6 +18,8 @@ export async function approveCompany(formData: FormData) {
   const note = String(formData.get("internal_note") || "");
   if (!groupId) throw new Error("Please choose a customer group.");
 
+  const { data: before } = await supabase.from("companies").select("name, status").eq("id", id).single();
+
   const { error } = await supabase
     .from("companies")
     .update({
@@ -29,6 +32,12 @@ export async function approveCompany(formData: FormData) {
     })
     .eq("id", id);
   if (error) throw new Error(error.message);
+
+  // First approval: tell the customer their access is active
+  if (before && before.status !== "approved") {
+    const { data: people } = await supabase.from("profiles").select("email").eq("company_id", id);
+    await sendEmail({ to: (people ?? []).map((p) => p.email), ...emails.accessApproved(before.name) });
+  }
   revalidatePath("/admin");
 }
 

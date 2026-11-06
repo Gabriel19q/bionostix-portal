@@ -24,14 +24,20 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             <nav className="flex items-center gap-3 text-sm">
               {user ? (
                 <>
-                  {profile?.role === "admin" && (
-                    <Link href="/admin" className="text-slate-700 hover:text-brand-700">
+                  {profile?.role === "admin" ? (
+                    <Link href="/admin/requests" className="text-slate-700 hover:text-brand-700">
                       Admin
                     </Link>
+                  ) : (
+                    <>
+                      <Link href="/portal" className="text-slate-700 hover:text-brand-700">
+                        Catalog
+                      </Link>
+                      <Link href="/portal/requests" className="text-slate-700 hover:text-brand-700">
+                        My requests
+                      </Link>
+                    </>
                   )}
-                  <Link href="/portal" className="text-slate-700 hover:text-brand-700">
-                    Portal
-                  </Link>
                   <form action="/auth/signout" method="post">
                     <button className="btn-secondary">Sign out</button>
                   </form>

@@ -13,7 +13,7 @@ const DOC_LABELS: Record<string, string> = {
 export default async function PortalPage() {
   const { supabase, user, profile, company } = await getSession();
   if (!user) redirect("/login");
-  if (profile?.role === "admin") redirect("/admin");
+  if (profile?.role === "admin") redirect("/admin/requests");
 
   if (!company) {
     return <ApplicationForm defaultName={profile?.full_name ?? ""} />;
@@ -77,7 +77,8 @@ export default async function PortalPage() {
           stock and to request products.
         </div>
       )}
-      <CatalogTable items={(catalog ?? []) as CatalogItem[]} />
+      <CatalogTable items={(catalog ?? []) as CatalogItem[]} canRequest={company.can_request}
+        defaultCountry={company.country} />
     </div>
   );
 }

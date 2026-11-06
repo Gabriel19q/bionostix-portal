@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { ACCEPTED_TYPES, uploadCompanyDocument } from "@/lib/upload";
+import { notifyNewApplication } from "./actions";
 
 export function ApplicationForm({ defaultName }: { defaultName: string }) {
   const router = useRouter();
@@ -36,6 +37,7 @@ export function ApplicationForm({ defaultName }: { defaultName: string }) {
 
       await uploadCompanyDocument(supabase, companyId as string, licence, "license");
       if (gdp && gdp.size > 0) await uploadCompanyDocument(supabase, companyId as string, gdp, "gdp_certificate");
+      await notifyNewApplication();
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");

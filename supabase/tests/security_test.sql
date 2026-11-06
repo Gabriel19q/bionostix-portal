@@ -72,6 +72,14 @@ select pg_temp.expect_error($$update public.profiles set company_id = null where
 select pg_temp.expect_error(
   $$select public.submit_request(jsonb_build_array(jsonb_build_object('offer_id', (select offer_id from public.get_catalog()), 'qty', 5)))$$,
   'quantity below MOQ');
+select pg_temp.expect_error(
+  $$select public.submit_request(jsonb_build_array(jsonb_build_object('offer_id', (select offer_id from public.get_catalog()), 'qty', 5000)))$$,
+  'quantity above available stock');
+select pg_temp.expect_error(
+  $$select public.submit_request(jsonb_build_array(
+      jsonb_build_object('offer_id', (select offer_id from public.get_catalog()), 'qty', 20),
+      jsonb_build_object('offer_id', (select offer_id from public.get_catalog()), 'qty', 20)))$$,
+  'same batch twice');
 select public.submit_request(
   jsonb_build_array(jsonb_build_object('offer_id', (select offer_id from public.get_catalog()), 'qty', 20)),
   'Please confirm by Friday', 'Germany');

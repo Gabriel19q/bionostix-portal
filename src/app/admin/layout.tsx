@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 
 const tabs = [
+  { href: "/admin/requests", label: "Requests" },
   { href: "/admin", label: "Customers" },
   { href: "/admin/catalog", label: "Catalog" },
   { href: "/admin/import", label: "Import stock list" },

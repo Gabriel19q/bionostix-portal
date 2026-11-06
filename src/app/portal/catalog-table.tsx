@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { displayDate, eur, monthsUntil } from "@/lib/format";
+import { CartPanel, useCart } from "./cart";
 
 export type CatalogItem = {
   offer_id: string;
@@ -27,7 +28,13 @@ export type CatalogItem = {
 
 type SortKey = "name" | "expiry" | "price";
 
-export function CatalogTable({ items }: { items: CatalogItem[] }) {
+export function CatalogTable({ items, canRequest, defaultCountry }: {
+  items: CatalogItem[];
+  canRequest: boolean;
+  defaultCountry: string;
+}) {
+  const { cart, set, clear } = useCart(items);
+  const [draft, setDraft] = useState<Record<string, string>>({});
   const [q, setQ] = useState("");
   const [manufacturer, setManufacturer] = useState("");
   const [sort, setSort] = useState<SortKey>("name");
@@ -91,6 +98,7 @@ export function CatalogTable({ items }: { items: CatalogItem[] }) {
               <th className="px-3 py-2 text-right">MOQ</th>
               <th className="px-3 py-2 text-right">Price / pack</th>
               <th className="px-3 py-2">Terms</th>
+              {canRequest && <th className="px-3 py-2">Request</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -128,12 +136,39 @@ export function CatalogTable({ items }: { items: CatalogItem[] }) {
                     {i.incoterm}
                     <div className="text-slate-400">stock {displayDate(i.stock_as_of)}</div>
                   </td>
+                  {canRequest && (
+                    <td className="px-3 py-2">
+                      {cart[i.offer_id] ? (
+                        <div className="text-xs">
+                          <span className="font-medium text-emerald-700">{cart[i.offer_id]} packs added</span>
+                          <button className="ml-2 text-slate-500 underline" onClick={() => set(i.offer_id, 0)}>Remove</button>
+                        </div>
+                      ) : (
+                        <form
+                          className="flex items-center gap-1"
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            const qty = Math.floor(Number(draft[i.offer_id] ?? i.moq));
+                            if (qty >= i.moq && qty <= i.available_qty) set(i.offer_id, qty);
+                          }}
+                        >
+                          <input type="number" min={i.moq} max={i.available_qty} aria-label="Packs"
+                            className="input w-24 py-1 text-right"
+                            value={draft[i.offer_id] ?? String(i.moq)}
+                            onChange={(e) => setDraft({ ...draft, [i.offer_id]: e.target.value })} />
+                          <button className="btn-secondary px-3 py-1">Add</button>
+                        </form>
+                      )}
+                    </td>
+                  )}
                 </tr>
               );
             })}
           </tbody>
         </table>
       </div>
+      <CartPanel items={items} cart={cart} setQty={set} clear={clear} canRequest={canRequest}
+        defaultCountry={defaultCountry} />
       <p className="text-xs text-slate-500">
         Prices per pack in EUR, excluding VAT. Availability as reported by the manufacturer on the date shown and subject
         to confirmation. Narcotics are supplied only after individual review.
