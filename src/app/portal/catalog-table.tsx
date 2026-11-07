@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { displayDate, eur, monthsUntil } from "@/lib/format";
 import { CartPanel, useCart } from "./cart";
+import { downloadCatalogExcel } from "./export";
 
 export type CatalogItem = {
   offer_id: string;
@@ -36,12 +37,25 @@ export function CatalogTable({ items, canRequest, defaultCountry }: {
   canRequest: boolean;
   defaultCountry: string;
 }) {
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [includePrices, setIncludePrices] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const { cart, set, clear } = useCart(items);
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [q, setQ] = useState("");
   const [manufacturer, setManufacturer] = useState("");
   const [sort, setSort] = useState<SortKey>("name");
   const [coaOnly, setCoaOnly] = useState(false);
+
+  async function exportRows(list: CatalogItem[]) {
+    if (list.length === 0) return;
+    setExporting(true);
+    try {
+      await downloadCatalogExcel(list, { includePrices });
+    } finally {
+      setExporting(false);
+    }
+  }
 
   const manufacturers = useMemo(() => [...new Set(items.map((i) => i.manufacturer))].sort(), [items]);
 
@@ -96,10 +110,45 @@ export function CatalogTable({ items, canRequest, defaultCountry }: {
         <p className="pb-2 text-sm text-slate-500">{rows.length} of {items.length} batches</p>
       </div>
 
+      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
+        <span className="font-medium">Download Excel:</span>
+        <button className="btn-secondary px-3 py-1" disabled={exporting} onClick={() => exportRows(items)}>
+          All products ({items.length})
+        </button>
+        {rows.length !== items.length && (
+          <button className="btn-secondary px-3 py-1" disabled={exporting} onClick={() => exportRows(rows)}>
+            Current view ({rows.length})
+          </button>
+        )}
+        <button className="btn-secondary px-3 py-1" disabled={exporting || selected.size === 0}
+          onClick={() => exportRows(items.filter((i) => selected.has(i.offer_id)))}>
+          Selected ({selected.size})
+        </button>
+        <label className="ml-2 flex items-center gap-2">
+          <input type="checkbox" checked={includePrices} onChange={(e) => setIncludePrices(e.target.checked)} />
+          Include prices
+        </label>
+        {selected.size > 0 && (
+          <button className="ml-auto text-xs text-slate-500 underline" onClick={() => setSelected(new Set())}>Clear selection</button>
+        )}
+      </div>
+
       <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
         <table className="min-w-full text-sm">
           <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
             <tr>
+              <th className="px-3 py-2">
+                <input type="checkbox" aria-label="Select all shown"
+                  checked={rows.length > 0 && rows.every((r) => selected.has(r.offer_id))}
+                  onChange={(e) => {
+                    const next = new Set(selected);
+                    for (const r of rows) {
+                      if (e.target.checked) next.add(r.offer_id);
+                      else next.delete(r.offer_id);
+                    }
+                    setSelected(next);
+                  }} />
+              </th>
               <th className="px-3 py-2">Product</th>
               <th className="px-3 py-2">Manufacturer</th>
               <th className="px-3 py-2">Batch</th>
@@ -116,7 +165,16 @@ export function CatalogTable({ items, canRequest, defaultCountry }: {
             {rows.map((i) => {
               const months = i.expiry_date ? monthsUntil(i.expiry_date) : null;
               return (
-                <tr key={i.offer_id}>
+                <tr key={i.offer_id} className={selected.has(i.offer_id) ? "bg-brand-50/60" : ""}>
+                  <td className="px-3 py-2">
+                    <input type="checkbox" aria-label={`Select ${i.trade_name}`} checked={selected.has(i.offer_id)}
+                      onChange={(e) => {
+                        const next = new Set(selected);
+                        if (e.target.checked) next.add(i.offer_id);
+                        else next.delete(i.offer_id);
+                        setSelected(next);
+                      }} />
+                  </td>
                   <td className="px-3 py-2">
                     <div className="font-medium">{i.trade_name}</div>
                     <div className="text-xs text-slate-500">
