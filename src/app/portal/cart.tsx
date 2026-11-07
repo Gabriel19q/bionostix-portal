@@ -67,8 +67,10 @@ export function CartPanel({
   const lines = items.filter((i) => cart[i.offer_id]);
   if (lines.length === 0) return null;
 
-  const problems = lines.filter((i) => cart[i.offer_id] < i.moq || cart[i.offer_id] > i.available_qty);
-  const total = lines.reduce((sum, i) => sum + cart[i.offer_id] * Number(i.unit_price), 0);
+  const tooMuch = (i: CatalogItem) => i.available_qty !== null && cart[i.offer_id] > i.available_qty;
+  const problems = lines.filter((i) => cart[i.offer_id] < i.moq || tooMuch(i));
+  const total = lines.reduce((sum, i) => sum + (i.unit_price === null ? 0 : cart[i.offer_id] * Number(i.unit_price)), 0);
+  const openPrices = lines.some((i) => i.unit_price === null);
 
   async function onSubmit() {
     setBusy(true);
@@ -104,19 +106,19 @@ export function CartPanel({
         <tbody className="divide-y divide-slate-100">
           {lines.map((i) => {
             const qty = cart[i.offer_id];
-            const bad = qty < i.moq || qty > i.available_qty;
+            const bad = qty < i.moq || tooMuch(i);
             return (
               <tr key={i.offer_id}>
                 <td className="py-1.5">{i.trade_name} <span className="text-xs text-slate-500">{i.strength} {i.pack_size}</span></td>
-                <td className="py-1.5 font-mono text-xs">{i.batch}</td>
+                <td className="py-1.5 font-mono text-xs">{i.batch || "–"}</td>
                 <td className="py-1.5 text-right">
-                  <input type="number" min={i.moq} max={i.available_qty} value={qty}
+                  <input type="number" min={i.moq} max={i.available_qty ?? undefined} value={qty}
                     onChange={(e) => setQty(i.offer_id, Math.max(0, Math.floor(Number(e.target.value) || 0)))}
                     className={`input w-24 text-right ${bad ? "border-red-400" : ""}`} />
-                  {bad && <div className="text-xs text-red-700">{i.moq}–{i.available_qty}</div>}
+                  {bad && <div className="text-xs text-red-700">{i.available_qty === null ? `min. ${i.moq}` : `${i.moq}–${i.available_qty}`}</div>}
                 </td>
-                <td className="py-1.5 text-right">{eur(i.unit_price)}</td>
-                <td className="py-1.5 text-right">{eur(qty * Number(i.unit_price))}</td>
+                <td className="py-1.5 text-right">{i.unit_price === null ? "On request" : eur(i.unit_price)}</td>
+                <td className="py-1.5 text-right">{i.unit_price === null ? "–" : eur(qty * Number(i.unit_price))}</td>
                 <td className="py-1.5 text-right">
                   <button className="text-xs text-slate-500 underline" onClick={() => setQty(i.offer_id, 0)}>Remove</button>
                 </td>
@@ -126,7 +128,9 @@ export function CartPanel({
         </tbody>
         <tfoot>
           <tr>
-            <td colSpan={4} className="pt-2 text-right font-medium">Indicative total</td>
+            <td colSpan={4} className="pt-2 text-right font-medium">
+              Indicative total{openPrices && <span className="font-normal text-slate-500"> (plus items with price on request)</span>}
+            </td>
             <td className="pt-2 text-right font-semibold">{eur(total)}</td>
             <td></td>
           </tr>

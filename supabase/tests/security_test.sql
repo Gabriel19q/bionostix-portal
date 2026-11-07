@@ -56,6 +56,10 @@ insert into public.offers (product_id, batch, expiry_date, available_qty, moq, p
   select id, 'B001', current_date + 400, 1000, 10, 10.00 from public.products;
 insert into public.offers (product_id, batch, expiry_date, available_qty, moq, purchase_price)
   select id, 'B000-EXPIRED', current_date - 1, 50, 1, 9.00 from public.products;
+insert into public.products (trade_name, manufacturer_id)
+  select 'Upon Request Product', id from public.manufacturers;
+insert into public.offers (product_id, moq)
+  select id, 100 from public.products where trade_name = 'Upon Request Product';
 reset role;
 
 -- Approved EU customer -------------------------------------------------------
@@ -63,25 +67,27 @@ set role authenticated;
 select pg_temp.as_user('00000000-0000-0000-0000-00000000000c');
 select pg_temp.expect((select count(*) from public.offers) = 0, 'customer cannot read offers table');
 select pg_temp.expect((select count(*) from public.companies) = 0, 'customer cannot read companies table');
-select pg_temp.expect((select count(*) from public.get_catalog()) = 1, 'catalog hides expired batch');
-select pg_temp.expect((select unit_price from public.get_catalog()) = 10.80, 'EU price = 10.00 + 8%');
+select pg_temp.expect((select count(*) from public.get_catalog()) = 2, 'catalog hides expired batch, shows on-request row');
+select pg_temp.expect((select unit_price is null and available_qty is null and expiry_date is null and batch = ''
+  from public.get_catalog() where trade_name = 'Upon Request Product'), 'on-request row has no price, qty, expiry, batch');
+select pg_temp.expect((select unit_price from public.get_catalog() where batch = 'B001') = 10.80, 'EU price = 10.00 + 8%');
 select pg_temp.expect_error($$select purchase_price from public.get_catalog()$$, 'purchase price not in catalog');
 select pg_temp.expect((select can_request from public.get_my_company()), 'approved company can request');
 select pg_temp.expect_error($$update public.profiles set role = 'admin' where id = auth.uid()$$, 'self-promotion to admin');
 select pg_temp.expect_error($$update public.profiles set company_id = null where id = auth.uid()$$, 'changing own company');
 select pg_temp.expect_error(
-  $$select public.submit_request(jsonb_build_array(jsonb_build_object('offer_id', (select offer_id from public.get_catalog()), 'qty', 5)))$$,
+  $$select public.submit_request(jsonb_build_array(jsonb_build_object('offer_id', (select offer_id from public.get_catalog() where batch = 'B001'), 'qty', 5)))$$,
   'quantity below MOQ');
 select pg_temp.expect_error(
-  $$select public.submit_request(jsonb_build_array(jsonb_build_object('offer_id', (select offer_id from public.get_catalog()), 'qty', 5000)))$$,
+  $$select public.submit_request(jsonb_build_array(jsonb_build_object('offer_id', (select offer_id from public.get_catalog() where batch = 'B001'), 'qty', 5000)))$$,
   'quantity above available stock');
 select pg_temp.expect_error(
   $$select public.submit_request(jsonb_build_array(
-      jsonb_build_object('offer_id', (select offer_id from public.get_catalog()), 'qty', 20),
-      jsonb_build_object('offer_id', (select offer_id from public.get_catalog()), 'qty', 20)))$$,
+      jsonb_build_object('offer_id', (select offer_id from public.get_catalog() where batch = 'B001'), 'qty', 20),
+      jsonb_build_object('offer_id', (select offer_id from public.get_catalog() where batch = 'B001'), 'qty', 20)))$$,
   'same batch twice');
 select public.submit_request(
-  jsonb_build_array(jsonb_build_object('offer_id', (select offer_id from public.get_catalog()), 'qty', 20)),
+  jsonb_build_array(jsonb_build_object('offer_id', (select offer_id from public.get_catalog() where batch = 'B001'), 'qty', 20)),
   'Please confirm by Friday', 'Germany');
 select pg_temp.expect((select unit_price_snapshot from public.get_my_request_items()) = 10.80, 'price snapshot stored');
 select pg_temp.expect((select count(*) from public.request_item_costs) = 0, 'customer cannot read cost snapshot');
@@ -94,7 +100,7 @@ reset role;
 -- Other customer sees own prices and nothing of Sanicura ------------------------
 set role authenticated;
 select pg_temp.as_user('00000000-0000-0000-0000-00000000000d');
-select pg_temp.expect((select unit_price from public.get_catalog()) = 11.50, 'MENA price = 10.00 + 15%');
+select pg_temp.expect((select unit_price from public.get_catalog() where batch = 'B001') = 11.50, 'MENA price = 10.00 + 15%');
 select pg_temp.expect((select count(*) from public.get_my_requests()) = 0, 'cannot see other company requests');
 select pg_temp.expect((select count(*) from public.get_my_request_items()) = 0, 'cannot see other company items');
 reset role;
@@ -152,6 +158,17 @@ select pg_temp.expect((select count(*) from storage.objects where name like 'req
 select pg_temp.as_user('00000000-0000-0000-0000-00000000000d');
 select pg_temp.expect((select count(*) from storage.objects where name like 'request/%') = 0, 'other customer cannot read it');
 select pg_temp.expect((select count(*) from storage.objects where name like 'company/%') = 0, 'other customer cannot read licence');
+reset role;
+
+-- On-request rows can be requested: no stock limit, MOQ still applies, price stays open
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000d');
+select pg_temp.expect_error(
+  $$select public.submit_request(jsonb_build_array(jsonb_build_object('offer_id', (select offer_id from public.get_catalog() where trade_name = 'Upon Request Product'), 'qty', 50)))$$,
+  'on-request row below MOQ');
+select public.submit_request(jsonb_build_array(jsonb_build_object(
+  'offer_id', (select offer_id from public.get_catalog() where trade_name = 'Upon Request Product'), 'qty', 5000)));
+select pg_temp.expect((select unit_price_snapshot is null from public.get_my_request_items()), 'on-request price stays open');
 reset role;
 
 -- Anonymous visitors ------------------------------------------------------------

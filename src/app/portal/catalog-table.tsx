@@ -18,13 +18,15 @@ export type CatalogItem = {
   is_cold_chain: boolean;
   is_narcotic: boolean;
   batch: string;
-  expiry_date: string;
-  available_qty: number;
+  expiry_date: string | null;
+  available_qty: number | null;
   moq: number;
   incoterm: string;
   stock_as_of: string;
-  unit_price: number;
+  unit_price: number | null;
 };
+
+const onRequest = <span className="text-slate-500">On request</span>;
 
 type SortKey = "name" | "expiry" | "price";
 
@@ -50,9 +52,10 @@ export function CatalogTable({ items, canRequest, defaultCountry }: {
         .some((v) => v?.toLowerCase().includes(needle));
     });
     return filtered.sort((a, b) => {
-      if (sort === "expiry") return a.expiry_date.localeCompare(b.expiry_date);
-      if (sort === "price") return Number(a.unit_price) - Number(b.unit_price);
-      return a.trade_name.localeCompare(b.trade_name) || a.expiry_date.localeCompare(b.expiry_date);
+      const exp = (x: CatalogItem) => x.expiry_date ?? "9999";
+      if (sort === "expiry") return exp(a).localeCompare(exp(b));
+      if (sort === "price") return (a.unit_price ?? Infinity) - (b.unit_price ?? Infinity);
+      return a.trade_name.localeCompare(b.trade_name) || exp(a).localeCompare(exp(b));
     });
   }, [items, q, manufacturer, sort]);
 
@@ -103,7 +106,7 @@ export function CatalogTable({ items, canRequest, defaultCountry }: {
           </thead>
           <tbody className="divide-y divide-slate-100">
             {rows.map((i) => {
-              const months = monthsUntil(i.expiry_date);
+              const months = i.expiry_date ? monthsUntil(i.expiry_date) : null;
               return (
                 <tr key={i.offer_id}>
                   <td className="px-3 py-2">
@@ -122,16 +125,20 @@ export function CatalogTable({ items, canRequest, defaultCountry }: {
                     </div>
                   </td>
                   <td className="px-3 py-2">{i.manufacturer}</td>
-                  <td className="px-3 py-2 font-mono text-xs">{i.batch}</td>
+                  <td className="px-3 py-2 font-mono text-xs">{i.batch || "–"}</td>
                   <td className="px-3 py-2">
-                    <div className={months < 6 ? "font-medium text-red-700" : months < 12 ? "text-amber-700" : ""}>
-                      {displayDate(i.expiry_date)}
-                    </div>
-                    <div className="text-xs text-slate-500">{months} months left</div>
+                    {months === null ? onRequest : (
+                      <>
+                        <div className={months < 6 ? "font-medium text-red-700" : months < 12 ? "text-amber-700" : ""}>
+                          {displayDate(i.expiry_date)}
+                        </div>
+                        <div className="text-xs text-slate-500">{months} months left</div>
+                      </>
+                    )}
                   </td>
-                  <td className="px-3 py-2 text-right">{i.available_qty.toLocaleString("en")}</td>
+                  <td className="px-3 py-2 text-right">{i.available_qty === null ? onRequest : i.available_qty.toLocaleString("en")}</td>
                   <td className="px-3 py-2 text-right">{i.moq}</td>
-                  <td className="px-3 py-2 text-right font-medium">{eur(i.unit_price)}</td>
+                  <td className="px-3 py-2 text-right font-medium">{i.unit_price === null ? onRequest : eur(i.unit_price)}</td>
                   <td className="px-3 py-2 text-xs text-slate-600">
                     {i.incoterm}
                     <div className="text-slate-400">stock {displayDate(i.stock_as_of)}</div>
@@ -149,10 +156,10 @@ export function CatalogTable({ items, canRequest, defaultCountry }: {
                           onSubmit={(e) => {
                             e.preventDefault();
                             const qty = Math.floor(Number(draft[i.offer_id] ?? i.moq));
-                            if (qty >= i.moq && qty <= i.available_qty) set(i.offer_id, qty);
+                            if (qty >= i.moq && (i.available_qty === null || qty <= i.available_qty)) set(i.offer_id, qty);
                           }}
                         >
-                          <input type="number" min={i.moq} max={i.available_qty} aria-label="Packs"
+                          <input type="number" min={i.moq} max={i.available_qty ?? undefined} aria-label="Packs"
                             className="input w-24 py-1 text-right"
                             value={draft[i.offer_id] ?? String(i.moq)}
                             onChange={(e) => setDraft({ ...draft, [i.offer_id]: e.target.value })} />
@@ -171,7 +178,8 @@ export function CatalogTable({ items, canRequest, defaultCountry }: {
         defaultCountry={defaultCountry} />
       <p className="text-xs text-slate-500">
         Prices per pack in EUR, excluding VAT. Availability as reported by the manufacturer on the date shown and subject
-        to confirmation. Narcotics are supplied only after individual review.
+        to confirmation. “On request” items can be requested as well; we confirm price and availability in our offer.
+        Narcotics are supplied only after individual review.
       </p>
     </div>
   );

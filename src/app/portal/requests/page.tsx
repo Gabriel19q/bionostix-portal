@@ -5,7 +5,7 @@ import { displayDate, eur } from "@/lib/format";
 import { StatusBadge, type RequestStatus } from "@/lib/status";
 
 type Req = { id: string; number: string; status: RequestStatus; created_at: string; updated_at: string };
-type Item = { request_id: string; requested_qty: number; unit_price_snapshot: number; confirmed_qty: number | null; confirmed_unit_price: number | null };
+type Item = { request_id: string; requested_qty: number; unit_price_snapshot: number | null; confirmed_qty: number | null; confirmed_unit_price: number | null };
 
 export default async function MyRequestsPage() {
   const { supabase, company } = await getSession();
@@ -39,7 +39,7 @@ export default async function MyRequestsPage() {
               {reqs.map((r) => {
                 const lines = allItems.filter((i) => i.request_id === r.id);
                 const value = lines.reduce(
-                  (s, i) => s + (i.confirmed_qty ?? i.requested_qty) * Number(i.confirmed_unit_price ?? i.unit_price_snapshot), 0);
+                  (s, i) => s + (i.confirmed_qty ?? i.requested_qty) * Number(i.confirmed_unit_price ?? i.unit_price_snapshot ?? 0), 0);
                 return (
                   <tr key={r.id}>
                     <td className="px-3 py-2">

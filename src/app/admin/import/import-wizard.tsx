@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import * as XLSX from "xlsx";
 import { IMPORT_FIELDS, guessMapping, type ImportFieldKey } from "@/lib/parse";
-import { today } from "@/lib/format";
+import { displayDate, eur, today } from "@/lib/format";
 import type { ImportPayload, ImportResult, RowResult } from "@/lib/import";
 import { applyImport, previewImport } from "./actions";
 
@@ -67,6 +67,7 @@ export function ImportWizard({ manufacturers }: { manufacturers: string[] }) {
   const [defaultMoq, setDefaultMoq] = useState(1);
   const [isRx, setIsRx] = useState(true);
   const [hideMissing, setHideMissing] = useState(false);
+  const [parseNames, setParseNames] = useState(true);
   const [preview, setPreview] = useState<ImportResult | null>(null);
   const [done, setDone] = useState<ImportResult | null>(null);
   const [filter, setFilter] = useState<RowResult["status"] | "all">("all");
@@ -82,7 +83,14 @@ export function ImportWizard({ manufacturers }: { manufacturers: string[] }) {
       const s = await readFile(file);
       setSheet(s);
       setFileName(file.name);
-      setMapping(guessMapping(s.headers));
+      const guessed = guessMapping(s.headers);
+      // An unnamed column full of text is usually a notes column
+      if (!guessed.note) {
+        const noteCol = s.headers.findIndex((h, i) => h.startsWith("Column ") &&
+          s.rows.filter((r) => typeof r[i] === "string" && isNaN(Number(r[i]))).length >= Math.min(3, s.rows.length));
+        if (noteCol >= 0) guessed.note = s.headers[noteCol];
+      }
+      setMapping(guessed);
     } catch (err) {
       setSheet(null);
       setError(err instanceof Error ? err.message : "Could not read this file.");
@@ -95,10 +103,11 @@ export function ImportWizard({ manufacturers }: { manufacturers: string[] }) {
       Object.entries(mapping).filter(([, h]) => h).map(([k, h]) => [k, sheet.headers.indexOf(h as string)]),
     );
     const rows = sheet.rows.map((r) => Object.fromEntries(Object.entries(idx).map(([k, i]) => [k, r[i] ?? null])));
-    return { manufacturer, stockAsOf, incoterm, defaultMoq, isRx, hideMissing, rows };
-  }, [sheet, mapping, manufacturer, stockAsOf, incoterm, defaultMoq, isRx, hideMissing]);
+    return { manufacturer, stockAsOf, incoterm, defaultMoq, isRx, hideMissing, parseNames, rows };
+  }, [sheet, mapping, manufacturer, stockAsOf, incoterm, defaultMoq, isRx, hideMissing, parseNames]);
 
-  const missingRequired = IMPORT_FIELDS.filter((f) => f.required && !mapping[f.key]).map((f) => f.label);
+  const missingRequired: string[] = IMPORT_FIELDS.filter((f) => f.required && !mapping[f.key]).map((f) => f.label);
+  if (!mapping.manufacturer && !manufacturer.trim()) missingRequired.push("Manufacturer (column or name below)");
 
   async function onPreview() {
     if (!payload) return;
@@ -192,7 +201,9 @@ export function ImportWizard({ manufacturers }: { manufacturers: string[] }) {
           </datalist>
           <div className="grid gap-3 md:grid-cols-4">
             <div className="md:col-span-2">
-              <label className="label">Manufacturer <span className="text-red-600">*</span></label>
+              <label className="label">
+                {mapping.manufacturer ? "Manufacturer for rows without one (optional)" : <>Manufacturer <span className="text-red-600">*</span></>}
+              </label>
               <input className="input" list="import-manufacturers" value={manufacturer}
                 onChange={(e) => { setManufacturer(e.target.value); setPreview(null); }} />
             </div>
@@ -212,19 +223,23 @@ export function ImportWizard({ manufacturers }: { manufacturers: string[] }) {
           </div>
           <div className="flex flex-col gap-2 text-sm">
             <label className="flex items-center gap-2">
+              <input type="checkbox" checked={parseNames} onChange={(e) => { setParseNames(e.target.checked); setPreview(null); }} />
+              Detect active ingredient, strength, dosage form and pack size from the product name
+            </label>
+            <label className="flex items-center gap-2">
               <input type="checkbox" checked={isRx} onChange={(e) => setIsRx(e.target.checked)} />
               New products are prescription only (Rx)
             </label>
             <label className="flex items-center gap-2">
               <input type="checkbox" checked={hideMissing} onChange={(e) => { setHideMissing(e.target.checked); setPreview(null); }} />
-              Hide this manufacturer&apos;s batches that are not on the list (sold out)
+              Hide batches of these manufacturers that are not on the list (sold out)
             </label>
           </div>
 
           {missingRequired.length > 0 && (
             <p className="text-sm text-amber-700">Still missing: {missingRequired.join(", ")}.</p>
           )}
-          <button className="btn-primary" disabled={busy || missingRequired.length > 0 || !manufacturer.trim()} onClick={onPreview}>
+          <button className="btn-primary" disabled={busy || missingRequired.length > 0} onClick={onPreview}>
             {busy && !preview ? "Checking…" : "Show preview"}
           </button>
         </div>
@@ -233,8 +248,8 @@ export function ImportWizard({ manufacturers }: { manufacturers: string[] }) {
       {preview && (
         <div className="card space-y-4">
           <h2 className="font-semibold">4. Preview: nothing is saved yet</h2>
-          {preview.manufacturerIsNew && (
-            <p className="text-sm text-amber-700">“{manufacturer}” is a new manufacturer and will be created.</p>
+          {preview.newManufacturers.length > 0 && (
+            <p className="text-sm text-amber-700">New manufacturer(s) will be created: {preview.newManufacturers.join(", ")}.</p>
           )}
           <div className="flex flex-wrap gap-2 text-sm">
             {(["all", "new_product", "new_batch", "update", "unchanged", "error"] as const).map((s) => (
@@ -250,14 +265,26 @@ export function ImportWizard({ manufacturers }: { manufacturers: string[] }) {
           <div className="max-h-96 overflow-auto rounded border border-slate-200">
             <table className="min-w-full text-sm">
               <thead className="sticky top-0 bg-slate-50 text-left text-xs uppercase text-slate-500">
-                <tr><th className="px-3 py-2">Row</th><th className="px-3 py-2">Product</th><th className="px-3 py-2">Batch</th><th className="px-3 py-2">Result</th><th className="px-3 py-2">Details</th></tr>
+                <tr>
+                  <th className="px-3 py-2">Row</th><th className="px-3 py-2">Product</th><th className="px-3 py-2">Manufacturer</th>
+                  <th className="px-3 py-2">Ingredient · strength · pack</th><th className="px-3 py-2">Batch</th>
+                  <th className="px-3 py-2">Expiry</th><th className="px-3 py-2 text-right">Qty</th>
+                  <th className="px-3 py-2 text-right">MOQ</th><th className="px-3 py-2 text-right">Purchase</th>
+                  <th className="px-3 py-2">Result</th><th className="px-3 py-2">Details</th>
+                </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {visibleRows.slice(0, 500).map((r) => (
                   <tr key={r.line}>
                     <td className="px-3 py-1.5 text-slate-500">{r.line}</td>
                     <td className="px-3 py-1.5">{r.product}</td>
-                    <td className="px-3 py-1.5 font-mono text-xs">{r.batch}</td>
+                    <td className="px-3 py-1.5">{r.manufacturer}</td>
+                    <td className="px-3 py-1.5 text-xs text-slate-600">{[r.ingredient, r.strength, r.pack].filter(Boolean).join(" · ") || "–"}</td>
+                    <td className="px-3 py-1.5 font-mono text-xs">{r.batch || "–"}</td>
+                    <td className="px-3 py-1.5 whitespace-nowrap">{r.expiry ? displayDate(r.expiry) : <span className="text-slate-400">open</span>}</td>
+                    <td className="px-3 py-1.5 text-right">{r.qty ?? <span className="text-slate-400">on request</span>}</td>
+                    <td className="px-3 py-1.5 text-right">{r.moq}</td>
+                    <td className="px-3 py-1.5 text-right whitespace-nowrap">{r.price !== null ? eur(r.price) : <span className="text-slate-400">on request</span>}</td>
                     <td className="px-3 py-1.5"><span className={`rounded px-2 py-0.5 text-xs ${STATUS_STYLE[r.status]}`}>{STATUS_LABEL[r.status]}</span></td>
                     <td className="px-3 py-1.5 text-xs text-slate-600">{r.message}</td>
                   </tr>

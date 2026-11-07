@@ -20,13 +20,11 @@ export async function saveOffer(formData: FormData) {
   const productId = parseText(get("product_id"));
   const manufacturerName = parseText(get("manufacturer"));
   const tradeName = parseText(get("trade_name"));
-  const batch = parseText(get("batch"));
+  const batch = parseText(get("batch")) ?? "";
   const expiry = parseDate(get("expiry_date"));
   const qty = parseNumber(get("available_qty"));
   const price = parseNumber(get("purchase_price"));
-  if (!manufacturerName || !tradeName || !batch || !expiry || qty === null || price === null) {
-    throw new Error("Manufacturer, product name, batch, expiry date, quantity and purchase price are required.");
-  }
+  if (!manufacturerName || !tradeName) throw new Error("Manufacturer and product name are required.");
 
   const manufacturer_id = await findOrCreateManufacturer(supabase, manufacturerName);
   const product: ProductFields & { is_rx: boolean; is_cold_chain: boolean; is_narcotic: boolean } = {
@@ -57,9 +55,10 @@ export async function saveOffer(formData: FormData) {
     product_id: pid,
     batch,
     expiry_date: expiry,
-    available_qty: Math.round(qty),
+    available_qty: qty === null ? null : Math.round(qty),
     moq: Math.max(1, Math.round(parseNumber(get("moq")) ?? 1)),
-    purchase_price: price,
+    purchase_price: price === null ? null : Math.round(price * 100) / 100,
+    internal_note: parseText(get("internal_note")),
     markup_override_pct: markup,
     incoterm: parseText(get("incoterm")) ?? "EXW",
     stock_as_of: parseDate(get("stock_as_of")) ?? new Date().toISOString().slice(0, 10),
@@ -70,7 +69,7 @@ export async function saveOffer(formData: FormData) {
     ? await supabase.from("offers").update(offer).eq("id", offerId)
     : await supabase.from("offers").insert(offer);
   if (error) {
-    if (error.code === "23505") throw new Error("This product already has a batch with that number.");
+    if (error.code === "23505") throw new Error("This product already has an entry with that batch (or without batch).");
     throw new Error(error.message);
   }
 

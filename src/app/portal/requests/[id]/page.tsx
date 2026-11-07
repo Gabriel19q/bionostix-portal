@@ -6,7 +6,7 @@ import { DOC_TYPE_LABEL, SELLER_LABEL, STATUS_HINT, STATUS_LABEL, StatusBadge, t
 import { respondAction } from "../../actions";
 
 type Req = { id: string; number: string; status: RequestStatus; seller: string | null; customer_comment: string | null; delivery_country: string | null; created_at: string };
-type Item = { id: string; trade_name: string; strength: string | null; pack_size: string | null; manufacturer: string; batch: string; expiry_date: string; requested_qty: number; unit_price_snapshot: number; confirmed_qty: number | null; confirmed_unit_price: number | null };
+type Item = { id: string; trade_name: string; strength: string | null; pack_size: string | null; manufacturer: string; batch: string; expiry_date: string | null; requested_qty: number; unit_price_snapshot: number | null; confirmed_qty: number | null; confirmed_unit_price: number | null };
 type History = { id: number; new_status: RequestStatus; note: string | null; created_at: string };
 type Doc = { id: string; storage_path: string; file_name: string; doc_type: string; created_at: string };
 
@@ -37,8 +37,9 @@ export default async function RequestDetailPage({
   const urlByPath = new Map((signed ?? []).map((s) => [s.path, s.signedUrl]));
 
   const confirmed = lines.some((l) => l.confirmed_qty !== null || l.confirmed_unit_price !== null);
-  const total = lines.reduce(
-    (s, l) => s + (l.confirmed_qty ?? l.requested_qty) * Number(l.confirmed_unit_price ?? l.unit_price_snapshot), 0);
+  const priceOf = (l: Item) => l.confirmed_unit_price ?? l.unit_price_snapshot;
+  const total = lines.reduce((s, l) => s + (l.confirmed_qty ?? l.requested_qty) * Number(priceOf(l) ?? 0), 0);
+  const openPrices = lines.some((l) => priceOf(l) === null);
   const canCancel = ["new", "in_review", "offer_sent"].includes(r.status);
 
   return (
@@ -87,15 +88,16 @@ export default async function RequestDetailPage({
           <tbody className="divide-y divide-slate-100">
             {lines.map((l) => {
               const qty = l.confirmed_qty ?? l.requested_qty;
-              const price = Number(l.confirmed_unit_price ?? l.unit_price_snapshot);
-              const priceChanged = l.confirmed_unit_price !== null && Number(l.confirmed_unit_price) !== Number(l.unit_price_snapshot);
+              const price = priceOf(l);
+              const priceChanged = l.confirmed_unit_price !== null && l.unit_price_snapshot !== null &&
+                Number(l.confirmed_unit_price) !== Number(l.unit_price_snapshot);
               return (
                 <tr key={l.id}>
                   <td className="px-3 py-2">
                     <div className="font-medium">{l.trade_name}</div>
                     <div className="text-xs text-slate-500">{[l.strength, l.pack_size, l.manufacturer].filter(Boolean).join(" · ")}</div>
                   </td>
-                  <td className="px-3 py-2 font-mono text-xs">{l.batch}</td>
+                  <td className="px-3 py-2 font-mono text-xs">{l.batch || "–"}</td>
                   <td className="px-3 py-2">{displayDate(l.expiry_date)}</td>
                   <td className="px-3 py-2 text-right">{l.requested_qty}</td>
                   {confirmed && (
@@ -104,10 +106,10 @@ export default async function RequestDetailPage({
                     </td>
                   )}
                   <td className="px-3 py-2 text-right">
-                    {eur(price)}
+                    {price === null ? <span className="text-slate-500">On request</span> : eur(price)}
                     {priceChanged && <div className="text-xs text-slate-400 line-through">{eur(l.unit_price_snapshot)}</div>}
                   </td>
-                  <td className="px-3 py-2 text-right">{eur(qty * price)}</td>
+                  <td className="px-3 py-2 text-right">{price === null ? "–" : eur(qty * Number(price))}</td>
                 </tr>
               );
             })}
@@ -116,6 +118,7 @@ export default async function RequestDetailPage({
             <tr>
               <td colSpan={confirmed ? 6 : 5} className="px-3 py-2 text-right font-medium">
                 {confirmed ? "Total" : "Indicative total"}
+                {openPrices && <span className="font-normal text-slate-500"> (plus items with price on request)</span>}
               </td>
               <td className="px-3 py-2 text-right font-semibold">{eur(total)}</td>
             </tr>

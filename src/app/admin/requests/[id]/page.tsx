@@ -11,14 +11,14 @@ import { RequestDocumentUpload } from "./request-document-upload";
 type Item = {
   id: string;
   requested_qty: number;
-  unit_price_snapshot: number;
+  unit_price_snapshot: number | null;
   confirmed_qty: number | null;
   confirmed_unit_price: number | null;
-  request_item_costs: { purchase_price_snapshot: number } | null;
+  request_item_costs: { purchase_price_snapshot: number | null } | null;
   offers: {
     batch: string;
-    expiry_date: string;
-    available_qty: number;
+    expiry_date: string | null;
+    available_qty: number | null;
     products: { trade_name: string; strength: string | null; pack_size: string | null; is_narcotic: boolean; manufacturers: { name: string } | null };
   };
 };
@@ -33,8 +33,14 @@ function nextStatus(s: RequestStatus): RequestStatus {
   return i >= 0 && i < STATUS_FLOW.length - 1 ? STATUS_FLOW[i + 1] : s;
 }
 
-export default async function AdminRequestPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function AdminRequestPage({
+  params, searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ error?: string }>;
+}) {
   const { id } = await params;
+  const { error: pageError } = await searchParams;
   const { supabase } = await getSession();
   const [{ data: req }, { data: items }, { data: history }, { data: docs }] = await Promise.all([
     supabase.from("requests")
@@ -54,12 +60,19 @@ export default async function AdminRequestPage({ params }: { params: Promise<{ i
     : { data: [] };
   const urlByPath = new Map((signed ?? []).map((s) => [s.path, s.signedUrl]));
 
-  let value = 0, cost = 0;
+  // Margin only where both sale and purchase price are known
+  let value = 0, cost = 0, marginValue = 0;
   for (const l of lines) {
     const qty = l.confirmed_qty ?? l.requested_qty;
-    value += qty * Number(l.confirmed_unit_price ?? l.unit_price_snapshot);
-    cost += qty * Number(l.request_item_costs?.purchase_price_snapshot ?? 0);
+    const price = l.confirmed_unit_price ?? l.unit_price_snapshot;
+    const purchase = l.request_item_costs?.purchase_price_snapshot ?? null;
+    if (price !== null) value += qty * Number(price);
+    if (price !== null && purchase !== null) {
+      cost += qty * Number(purchase);
+      marginValue += qty * Number(price);
+    }
   }
+  const openPrices = lines.some((l) => (l.confirmed_unit_price ?? l.unit_price_snapshot) === null);
   const c = req.companies;
 
   return (
@@ -77,6 +90,11 @@ export default async function AdminRequestPage({ params }: { params: Promise<{ i
         </div>
         <StatusBadge status={req.status} />
       </div>
+      {pageError === "prices" && (
+        <div className="card border-red-300 bg-red-50 text-sm text-red-900">
+          Some lines have no price yet (“on request”). Enter a confirmed price for every line and save, then send the offer.
+        </div>
+      )}
       {req.customer_comment && (
         <div className="card text-sm"><span className="font-medium">Customer comment:</span> {req.customer_comment}</div>
       )}
@@ -98,8 +116,8 @@ export default async function AdminRequestPage({ params }: { params: Promise<{ i
               {lines.map((l) => {
                 const p = l.offers.products;
                 const qty = l.confirmed_qty ?? l.requested_qty;
-                const price = Number(l.confirmed_unit_price ?? l.unit_price_snapshot);
-                const purchase = Number(l.request_item_costs?.purchase_price_snapshot ?? 0);
+                const price = l.confirmed_unit_price ?? l.unit_price_snapshot;
+                const purchase = l.request_item_costs?.purchase_price_snapshot ?? null;
                 return (
                   <tr key={l.id}>
                     <td className="px-3 py-2">
@@ -111,32 +129,34 @@ export default async function AdminRequestPage({ params }: { params: Promise<{ i
                       </div>
                     </td>
                     <td className="px-3 py-2 font-mono text-xs">
-                      {l.offers.batch}<div className="font-sans text-slate-500">exp. {displayDate(l.offers.expiry_date)}</div>
+                      {l.offers.batch || "–"}<div className="font-sans text-slate-500">exp. {displayDate(l.offers.expiry_date)}</div>
                     </td>
                     <td className="px-3 py-2 text-right">{l.requested_qty}</td>
-                    <td className={`px-3 py-2 text-right ${l.offers.available_qty < l.requested_qty ? "text-red-700" : "text-slate-500"}`}>
-                      {l.offers.available_qty}
+                    <td className={`px-3 py-2 text-right ${l.offers.available_qty !== null && l.offers.available_qty < l.requested_qty ? "text-red-700" : "text-slate-500"}`}>
+                      {l.offers.available_qty ?? "on request"}
                     </td>
                     <td className="px-3 py-2 text-right">
                       <input name={`qty_${l.id}`} className="input w-24 py-1 text-right" defaultValue={l.confirmed_qty ?? ""}
                         placeholder={String(l.requested_qty)} />
                     </td>
-                    <td className="px-3 py-2 text-right text-slate-500">{eur(purchase)}</td>
-                    <td className="px-3 py-2 text-right">{eur(l.unit_price_snapshot)}</td>
+                    <td className="px-3 py-2 text-right text-slate-500">{purchase === null ? "open" : eur(purchase)}</td>
+                    <td className="px-3 py-2 text-right">{l.unit_price_snapshot === null ? "on request" : eur(l.unit_price_snapshot)}</td>
                     <td className="px-3 py-2 text-right">
                       <input name={`price_${l.id}`} className="input w-28 py-1 text-right" defaultValue={l.confirmed_unit_price ?? ""}
-                        placeholder={String(l.unit_price_snapshot)} />
+                        placeholder={l.unit_price_snapshot === null ? "enter price" : String(l.unit_price_snapshot)} />
                     </td>
-                    <td className="px-3 py-2 text-right">{eur(qty * (price - purchase))}</td>
+                    <td className="px-3 py-2 text-right">{price === null || purchase === null ? "–" : eur(qty * (Number(price) - Number(purchase)))}</td>
                   </tr>
                 );
               })}
             </tbody>
             <tfoot className="text-sm">
               <tr>
-                <td colSpan={7} className="px-3 py-2 text-right">Value {eur(value)} · Purchase {eur(cost)}</td>
+                <td colSpan={7} className="px-3 py-2 text-right">
+                  Value {eur(value)}{openPrices && <span className="text-amber-700"> · some prices still open</span>}
+                </td>
                 <td colSpan={2} className="px-3 py-2 text-right font-semibold">
-                  Margin {eur(value - cost)}{value > 0 && ` (${Math.round(((value - cost) / value) * 100)}%)`}
+                  Margin {eur(marginValue - cost)}{marginValue > 0 && ` (${Math.round(((marginValue - cost) / marginValue) * 100)}%)`}
                 </td>
               </tr>
             </tfoot>

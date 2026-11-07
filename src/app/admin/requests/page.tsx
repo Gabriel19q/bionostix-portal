@@ -13,10 +13,10 @@ type Row = {
   companies: { name: string } | null;
   request_items: {
     requested_qty: number;
-    unit_price_snapshot: number;
+    unit_price_snapshot: number | null;
     confirmed_qty: number | null;
     confirmed_unit_price: number | null;
-    request_item_costs: { purchase_price_snapshot: number } | null;
+    request_item_costs: { purchase_price_snapshot: number | null } | null;
   }[];
 };
 
@@ -66,11 +66,16 @@ export default async function AdminRequestsPage({ searchParams }: { searchParams
               <tr><td colSpan={7} className="px-3 py-6 text-center text-slate-500">Nothing here.</td></tr>
             )}
             {rows.map((r) => {
-              let value = 0, cost = 0;
+              let value = 0, cost = 0, marginValue = 0;
               for (const i of r.request_items) {
                 const qty = i.confirmed_qty ?? i.requested_qty;
-                value += qty * Number(i.confirmed_unit_price ?? i.unit_price_snapshot);
-                cost += qty * Number(i.request_item_costs?.purchase_price_snapshot ?? 0);
+                const price = i.confirmed_unit_price ?? i.unit_price_snapshot;
+                const purchase = i.request_item_costs?.purchase_price_snapshot ?? null;
+                if (price !== null) value += qty * Number(price);
+                if (price !== null && purchase !== null) {
+                  cost += qty * Number(purchase);
+                  marginValue += qty * Number(price);
+                }
               }
               return (
                 <tr key={r.id} className={r.status === "new" ? "bg-amber-50/50" : ""}>
@@ -85,8 +90,8 @@ export default async function AdminRequestsPage({ searchParams }: { searchParams
                   <td className="px-3 py-2 text-right">{r.request_items.length}</td>
                   <td className="px-3 py-2 text-right">{eur(value)}</td>
                   <td className="px-3 py-2 text-right">
-                    {eur(value - cost)}
-                    {value > 0 && <span className="text-xs text-slate-500"> ({Math.round(((value - cost) / value) * 100)}%)</span>}
+                    {eur(marginValue - cost)}
+                    {marginValue > 0 && <span className="text-xs text-slate-500"> ({Math.round(((marginValue - cost) / marginValue) * 100)}%)</span>}
                   </td>
                   <td className="px-3 py-2"><StatusBadge status={r.status} /></td>
                 </tr>

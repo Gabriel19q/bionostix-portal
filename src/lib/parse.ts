@@ -63,27 +63,30 @@ export function parseText(input: unknown): string | null {
   return s === "" ? null : s;
 }
 
-// PZN: keep digits only, pad to 8 (German PZNs are 8 digits; older 7-digit ones get a leading 0)
+// PZN: keep digits only, pad to 8 digits (German PZNs have 8 digits)
 export function parsePzn(input: unknown): string | null {
   const s = parseText(input);
   if (!s) return null;
   const digits = s.replace(/\D/g, "");
   if (digits.length === 0) return null;
-  return digits.length === 7 ? `0${digits}` : digits;
+  // numbers in Excel lose leading zeros (368697 -> 00368697)
+  return digits.length < 8 ? digits.padStart(8, "0") : digits;
 }
 
 export const IMPORT_FIELDS = [
-  { key: "trade_name", label: "Product name", required: true, hints: ["product", "name", "bezeichnung", "artikel", "handelsname", "präparat", "praeparat", "description", "artikelbezeichnung"] },
-  { key: "batch", label: "Batch", required: true, hints: ["batch", "charge", "ch.-b", "ch-b", "chb", "lot", "chargen"] },
-  { key: "expiry_date", label: "Expiry date", required: true, hints: ["expiry", "exp", "verfall", "mhd", "haltbar", "verwendbar", "ablauf"] },
-  { key: "available_qty", label: "Available quantity", required: true, hints: ["qty", "quantity", "menge", "stock", "bestand", "stück", "stueck", "packungen", "anzahl", "verfügbar", "verfuegbar"] },
-  { key: "purchase_price", label: "Purchase price (EUR)", required: true, hints: ["price", "preis", "ek", "einkauf", "apu", "netto", "unit price", "cost"] },
+  { key: "trade_name", label: "Product name", required: true, hints: ["product", "name", "bezeichnung", "artikel", "handelsname", "präparat", "praeparat", "description", "artikelbezeichnung", "produkt"] },
+  { key: "manufacturer", label: "Manufacturer", required: false, hints: ["manufacturer", "hersteller", "supplier", "lieferant", "firma", "pharmazeutischer unternehmer"] },
   { key: "pzn", label: "PZN", required: false, hints: ["pzn"] },
+  { key: "batch", label: "Batch", required: false, hints: ["batch", "charge", "ch.-b", "ch-b", "chb", "lot", "chargen"] },
+  { key: "expiry_date", label: "Expiry date / shelf life", required: false, hints: ["expiry", "exp", "verfall", "mhd", "shelf life", "shelf", "haltbar", "verwendbar", "ablauf", "haltbarkeit"] },
+  { key: "available_qty", label: "Available quantity", required: false, hints: ["qty", "quantity", "menge", "stock", "bestand", "stück", "stueck", "packungen", "anzahl", "verfügbar", "verfuegbar"] },
+  { key: "purchase_price", label: "Purchase price (EUR)", required: false, hints: ["ek", "price", "preis", "einkauf", "netto", "unit price", "cost", "apu"] },
   { key: "active_ingredient", label: "Active ingredient", required: false, hints: ["wirkstoff", "ingredient", "inn", "substance"] },
   { key: "strength", label: "Strength", required: false, hints: ["strength", "stärke", "staerke", "dosis", "dosage"] },
-  { key: "dosage_form", label: "Dosage form", required: false, hints: ["form", "darreichung", "dosage form"] },
+  { key: "dosage_form", label: "Dosage form", required: false, hints: ["darreichung", "dosage form", "form"] },
   { key: "pack_size", label: "Pack size", required: false, hints: ["pack", "packung", "packungsgröße", "packungsgroesse", "größe", "inhalt", "n1", "n2", "n3"] },
   { key: "moq", label: "Minimum order quantity", required: false, hints: ["moq", "mindest", "minimum"] },
+  { key: "note", label: "Internal note", required: false, hints: ["note", "notes", "notiz", "bemerkung", "kommentar", "comment", "remarks", "info", "status"] },
 ] as const;
 
 export type ImportFieldKey = (typeof IMPORT_FIELDS)[number]["key"];
@@ -110,4 +113,26 @@ export function guessMapping(headers: string[]): Partial<Record<ImportFieldKey, 
     }
   }
   return result;
+}
+
+const ON_REQUEST = /request|anfrage|tbc|to be confirmed|tba|n\/a|on demand|bestätigen|bestaetigen|\?/i;
+
+// "12,50" -> 12.5 · "upon request" -> on request · anything else unreadable -> flagged
+export function parsePrice(input: unknown): { value: number | null; unreadable: boolean } {
+  const text = parseText(input);
+  if (text === null) return { value: null, unreadable: false };
+  const n = parseNumber(input);
+  if (n !== null && n >= 0) return { value: Math.round(n * 100) / 100, unreadable: false };
+  return { value: null, unreadable: !ON_REQUEST.test(text) };
+}
+
+// 1000 -> qty 1000 · "min. 500" -> MOQ 500, quantity on request · "Qty to be confirmed" -> on request
+export function parseQuantity(input: unknown): { qty: number | null; moq: number | null; unreadable: boolean } {
+  const text = parseText(input);
+  if (text === null) return { qty: null, moq: null, unreadable: false };
+  const min = text.match(/^(?:min(?:imum)?\.?|mind(?:estens)?\.?|ab|from|>=?)\s*([\d.,]+)/i);
+  if (min) return { qty: null, moq: parseNumber(min[1]), unreadable: false };
+  const n = parseNumber(input);
+  if (n !== null && n >= 0) return { qty: Math.round(n), moq: null, unreadable: false };
+  return { qty: null, moq: null, unreadable: !ON_REQUEST.test(text) };
 }

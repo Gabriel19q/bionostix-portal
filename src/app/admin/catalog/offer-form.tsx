@@ -16,10 +16,11 @@ export type OfferFormValues = {
   is_cold_chain?: boolean;
   is_narcotic?: boolean;
   batch?: string;
-  expiry_date?: string;
-  available_qty?: number;
+  expiry_date?: string | null;
+  available_qty?: number | null;
   moq?: number;
-  purchase_price?: number;
+  purchase_price?: number | null;
+  internal_note?: string | null;
   markup_override_pct?: number | null;
   incoterm?: string;
   stock_as_of?: string;
@@ -88,16 +89,21 @@ export function OfferForm({ values, manufacturers }: { values: OfferFormValues; 
       <div className="card space-y-4">
         <h2 className="font-semibold">Batch and price</h2>
         <div className="grid gap-4 md:grid-cols-3">
-          <Field label="Batch" name="batch" defaultValue={v.batch} required />
-          <Field label="Expiry date" name="expiry_date" type="date" defaultValue={v.expiry_date} required />
+          <Field label="Batch" name="batch" defaultValue={v.batch} hint="Leave empty if unknown." />
+          <Field label="Expiry date" name="expiry_date" type="date" defaultValue={v.expiry_date} hint="Leave empty if unknown." />
           <Field label="Stock checked on" name="stock_as_of" type="date" defaultValue={v.stock_as_of ?? today()} />
-          <Field label="Available quantity (packs)" name="available_qty" type="number" defaultValue={v.available_qty} required />
+          <Field label="Available quantity (packs)" name="available_qty" type="number" defaultValue={v.available_qty}
+            hint="Empty = on request." />
           <Field label="Minimum order quantity" name="moq" type="number" defaultValue={v.moq ?? 1} />
           <Field label="Incoterm" name="incoterm" defaultValue={v.incoterm ?? "EXW"} />
-          <Field label="Purchase price per pack (EUR)" name="purchase_price" defaultValue={v.purchase_price} required
-            hint="Only visible to admins." />
+          <Field label="Purchase price per pack (EUR)" name="purchase_price" defaultValue={v.purchase_price}
+            hint="Only visible to admins. Empty = price on request." />
           <Field label="Own markup % (optional)" name="markup_override_pct" defaultValue={v.markup_override_pct}
             hint="Leave empty to use the customer group's markup." />
+          <div className="md:col-span-3">
+            <Field label="Internal note (admins only)" name="internal_note" defaultValue={v.internal_note}
+              hint="e.g. price from August, check before offering" />
+          </div>
         </div>
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" name="is_active" defaultChecked={v.is_active ?? true} /> Visible to customers

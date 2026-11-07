@@ -6,10 +6,11 @@ import { setOfferActive } from "./actions";
 type Row = {
   id: string;
   batch: string;
-  expiry_date: string;
-  available_qty: number;
+  expiry_date: string | null;
+  available_qty: number | null;
   moq: number;
-  purchase_price: number;
+  purchase_price: number | null;
+  internal_note: string | null;
   markup_override_pct: number | null;
   incoterm: string;
   stock_as_of: string;
@@ -36,7 +37,7 @@ export default async function AdminCatalogPage({
     supabase
       .from("offers")
       .select("*, products(trade_name, strength, pack_size, pzn, is_cold_chain, is_narcotic, manufacturers(name))")
-      .order("expiry_date")
+      .order("expiry_date", { nullsFirst: false })
       .returns<Row[]>(),
     supabase.from("customer_groups").select("id, name, default_markup_pct").order("name"),
     supabase.from("manufacturers").select("name").order("name"),
@@ -110,7 +111,7 @@ export default async function AdminCatalogPage({
               </tr>
             )}
             {rows.map((o) => {
-              const months = monthsUntil(o.expiry_date);
+              const months = o.expiry_date ? monthsUntil(o.expiry_date) : null;
               return (
                 <tr key={o.id} className={o.is_active ? "" : "bg-slate-50 text-slate-400"}>
                   <td className="px-3 py-2">
@@ -123,21 +124,23 @@ export default async function AdminCatalogPage({
                       {o.products.is_cold_chain && " · cold chain"}
                       {o.products.is_narcotic && " · BtM"}
                     </div>
+                    {o.internal_note && <div className="text-xs italic text-amber-700">{o.internal_note}</div>}
                   </td>
                   <td className="px-3 py-2">{o.products.manufacturers?.name}</td>
-                  <td className="px-3 py-2 font-mono text-xs">{o.batch}</td>
-                  <td className={`px-3 py-2 ${months < 6 ? "font-medium text-red-700" : months < 12 ? "text-amber-700" : ""}`}>
-                    {displayDate(o.expiry_date)}
+                  <td className="px-3 py-2 font-mono text-xs">{o.batch || "–"}</td>
+                  <td className={`px-3 py-2 whitespace-nowrap ${months === null ? "text-slate-400" : months < 6 ? "font-medium text-red-700" : months < 12 ? "text-amber-700" : ""}`}>
+                    {o.expiry_date ? displayDate(o.expiry_date) : "open"}
                   </td>
-                  <td className="px-3 py-2 text-right">{o.available_qty}</td>
+                  <td className="px-3 py-2 text-right">{o.available_qty ?? <span className="text-slate-400">on request</span>}</td>
                   <td className="px-3 py-2 text-right">{o.moq}</td>
-                  <td className="px-3 py-2 text-right">{eur(o.purchase_price)}</td>
+                  <td className="px-3 py-2 text-right whitespace-nowrap">{o.purchase_price === null ? <span className="text-slate-400">on request</span> : eur(o.purchase_price)}</td>
                   <td className="px-3 py-2 text-right">
                     {o.markup_override_pct !== null ? `${o.markup_override_pct}%` : <span className="text-slate-400">group</span>}
                   </td>
                   {(groups ?? []).map((g) => (
-                    <td key={g.id} className="px-3 py-2 text-right">
-                      {eur(sellPrice(Number(o.purchase_price), o.markup_override_pct === null ? null : Number(o.markup_override_pct), Number(g.default_markup_pct)))}
+                    <td key={g.id} className="px-3 py-2 text-right whitespace-nowrap">
+                      {o.purchase_price === null ? <span className="text-slate-400">–</span>
+                        : eur(sellPrice(Number(o.purchase_price), o.markup_override_pct === null ? null : Number(o.markup_override_pct), Number(g.default_markup_pct)))}
                     </td>
                   ))}
                   <td className="px-3 py-2 text-xs">{displayDate(o.stock_as_of)}</td>

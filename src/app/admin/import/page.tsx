@@ -9,7 +9,7 @@ export default async function ImportPage() {
       <div>
         <h1 className="text-2xl font-semibold">Import stock list</h1>
         <p className="text-sm text-slate-600">
-          Upload a manufacturer&apos;s Excel or CSV list. You check the column assignment and a preview before anything
+          Upload an Excel or CSV list from one or several manufacturers. You check the column assignment and a preview before anything
           is saved. Batches already in the catalog are updated, new ones are added.
         </p>
       </div>

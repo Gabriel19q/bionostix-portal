@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSession } from "@/lib/session";
 import { emails, sendEmail } from "@/lib/email";
@@ -69,6 +70,8 @@ export async function changeStatus(formData: FormData) {
     const { data: items } = await supabase
       .from("request_items").select("id, requested_qty, unit_price_snapshot, confirmed_qty, confirmed_unit_price")
       .eq("request_id", id);
+    const missing = (items ?? []).filter((i) => i.confirmed_unit_price === null && i.unit_price_snapshot === null);
+    if (missing.length) redirect(`/admin/requests/${id}?error=prices`);
     for (const i of items ?? []) {
       if (i.confirmed_qty === null || i.confirmed_unit_price === null) {
         await supabase.from("request_items").update({
