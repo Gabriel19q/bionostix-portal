@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { OfferForm } from "../offer-form";
+import { offerAction } from "../actions";
+import { ConfirmButton } from "../bulk-controls";
 
 export default async function EditOfferPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -47,6 +49,15 @@ export default async function EditOfferPage({ params }: { params: Promise<{ id: 
           coa_available: offer.coa_available,
         }}
       />
+      <form action={offerAction} className="card flex flex-wrap items-center justify-between gap-3 border-red-200">
+        <input type="hidden" name="offer_id" value={offer.id} />
+        <p className="text-sm text-slate-600">
+          Delete this batch permanently. If it appears in a customer request, it is hidden instead.
+        </p>
+        <ConfirmButton value="delete" className="btn-danger" message="Delete this batch? This cannot be undone.">
+          Delete batch
+        </ConfirmButton>
+      </form>
     </div>
   );
 }

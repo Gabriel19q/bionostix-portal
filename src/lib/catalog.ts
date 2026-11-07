@@ -40,3 +40,31 @@ export async function findProduct(supabase: SupabaseClient, p: ProductFields) {
   return (data?.[0]?.id as string | undefined) ?? null;
 }
 
+
+// Deletes batches. Batches that appear in a customer request are kept for the record and hidden instead.
+// Products left without any batch are deleted as well.
+export async function deleteOffers(supabase: SupabaseClient, ids: string[]) {
+  if (ids.length === 0) return { deleted: 0, hidden: 0 };
+  const { data: used } = await supabase.from("request_items").select("offer_id").in("offer_id", ids);
+  const usedIds = new Set((used ?? []).map((u) => u.offer_id as string));
+  const deletable = ids.filter((id) => !usedIds.has(id));
+  const keep = ids.filter((id) => usedIds.has(id));
+
+  const { data: affected } = await supabase.from("offers").select("product_id").in("id", deletable);
+  if (deletable.length) {
+    const { error } = await supabase.from("offers").delete().in("id", deletable);
+    if (error) throw new Error(error.message);
+  }
+  if (keep.length) {
+    const { error } = await supabase.from("offers").update({ is_active: false }).in("id", keep);
+    if (error) throw new Error(error.message);
+  }
+
+  const productIds = [...new Set((affected ?? []).map((a) => a.product_id as string))];
+  if (productIds.length) {
+    const { data: stillUsed } = await supabase.from("offers").select("product_id").in("product_id", productIds);
+    const orphan = productIds.filter((p) => !(stillUsed ?? []).some((s) => s.product_id === p));
+    if (orphan.length) await supabase.from("products").delete().in("id", orphan);
+  }
+  return { deleted: deletable.length, hidden: keep.length };
+}

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { parseDate, parseNumber, parsePzn, parseText, parseYesNo } from "@/lib/parse";
-import { findOrCreateManufacturer, findProduct, type ProductFields } from "@/lib/catalog";
+import { deleteOffers, findOrCreateManufacturer, findProduct, type ProductFields } from "@/lib/catalog";
 
 async function requireAdmin() {
   const session = await getSession();
@@ -78,12 +78,38 @@ export async function saveOffer(formData: FormData) {
   redirect("/admin/catalog");
 }
 
-export async function setOfferActive(formData: FormData) {
+// Bulk actions from the catalog table and the delete button on a batch page
+export async function offerAction(formData: FormData) {
   const supabase = await requireAdmin();
-  const { error } = await supabase
-    .from("offers")
-    .update({ is_active: formData.get("active") === "true" })
-    .eq("id", String(formData.get("offer_id")));
-  if (error) throw new Error(error.message);
+  const op = String(formData.get("op") ?? "");
+  const back = new URLSearchParams();
+  for (const k of ["q", "m", "inactive"]) {
+    const v = parseText(formData.get(k));
+    if (v) back.set(k, v);
+  }
+
+  // Single-row show/hide: op = "toggle:<id>:<true|false>"
+  if (op.startsWith("toggle:")) {
+    const [, id, active] = op.split(":");
+    const { error } = await supabase.from("offers").update({ is_active: active === "true" }).eq("id", id);
+    if (error) throw new Error(error.message);
+    revalidatePath("/admin/catalog");
+    redirect(`/admin/catalog?${back}`);
+  }
+
+  const ids = formData.getAll("offer_id").map(String).filter(Boolean);
+  if (ids.length === 0) {
+    back.set("msg", "none");
+    redirect(`/admin/catalog?${back}`);
+  }
+  if (op === "hide" || op === "show") {
+    const { error } = await supabase.from("offers").update({ is_active: op === "show" }).in("id", ids);
+    if (error) throw new Error(error.message);
+    back.set("msg", `${op}:${ids.length}`);
+  } else if (op === "delete") {
+    const { deleted, hidden } = await deleteOffers(supabase, ids);
+    back.set("msg", `delete:${deleted}:${hidden}`);
+  }
   revalidatePath("/admin/catalog");
+  redirect(`/admin/catalog?${back}`);
 }

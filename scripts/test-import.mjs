@@ -3,6 +3,7 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { processImport } from "../src/lib/import.ts";
+import { deleteOffers } from "../src/lib/catalog.ts";
 
 function mockSupabase(tables) {
   return {
@@ -15,6 +16,7 @@ function mockSupabase(tables) {
         select() { if (op === "select") op = "select"; return q; },
         insert(v) { op = "insert"; payload = v; return q; },
         update(v) { op = "update"; payload = v; return q; },
+        delete() { op = "delete"; return q; },
         eq(c, v) { filters.push((r) => r[c] === v); return q; },
         ilike(c, v) { filters.push((r) => (r[c] ?? "").toLowerCase() === unescape(v)); return q; },
         is(c) { filters.push((r) => r[c] === null || r[c] === undefined); return q; },
@@ -35,6 +37,10 @@ function mockSupabase(tables) {
             rows.push(r);
           }
           return Promise.resolve({ data: single ? list[0] : list, error: null });
+        }
+        if (op === "delete") {
+          for (const r of match) rows.splice(rows.indexOf(r), 1);
+          return Promise.resolve({ data: match, error: null });
         }
         if (op === "update") {
           for (const r of match) Object.assign(r, payload);
@@ -148,6 +154,17 @@ if (existsSync(file)) {
   assert.deepEqual(t3.offers.map((o) => o.coa_available), [true, true, true]);
   const keep = await processImport(db3, { ...base, manufacturer: "X", rows: rows.map((r) => ({ trade_name: r.trade_name, batch: r.batch })) }, false);
   assert.equal(keep.counts.unchanged, 3, "without COA column and default 'keep' nothing changes");
+}
+
+// Deleting: batches used in a request are hidden instead; products without batches are removed
+{
+  const t4 = { manufacturers: [], products: [{ id: "p1" }, { id: "p2" }], offers: [
+    { id: "o1", product_id: "p1", is_active: true }, { id: "o2", product_id: "p1", is_active: true },
+    { id: "o3", product_id: "p2", is_active: true }], request_items: [{ id: "ri", offer_id: "o2" }] };
+  const res = await deleteOffers(mockSupabase(t4), ["o1", "o2", "o3"]);
+  assert.deepEqual(res, { deleted: 2, hidden: 1 });
+  assert.deepEqual(t4.offers.map((o) => [o.id, o.is_active]), [["o2", false]]);
+  assert.deepEqual(t4.products.map((p) => p.id), ["p1"], "p2 had no batches left and was removed");
 }
 
 console.log("import tests passed");

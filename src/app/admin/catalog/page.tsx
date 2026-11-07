@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { getSession } from "@/lib/session";
 import { displayDate, eur, monthsUntil, sellPrice } from "@/lib/format";
-import { setOfferActive } from "./actions";
+import { offerAction } from "./actions";
+import { ConfirmButton, SelectAll } from "./bulk-controls";
 
 type Row = {
   id: string;
@@ -30,9 +31,9 @@ type Row = {
 export default async function AdminCatalogPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; m?: string; inactive?: string }>;
+  searchParams: Promise<{ q?: string; m?: string; inactive?: string; msg?: string }>;
 }) {
-  const { q = "", m = "", inactive } = await searchParams;
+  const { q = "", m = "", inactive, msg } = await searchParams;
   const { supabase } = await getSession();
   const [{ data: offers }, { data: groups }, { data: manufacturers }] = await Promise.all([
     supabase
@@ -84,10 +85,26 @@ export default async function AdminCatalogPage({
         <button className="btn-secondary">Filter</button>
       </form>
 
+      {msg && <Notice msg={msg} />}
+
+      <form action={offerAction} className="space-y-2">
+      <input type="hidden" name="q" value={q} />
+      <input type="hidden" name="m" value={m} />
+      <input type="hidden" name="inactive" value={inactive ?? ""} />
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        <span className="text-slate-600">Selected batches:</span>
+        <button name="op" value="hide" className="btn-secondary px-3 py-1">Hide</button>
+        <button name="op" value="show" className="btn-secondary px-3 py-1">Show</button>
+        <ConfirmButton value="delete" className="btn-danger px-3 py-1"
+          message="Delete {n} selected batch(es)? This cannot be undone. Batches that appear in a customer request are hidden instead.">
+          Delete
+        </ConfirmButton>
+      </div>
       <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
         <table className="min-w-full text-sm">
           <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
             <tr>
+              <th className="px-3 py-2"><SelectAll /></th>
               <th className="px-3 py-2">Product</th>
               <th className="px-3 py-2">Manufacturer</th>
               <th className="px-3 py-2">Batch</th>
@@ -107,7 +124,7 @@ export default async function AdminCatalogPage({
           <tbody className="divide-y divide-slate-100">
             {rows.length === 0 && (
               <tr>
-                <td colSpan={12 + (groups?.length ?? 0)} className="px-3 py-6 text-center text-slate-500">
+                <td colSpan={13 + (groups?.length ?? 0)} className="px-3 py-6 text-center text-slate-500">
                   No batches yet. Add one or import a manufacturer stock list.
                 </td>
               </tr>
@@ -116,6 +133,9 @@ export default async function AdminCatalogPage({
               const months = o.expiry_date ? monthsUntil(o.expiry_date) : null;
               return (
                 <tr key={o.id} className={o.is_active ? "" : "bg-slate-50 text-slate-400"}>
+                  <td className="px-3 py-2">
+                    <input type="checkbox" name="offer_id" value={o.id} aria-label={`Select ${o.products.trade_name}`} />
+                  </td>
                   <td className="px-3 py-2">
                     <Link href={`/admin/catalog/${o.id}`} className="font-medium text-brand-700 hover:underline">
                       {o.products.trade_name}
@@ -151,13 +171,10 @@ export default async function AdminCatalogPage({
                   </td>
                   <td className="px-3 py-2 text-xs">{displayDate(o.stock_as_of)}</td>
                   <td className="px-3 py-2">
-                    <form action={setOfferActive}>
-                      <input type="hidden" name="offer_id" value={o.id} />
-                      <input type="hidden" name="active" value={o.is_active ? "false" : "true"} />
-                      <button className="text-xs text-slate-600 underline hover:text-brand-700">
-                        {o.is_active ? "Hide" : "Show"}
-                      </button>
-                    </form>
+                    <button name="op" value={`toggle:${o.id}:${o.is_active ? "false" : "true"}`}
+                      className="text-xs text-slate-600 underline hover:text-brand-700">
+                      {o.is_active ? "Hide" : "Show"}
+                    </button>
                   </td>
                 </tr>
               );
@@ -165,6 +182,21 @@ export default async function AdminCatalogPage({
           </tbody>
         </table>
       </div>
+      </form>
     </div>
   );
+}
+
+function Notice({ msg }: { msg: string }) {
+  const [op, a, b] = msg.split(":");
+  let text = "";
+  if (op === "none") text = "Please tick at least one batch first.";
+  else if (op === "hide") text = `${a} batch(es) hidden from customers.`;
+  else if (op === "show") text = `${a} batch(es) visible to customers again.`;
+  else if (op === "delete") {
+    text = `${a} batch(es) deleted.`;
+    if (Number(b) > 0) text += ` ${b} batch(es) appear in customer requests and were hidden instead, so the request history stays complete.`;
+  }
+  if (!text) return null;
+  return <div className="card border-brand-100 bg-brand-50 py-3 text-sm text-brand-900">{text}</div>;
 }
