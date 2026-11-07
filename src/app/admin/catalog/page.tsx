@@ -11,6 +11,7 @@ type Row = {
   moq: number;
   purchase_price: number | null;
   internal_note: string | null;
+  coa_available: boolean | null;
   markup_override_pct: number | null;
   incoterm: string;
   stock_as_of: string;
@@ -98,6 +99,7 @@ export default async function AdminCatalogPage({
               {(groups ?? []).map((g) => (
                 <th key={g.id} className="px-3 py-2 text-right">{g.name}</th>
               ))}
+              <th className="px-3 py-2">COA</th>
               <th className="px-3 py-2">Stock as of</th>
               <th className="px-3 py-2"></th>
             </tr>
@@ -105,7 +107,7 @@ export default async function AdminCatalogPage({
           <tbody className="divide-y divide-slate-100">
             {rows.length === 0 && (
               <tr>
-                <td colSpan={11 + (groups?.length ?? 0)} className="px-3 py-6 text-center text-slate-500">
+                <td colSpan={12 + (groups?.length ?? 0)} className="px-3 py-6 text-center text-slate-500">
                   No batches yet. Add one or import a manufacturer stock list.
                 </td>
               </tr>
@@ -143,6 +145,10 @@ export default async function AdminCatalogPage({
                         : eur(sellPrice(Number(o.purchase_price), o.markup_override_pct === null ? null : Number(o.markup_override_pct), Number(g.default_markup_pct)))}
                     </td>
                   ))}
+                  <td className="px-3 py-2 text-xs">
+                    {o.coa_available === true ? <span className="text-emerald-700">yes</span>
+                      : o.coa_available === false ? "no" : <span className="text-slate-400">–</span>}
+                  </td>
                   <td className="px-3 py-2 text-xs">{displayDate(o.stock_as_of)}</td>
                   <td className="px-3 py-2">
                     <form action={setOfferActive}>

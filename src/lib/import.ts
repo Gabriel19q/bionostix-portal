@@ -1,6 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { parseDate, parseNumber, parsePrice, parsePzn, parseQuantity, parseText } from "@/lib/parse";
+import { parseDate, parseNumber, parsePrice, parsePzn, parseQuantity, parseText, parseYesNo } from "@/lib/parse";
 import { parseProductName } from "@/lib/product-name";
 
 export type ImportRow = Record<string, unknown>;
@@ -13,6 +13,7 @@ export type ImportPayload = {
   isRx: boolean;
   hideMissing: boolean;
   parseNames: boolean; // derive ingredient, strength, form and pack size from the product name
+  coaDefault: "keep" | "yes" | "no"; // for lists without a COA column
   rows: ImportRow[]; // already mapped to field keys (trade_name, batch, ...)
 };
 
@@ -28,6 +29,7 @@ export type RowResult = {
   qty: number | null;
   moq: number;
   price: number | null;
+  coa: boolean | null;
   status: "new_product" | "new_batch" | "update" | "unchanged" | "error";
   message?: string;
 };
@@ -45,6 +47,7 @@ type Product = {
 type Offer = {
   id: string; product_id: string; batch: string; expiry_date: string | null; available_qty: number | null;
   moq: number; purchase_price: number | null; is_active: boolean; internal_note: string | null;
+  coa_available: boolean | null;
 };
 
 const norm = (s: string | null | undefined) => (s ?? "").trim().toLowerCase();
@@ -61,6 +64,10 @@ export async function processImport(supabase: SupabaseClient, payload: ImportPay
   const stockAsOf = parseDate(payload.stockAsOf) ?? new Date().toISOString().slice(0, 10);
   const fallbackMaker = parseText(payload.manufacturer);
   const hasNoteColumn = payload.rows.some((r) => "note" in r);
+  const hasCoaColumn = payload.rows.some((r) => "coa_available" in r);
+  const coaFor = (raw: ImportRow): boolean | null | undefined =>
+    hasCoaColumn ? parseYesNo(raw.coa_available)
+      : payload.coaDefault === "yes" ? true : payload.coaDefault === "no" ? false : undefined;
 
   // Manufacturers: one per row (column) or the list-wide one
   const makerNames = new Map<string, string>(); // normalised -> display name
@@ -101,7 +108,7 @@ export async function processImport(supabase: SupabaseClient, payload: ImportPay
   const offers: Offer[] = [];
   if (products.length) {
     const { data } = await supabase
-      .from("offers").select("id, product_id, batch, expiry_date, available_qty, moq, purchase_price, is_active, internal_note")
+      .from("offers").select("id, product_id, batch, expiry_date, available_qty, moq, purchase_price, is_active, internal_note, coa_available")
       .in("product_id", products.map((p) => p.id));
     offers.push(...((data ?? []) as Offer[]));
   }
@@ -135,7 +142,7 @@ export async function processImport(supabase: SupabaseClient, payload: ImportPay
     const base = {
       line, product: trade_name ?? "(no name)", manufacturer: makerName ?? "", batch,
       ingredient: product.active_ingredient, strength: product.strength, pack: product.pack_size,
-      expiry, qty: quantity.qty, moq, price: price.value,
+      expiry, qty: quantity.qty, moq, price: price.value, coa: coaFor(raw) ?? null,
     };
     const errors: string[] = [];
     if (!trade_name) errors.push("product name missing");
@@ -196,6 +203,8 @@ export async function processImport(supabase: SupabaseClient, payload: ImportPay
       is_active: true,
     };
     if (hasNoteColumn) values.internal_note = parseText(raw.note);
+    const coa = coaFor(raw);
+    if (coa !== undefined) values.coa_available = coa;
 
     if (offer) {
       touchedOfferIds.add(offer.id);
@@ -205,6 +214,7 @@ export async function processImport(supabase: SupabaseClient, payload: ImportPay
       if (offer.expiry_date !== expiry) changes.push(`expiry ${offer.expiry_date ?? "open"} → ${expiry ?? "open"}`);
       if (offer.moq !== moq) changes.push(`MOQ ${offer.moq} → ${moq}`);
       if (hasNoteColumn && (offer.internal_note ?? null) !== parseText(raw.note)) changes.push("note");
+      if (coa !== undefined && (offer.coa_available ?? null) !== coa) changes.push(`COA ${offer.coa_available ?? "open"} → ${coa ?? "open"}`);
       if (!offer.is_active) changes.push("visible again");
       if (!dryRun) {
         const { error } = await supabase.from("offers").update(values).eq("id", offer.id);

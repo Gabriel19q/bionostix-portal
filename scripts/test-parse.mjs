@@ -60,3 +60,13 @@ const listMap = guessMapping(["PZN", "Product", "Manufacturer", "EK", "HAP/APU",
 assert.deepEqual(listMap, { pzn: "PZN", trade_name: "Product", manufacturer: "Manufacturer", purchase_price: "EK",
   available_qty: "Quantity", expiry_date: "Shelf Life" });
 console.log("price/quantity/mapping tests passed");
+
+const { parseYesNo } = await import("../src/lib/parse.ts");
+assert.equal(parseYesNo("Ja"), true);
+assert.equal(parseYesNo("x"), true);
+assert.equal(parseYesNo("no"), false);
+assert.equal(parseYesNo("-"), false);
+assert.equal(parseYesNo(""), null);
+assert.equal(parseYesNo("on request"), null);
+assert.equal(guessMapping(["Product", "COA"]).coa_available, "COA");
+console.log("COA parsing tests passed");

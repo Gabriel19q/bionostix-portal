@@ -52,8 +52,8 @@ update public.companies set status = 'approved', verified_on = current_date,
 insert into public.manufacturers (name, country) values ('Test Pharma', 'Germany');
 insert into public.products (trade_name, active_ingredient, strength, pack_size, manufacturer_id)
   select 'Testamol', 'paracetamol', '500 mg', '20 tablets', id from public.manufacturers;
-insert into public.offers (product_id, batch, expiry_date, available_qty, moq, purchase_price)
-  select id, 'B001', current_date + 400, 1000, 10, 10.00 from public.products;
+insert into public.offers (product_id, batch, expiry_date, available_qty, moq, purchase_price, coa_available)
+  select id, 'B001', current_date + 400, 1000, 10, 10.00, true from public.products;
 insert into public.offers (product_id, batch, expiry_date, available_qty, moq, purchase_price)
   select id, 'B000-EXPIRED', current_date - 1, 50, 1, 9.00 from public.products;
 insert into public.products (trade_name, manufacturer_id)
@@ -71,6 +71,7 @@ select pg_temp.expect((select count(*) from public.get_catalog()) = 2, 'catalog 
 select pg_temp.expect((select unit_price is null and available_qty is null and expiry_date is null and batch = ''
   from public.get_catalog() where trade_name = 'Upon Request Product'), 'on-request row has no price, qty, expiry, batch');
 select pg_temp.expect((select unit_price from public.get_catalog() where batch = 'B001') = 10.80, 'EU price = 10.00 + 8%');
+select pg_temp.expect((select coa_available from public.get_catalog() where batch = 'B001'), 'customer sees COA availability');
 select pg_temp.expect_error($$select purchase_price from public.get_catalog()$$, 'purchase price not in catalog');
 select pg_temp.expect((select can_request from public.get_my_company()), 'approved company can request');
 select pg_temp.expect_error($$update public.profiles set role = 'admin' where id = auth.uid()$$, 'self-promotion to admin');

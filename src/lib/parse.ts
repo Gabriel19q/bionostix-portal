@@ -86,6 +86,7 @@ export const IMPORT_FIELDS = [
   { key: "dosage_form", label: "Dosage form", required: false, hints: ["darreichung", "dosage form", "form"] },
   { key: "pack_size", label: "Pack size", required: false, hints: ["pack", "packung", "packungsgröße", "packungsgroesse", "größe", "inhalt", "n1", "n2", "n3"] },
   { key: "moq", label: "Minimum order quantity", required: false, hints: ["moq", "mindest", "minimum"] },
+  { key: "coa_available", label: "COA available (yes/no)", required: false, hints: ["coa", "certificate of analysis", "analysenzertifikat", "analysezertifikat", "certificate", "zertifikat"] },
   { key: "note", label: "Internal note", required: false, hints: ["note", "notes", "notiz", "bemerkung", "kommentar", "comment", "remarks", "info", "status"] },
 ] as const;
 
@@ -135,4 +136,14 @@ export function parseQuantity(input: unknown): { qty: number | null; moq: number
   const n = parseNumber(input);
   if (n !== null && n >= 0) return { qty: Math.round(n), moq: null, unreadable: false };
   return { qty: null, moq: null, unreadable: !ON_REQUEST.test(text) };
+}
+
+// "yes", "ja", "x", "✓", 1 -> true · "no", "nein", "-", 0 -> false · empty / unclear -> null
+export function parseYesNo(input: unknown): boolean | null {
+  if (typeof input === "boolean") return input;
+  const s = parseText(input)?.toLowerCase();
+  if (!s) return null;
+  if (/^(yes|y|ja|j|x|✓|✔|true|1|available|vorhanden|verfügbar|verfuegbar|ok)$/.test(s)) return true;
+  if (/^(no|n|nein|-|–|false|0|not available|nicht verfügbar|nicht vorhanden|keins?)$/.test(s)) return false;
+  return null;
 }

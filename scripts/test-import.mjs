@@ -49,7 +49,7 @@ function mockSupabase(tables) {
   };
 }
 
-const base = { manufacturer: "Accord Healthcare", stockAsOf: "2026-11-06", incoterm: "EXW", defaultMoq: 1, isRx: true, hideMissing: false, parseNames: false };
+const base = { manufacturer: "Accord Healthcare", stockAsOf: "2026-11-06", incoterm: "EXW", defaultMoq: 1, isRx: true, hideMissing: false, parseNames: false, coaDefault: "keep" };
 const tables = { manufacturers: [], products: [], offers: [] };
 const db = mockSupabase(tables);
 
@@ -130,6 +130,24 @@ if (existsSync(file)) {
   const again = await processImport(db2, payload, false);
   assert.equal(again.counts.unchanged, rows.length, JSON.stringify(again.rows.filter((r) => r.status !== "unchanged")));
   console.log(`real list: ${res.counts.new_product} products from ${prev.newManufacturers.length} manufacturers imported`);
+}
+
+// COA: from a column, or one value for the whole list
+{
+  const t3 = { manufacturers: [], products: [], offers: [] };
+  const db3 = mockSupabase(t3);
+  const rows = [
+    { trade_name: "Alpha 10 mg", batch: "A1", coa_available: "ja" },
+    { trade_name: "Beta 20 mg", batch: "B1", coa_available: "no" },
+    { trade_name: "Gamma 5 mg", batch: "G1", coa_available: "" },
+  ];
+  await processImport(db3, { ...base, manufacturer: "X", rows }, false);
+  assert.deepEqual(t3.offers.map((o) => o.coa_available), [true, false, null]);
+  const again = await processImport(db3, { ...base, manufacturer: "X", coaDefault: "yes", rows: rows.map((r) => ({ trade_name: r.trade_name, batch: r.batch })) }, false);
+  assert.equal(again.counts.update, 2, "Alpha already had a COA");
+  assert.deepEqual(t3.offers.map((o) => o.coa_available), [true, true, true]);
+  const keep = await processImport(db3, { ...base, manufacturer: "X", rows: rows.map((r) => ({ trade_name: r.trade_name, batch: r.batch })) }, false);
+  assert.equal(keep.counts.unchanged, 3, "without COA column and default 'keep' nothing changes");
 }
 
 console.log("import tests passed");

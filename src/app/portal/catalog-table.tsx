@@ -24,6 +24,7 @@ export type CatalogItem = {
   incoterm: string;
   stock_as_of: string;
   unit_price: number | null;
+  coa_available: boolean | null;
 };
 
 const onRequest = <span className="text-slate-500">On request</span>;
@@ -40,6 +41,7 @@ export function CatalogTable({ items, canRequest, defaultCountry }: {
   const [q, setQ] = useState("");
   const [manufacturer, setManufacturer] = useState("");
   const [sort, setSort] = useState<SortKey>("name");
+  const [coaOnly, setCoaOnly] = useState(false);
 
   const manufacturers = useMemo(() => [...new Set(items.map((i) => i.manufacturer))].sort(), [items]);
 
@@ -47,6 +49,7 @@ export function CatalogTable({ items, canRequest, defaultCountry }: {
     const needle = q.trim().toLowerCase();
     const filtered = items.filter((i) => {
       if (manufacturer && i.manufacturer !== manufacturer) return false;
+      if (coaOnly && i.coa_available !== true) return false;
       if (!needle) return true;
       return [i.trade_name, i.active_ingredient, i.strength, i.pzn, i.manufacturer]
         .some((v) => v?.toLowerCase().includes(needle));
@@ -57,7 +60,7 @@ export function CatalogTable({ items, canRequest, defaultCountry }: {
       if (sort === "price") return (a.unit_price ?? Infinity) - (b.unit_price ?? Infinity);
       return a.trade_name.localeCompare(b.trade_name) || exp(a).localeCompare(exp(b));
     });
-  }, [items, q, manufacturer, sort]);
+  }, [items, q, manufacturer, sort, coaOnly]);
 
   if (items.length === 0) {
     return <div className="card text-sm text-slate-600">No products are available at the moment. Please check back soon.</div>;
@@ -86,6 +89,10 @@ export function CatalogTable({ items, canRequest, defaultCountry }: {
             <option value="price">Price</option>
           </select>
         </div>
+        <label className="flex items-center gap-2 pb-2 text-sm">
+          <input type="checkbox" checked={coaOnly} onChange={(e) => setCoaOnly(e.target.checked)} />
+          With COA only
+        </label>
         <p className="pb-2 text-sm text-slate-500">{rows.length} of {items.length} batches</p>
       </div>
 
@@ -100,6 +107,7 @@ export function CatalogTable({ items, canRequest, defaultCountry }: {
               <th className="px-3 py-2 text-right">Available</th>
               <th className="px-3 py-2 text-right">MOQ</th>
               <th className="px-3 py-2 text-right">Price / pack</th>
+              <th className="px-3 py-2" title="Certificate of analysis">COA</th>
               <th className="px-3 py-2">Terms</th>
               {canRequest && <th className="px-3 py-2">Request</th>}
             </tr>
@@ -139,6 +147,10 @@ export function CatalogTable({ items, canRequest, defaultCountry }: {
                   <td className="px-3 py-2 text-right">{i.available_qty === null ? onRequest : i.available_qty.toLocaleString("en")}</td>
                   <td className="px-3 py-2 text-right">{i.moq}</td>
                   <td className="px-3 py-2 text-right font-medium">{i.unit_price === null ? onRequest : eur(i.unit_price)}</td>
+                  <td className="px-3 py-2 text-xs">
+                    {i.coa_available === true ? <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-emerald-900">Available</span>
+                      : i.coa_available === false ? <span className="text-slate-600">Not available</span> : onRequest}
+                  </td>
                   <td className="px-3 py-2 text-xs text-slate-600">
                     {i.incoterm}
                     <div className="text-slate-400">stock {displayDate(i.stock_as_of)}</div>

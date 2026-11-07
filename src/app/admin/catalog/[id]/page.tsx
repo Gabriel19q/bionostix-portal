@@ -44,6 +44,7 @@ export default async function EditOfferPage({ params }: { params: Promise<{ id: 
           stock_as_of: offer.stock_as_of,
           is_active: offer.is_active,
           internal_note: offer.internal_note,
+          coa_available: offer.coa_available,
         }}
       />
     </div>

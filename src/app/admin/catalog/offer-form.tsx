@@ -21,6 +21,7 @@ export type OfferFormValues = {
   moq?: number;
   purchase_price?: number | null;
   internal_note?: string | null;
+  coa_available?: boolean | null;
   markup_override_pct?: number | null;
   incoterm?: string;
   stock_as_of?: string;
@@ -100,7 +101,16 @@ export function OfferForm({ values, manufacturers }: { values: OfferFormValues; 
             hint="Only visible to admins. Empty = price on request." />
           <Field label="Own markup % (optional)" name="markup_override_pct" defaultValue={v.markup_override_pct}
             hint="Leave empty to use the customer group's markup." />
-          <div className="md:col-span-3">
+          <div>
+            <label className="label" htmlFor="coa_available">Certificate of analysis (COA)</label>
+            <select id="coa_available" name="coa_available" className="input"
+              defaultValue={v.coa_available === true ? "yes" : v.coa_available === false ? "no" : ""}>
+              <option value="">Not specified</option>
+              <option value="yes">Available</option>
+              <option value="no">Not available</option>
+            </select>
+          </div>
+          <div className="md:col-span-2">
             <Field label="Internal note (admins only)" name="internal_note" defaultValue={v.internal_note}
               hint="e.g. price from August, check before offering" />
           </div>

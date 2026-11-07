@@ -68,6 +68,7 @@ export function ImportWizard({ manufacturers }: { manufacturers: string[] }) {
   const [isRx, setIsRx] = useState(true);
   const [hideMissing, setHideMissing] = useState(false);
   const [parseNames, setParseNames] = useState(true);
+  const [coaDefault, setCoaDefault] = useState<"keep" | "yes" | "no">("keep");
   const [preview, setPreview] = useState<ImportResult | null>(null);
   const [done, setDone] = useState<ImportResult | null>(null);
   const [filter, setFilter] = useState<RowResult["status"] | "all">("all");
@@ -103,8 +104,8 @@ export function ImportWizard({ manufacturers }: { manufacturers: string[] }) {
       Object.entries(mapping).filter(([, h]) => h).map(([k, h]) => [k, sheet.headers.indexOf(h as string)]),
     );
     const rows = sheet.rows.map((r) => Object.fromEntries(Object.entries(idx).map(([k, i]) => [k, r[i] ?? null])));
-    return { manufacturer, stockAsOf, incoterm, defaultMoq, isRx, hideMissing, parseNames, rows };
-  }, [sheet, mapping, manufacturer, stockAsOf, incoterm, defaultMoq, isRx, hideMissing, parseNames]);
+    return { manufacturer, stockAsOf, incoterm, defaultMoq, isRx, hideMissing, parseNames, coaDefault, rows };
+  }, [sheet, mapping, manufacturer, stockAsOf, incoterm, defaultMoq, isRx, hideMissing, parseNames, coaDefault]);
 
   const missingRequired: string[] = IMPORT_FIELDS.filter((f) => f.required && !mapping[f.key]).map((f) => f.label);
   if (!mapping.manufacturer && !manufacturer.trim()) missingRequired.push("Manufacturer (column or name below)");
@@ -215,6 +216,17 @@ export function ImportWizard({ manufacturers }: { manufacturers: string[] }) {
               <label className="label">Incoterm</label>
               <input className="input" value={incoterm} onChange={(e) => setIncoterm(e.target.value)} />
             </div>
+            {!mapping.coa_available && (
+              <div>
+                <label className="label">COA for all rows</label>
+                <select className="input" value={coaDefault}
+                  onChange={(e) => { setCoaDefault(e.target.value as typeof coaDefault); setPreview(null); }}>
+                  <option value="keep">Not specified</option>
+                  <option value="yes">COA available</option>
+                  <option value="no">No COA</option>
+                </select>
+              </div>
+            )}
             <div>
               <label className="label">Default MOQ</label>
               <input type="number" min={1} className="input" value={defaultMoq}
@@ -270,6 +282,7 @@ export function ImportWizard({ manufacturers }: { manufacturers: string[] }) {
                   <th className="px-3 py-2">Ingredient · strength · pack</th><th className="px-3 py-2">Batch</th>
                   <th className="px-3 py-2">Expiry</th><th className="px-3 py-2 text-right">Qty</th>
                   <th className="px-3 py-2 text-right">MOQ</th><th className="px-3 py-2 text-right">Purchase</th>
+                  <th className="px-3 py-2">COA</th>
                   <th className="px-3 py-2">Result</th><th className="px-3 py-2">Details</th>
                 </tr>
               </thead>
@@ -285,6 +298,7 @@ export function ImportWizard({ manufacturers }: { manufacturers: string[] }) {
                     <td className="px-3 py-1.5 text-right">{r.qty ?? <span className="text-slate-400">on request</span>}</td>
                     <td className="px-3 py-1.5 text-right">{r.moq}</td>
                     <td className="px-3 py-1.5 text-right whitespace-nowrap">{r.price !== null ? eur(r.price) : <span className="text-slate-400">on request</span>}</td>
+                    <td className="px-3 py-1.5">{r.coa === true ? "yes" : r.coa === false ? "no" : <span className="text-slate-400">–</span>}</td>
                     <td className="px-3 py-1.5"><span className={`rounded px-2 py-0.5 text-xs ${STATUS_STYLE[r.status]}`}>{STATUS_LABEL[r.status]}</span></td>
                     <td className="px-3 py-1.5 text-xs text-slate-600">{r.message}</td>
                   </tr>

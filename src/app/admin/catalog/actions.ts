@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
-import { parseDate, parseNumber, parsePzn, parseText } from "@/lib/parse";
+import { parseDate, parseNumber, parsePzn, parseText, parseYesNo } from "@/lib/parse";
 import { findOrCreateManufacturer, findProduct, type ProductFields } from "@/lib/catalog";
 
 async function requireAdmin() {
@@ -59,6 +59,7 @@ export async function saveOffer(formData: FormData) {
     moq: Math.max(1, Math.round(parseNumber(get("moq")) ?? 1)),
     purchase_price: price === null ? null : Math.round(price * 100) / 100,
     internal_note: parseText(get("internal_note")),
+    coa_available: parseYesNo(get("coa_available")),
     markup_override_pct: markup,
     incoterm: parseText(get("incoterm")) ?? "EXW",
     stock_as_of: parseDate(get("stock_as_of")) ?? new Date().toISOString().slice(0, 10),
