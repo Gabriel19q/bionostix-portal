@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { displayDate, eur, monthsUntil } from "@/lib/format";
 import { CartPanel, useCart } from "./cart";
 import { downloadCatalogExcel } from "./export";
+import { logExportAction } from "../activity-actions";
 
 export type CatalogItem = {
   offer_id: string;
@@ -47,11 +48,12 @@ export function CatalogTable({ items, canRequest, defaultCountry }: {
   const [sort, setSort] = useState<SortKey>("name");
   const [coaOnly, setCoaOnly] = useState(false);
 
-  async function exportRows(list: CatalogItem[]) {
+  async function exportRows(list: CatalogItem[], mode: "all" | "view" | "selected") {
     if (list.length === 0) return;
     setExporting(true);
     try {
       await downloadCatalogExcel(list, { includePrices });
+      logExportAction(list.length, mode, includePrices).catch(() => {});
     } finally {
       setExporting(false);
     }
@@ -112,16 +114,16 @@ export function CatalogTable({ items, canRequest, defaultCountry }: {
 
       <div className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
         <span className="font-medium">Download Excel:</span>
-        <button className="btn-secondary px-3 py-1" disabled={exporting} onClick={() => exportRows(items)}>
+        <button className="btn-secondary px-3 py-1" disabled={exporting} onClick={() => exportRows(items, "all")}>
           All products ({items.length})
         </button>
         {rows.length !== items.length && (
-          <button className="btn-secondary px-3 py-1" disabled={exporting} onClick={() => exportRows(rows)}>
+          <button className="btn-secondary px-3 py-1" disabled={exporting} onClick={() => exportRows(rows, "view")}>
             Current view ({rows.length})
           </button>
         )}
         <button className="btn-secondary px-3 py-1" disabled={exporting || selected.size === 0}
-          onClick={() => exportRows(items.filter((i) => selected.has(i.offer_id)))}>
+          onClick={() => exportRows(items.filter((i) => selected.has(i.offer_id)), "selected")}>
           Selected ({selected.size})
         </button>
         <label className="ml-2 flex items-center gap-2">

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
+import { logActivity } from "@/lib/activity";
 import { displayDate, eur } from "@/lib/format";
 import { StatusBadge, type RequestStatus } from "@/lib/status";
 
@@ -16,6 +17,7 @@ export default async function MyRequestsPage() {
     supabase.rpc("get_my_request_items"),
   ]);
   const reqs = (requests ?? []) as Req[];
+  await logActivity(supabase, "view_requests", "/portal/requests");
   const allItems = (items ?? []) as Item[];
 
   return (

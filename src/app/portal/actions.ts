@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/session";
 import { adminEmails, emails, sendEmail } from "@/lib/email";
+import { logActivity } from "@/lib/activity";
 
 type CartLine = { offer_id: string; qty: number };
 
@@ -25,6 +26,7 @@ export async function submitRequestAction(input: { items: CartLine[]; comment: s
   const { data: req } = await supabase.rpc("get_my_requests").eq("id", id).maybeSingle<{ number: string }>();
   const mail = emails.newRequest(req?.number ?? "", company.name, items.length, id as string);
   await sendEmail({ to: adminEmails(), ...mail });
+  await logActivity(supabase, "submit_request", "/portal", { number: req?.number, lines: items.length });
 
   revalidatePath("/portal/requests");
   return { ok: true as const, id: id as string };
@@ -41,6 +43,7 @@ export async function respondAction(formData: FormData) {
 
   const { data: req } = await supabase.rpc("get_my_requests").eq("id", id).maybeSingle<{ number: string }>();
   await sendEmail({ to: adminEmails(), ...emails.customerResponded(req?.number ?? "", company.name, accept, id) });
+  await logActivity(supabase, "respond", `/portal/requests/${id}`, { number: req?.number, accepted: accept });
 
   revalidatePath(`/portal/requests/${id}`);
   revalidatePath("/portal/requests");

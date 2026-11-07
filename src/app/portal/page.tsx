@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
+import { logActivity } from "@/lib/activity";
 import { ApplicationForm } from "./application-form";
 import { DocumentUpload } from "./document-upload";
 import { CatalogTable, type CatalogItem } from "./catalog-table";
@@ -64,6 +65,7 @@ export default async function PortalPage() {
   }
 
   const { data: catalog } = await supabase.rpc("get_catalog");
+  await logActivity(supabase, "view_catalog", "/portal", { items: catalog?.length ?? 0 });
 
   return (
     <div className="space-y-6">

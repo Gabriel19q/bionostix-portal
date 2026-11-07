@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { logLoginAction } from "../activity-actions";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -22,6 +23,7 @@ export default function LoginPage() {
       setError(error.message);
       return;
     }
+    await logLoginAction();
     router.push("/portal");
     router.refresh();
   }
@@ -45,6 +47,9 @@ export default function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
           />
         </div>
+        <p className="text-right text-sm">
+          <Link href="/forgot-password" className="text-brand-700 underline">Forgot password?</Link>
+        </p>
         {error && <p className="text-sm text-red-700">{error}</p>}
         <button className="btn-primary w-full" disabled={busy}>
           {busy ? "Signing in…" : "Sign in"}

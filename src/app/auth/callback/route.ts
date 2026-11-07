@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { logActivity } from "@/lib/activity";
 
 // Target of the email confirmation link: turns the one-time code into a session.
 export async function GET(request: Request) {
@@ -11,7 +12,10 @@ export async function GET(request: Request) {
   if (code) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) return NextResponse.redirect(`${origin}${next}`);
+    if (!error) {
+      await logActivity(supabase, "login", "/auth/callback");
+      return NextResponse.redirect(`${origin}${next}`);
+    }
   }
   return NextResponse.redirect(`${origin}/login?error=confirmation`);
 }

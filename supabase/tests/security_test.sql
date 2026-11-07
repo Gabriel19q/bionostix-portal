@@ -172,6 +172,26 @@ select public.submit_request(jsonb_build_array(jsonb_build_object(
 select pg_temp.expect((select unit_price_snapshot is null from public.get_my_request_items()), 'on-request price stays open');
 reset role;
 
+-- Usage tracking
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000c');
+select public.log_activity('login');
+select public.log_activity('view_catalog', '/portal');
+select public.log_activity('export', '/portal', '{"rows": 12}'::jsonb);
+select pg_temp.expect_error($$select public.log_activity('hack')$$, 'unknown activity event');
+select pg_temp.expect((select count(*) from public.activity_log) = 0, 'customer cannot read activity log');
+select pg_temp.expect((select count(*) from public.admin_activity_overview()) = 0, 'customer gets no overview');
+select pg_temp.expect_error($$insert into public.activity_log (user_id, event) values (auth.uid(), 'login')$$, 'customer cannot insert directly');
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000a');
+select public.log_activity('view_catalog');
+select pg_temp.expect((select count(*) from public.activity_log) = 3, 'admin activity is not logged, customer activity is');
+select pg_temp.expect((select visits_30d from public.admin_activity_overview() where email = 'buyer@sanicura.example') = 1, 'three events = one visit');
+select pg_temp.expect((select exports_30d from public.admin_activity_overview() where email = 'buyer@sanicura.example') = 1, 'export counted');
+reset role;
+set role anon;
+select pg_temp.expect_error($$select public.log_activity('login')$$, 'anon cannot log');
+reset role;
+
 -- Anonymous visitors ------------------------------------------------------------
 set role anon;
 select pg_temp.expect_error($$select * from public.get_catalog()$$, 'anon reads catalog');

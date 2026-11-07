@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
+import { logActivity } from "@/lib/activity";
 import { displayDate, eur } from "@/lib/format";
 import { DOC_TYPE_LABEL, SELLER_LABEL, STATUS_HINT, STATUS_LABEL, StatusBadge, type RequestStatus } from "@/lib/status";
 import { respondAction } from "../../actions";
@@ -29,6 +30,7 @@ export default async function RequestDetailPage({
   ]);
   if (!req) notFound();
   const r = req as Req;
+  await logActivity(supabase, "view_request", `/portal/requests/${id}`, { number: r.number, status: r.status });
   const lines = (items ?? []) as Item[];
   const files = (docs ?? []) as Doc[];
   const { data: signed } = files.length
