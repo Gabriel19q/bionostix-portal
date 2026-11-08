@@ -53,7 +53,7 @@ Kunde handelt bei: new (anlegen), accepted/cancelled. Alles andere Admin. Jede �
 - Rechtstexte (Impressum, Datenschutz, B2B-Nutzungsbedingungen) liefert der Anwalt.
 
 ## Technik
-Next.js (App Router, TypeScript, Tailwind) · Supabase (Postgres, Auth, Storage; Frankfurt) · Vercel (fra1) · Resend (E-Mail) · Domain portal.bionostix.de.
+Next.js (App Router, TypeScript, Tailwind) · Supabase (Postgres, Auth, Storage; Frankfurt) · Vercel (fra1) · Resend (E-Mail) · Domain portal.bionostix-germany.de (DNS bei IONOS, CNAME portal → Vercel).
 
 ## Etappen
 1. Konten (GitHub, Supabase, Vercel, Resend)

@@ -14,7 +14,8 @@ B2B-Portal für lizenzierte Großhändler und Importeure. Anforderungen: `SPEC.m
 
 ## Umgebungsvariablen (Vercel)
 - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` – Datenbank
-- `NEXT_PUBLIC_SITE_URL` – Basisadresse für Links in E-Mails
+- `NEXT_PUBLIC_SITE_URL` – Basisadresse für Links in E-Mails (https://portal.bionostix-germany.de)
+- `NEXT_PUBLIC_CONTACT_EMAIL` – Kontaktadresse, die Kunden im Portal sehen
 - `ADMIN_NOTIFY_EMAILS` – wer bei neuen Anfragen/Anträgen eine E-Mail bekommt (Komma-getrennt)
 - `EMAIL_FROM` – Absender, Domain muss bei Resend verifiziert sein
 - `RESEND_API_KEY` – geheim, nur in Vercel eintragen. Ohne Key werden keine E-Mails verschickt, das Portal läuft trotzdem.

@@ -3,7 +3,20 @@ import { NextResponse, type NextRequest } from "next/server";
 
 // Refreshes the login session on every request and keeps signed-out
 // visitors away from the portal and admin areas.
+// Old production addresses forward to the portal's own domain (preview deployments stay reachable)
+const OLD_HOSTS = ["bionostix-portal.vercel.app", "bionostix-portal-bionostix-germany.vercel.app"];
+const MAIN_HOST = "portal.bionostix-germany.de";
+
 export async function middleware(request: NextRequest) {
+  const host = request.headers.get("host") ?? "";
+  if (OLD_HOSTS.includes(host)) {
+    const url = request.nextUrl.clone();
+    url.host = MAIN_HOST;
+    url.protocol = "https";
+    url.port = "";
+    return NextResponse.redirect(url, 308);
+  }
+
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(

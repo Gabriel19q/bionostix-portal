@@ -2,7 +2,7 @@ import "server-only";
 
 // Sends plain-text emails through Resend (https://resend.com).
 // Without RESEND_API_KEY nothing is sent and the portal keeps working.
-const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://bionostix-portal.vercel.app";
+const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://portal.bionostix-germany.de";
 const FROM = process.env.EMAIL_FROM ?? "Bionostix Germany <portal@bionostix.de>";
 
 export function adminEmails() {

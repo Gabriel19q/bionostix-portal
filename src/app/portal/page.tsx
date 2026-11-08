@@ -58,7 +58,7 @@ export default async function PortalPage() {
       <div className="card mx-auto max-w-2xl space-y-2">
         <h1 className="text-xl font-semibold">Access not active</h1>
         <p className="text-sm text-slate-600">
-          Access for {company.name} is currently not active. Please contact us at gabriel.barakat@bionostix.de.
+          Access for {company.name} is currently not active. Please contact us at {process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? "info@bionostix-germany.de"}.
         </p>
       </div>
     );
