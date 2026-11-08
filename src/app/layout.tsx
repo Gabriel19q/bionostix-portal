@@ -59,7 +59,10 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <footer className="border-t border-slate-200 bg-white">
           <div className="mx-auto flex max-w-6xl flex-wrap justify-between gap-2 px-6 py-4 text-xs text-slate-500">
             <span>Bionostix Germany · The European trading arm of the Bionostix Group</span>
-            <span>For licensed pharmaceutical wholesalers and importers only.</span>
+            <span className="flex gap-4">
+              <span>For licensed pharmaceutical wholesalers and importers only.</span>
+              <Link href="/legal-notice" className="underline hover:text-brand-700">Legal notice</Link>
+            </span>
           </div>
         </footer>
       </body>

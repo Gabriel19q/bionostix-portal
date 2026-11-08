@@ -192,6 +192,18 @@ set role anon;
 select pg_temp.expect_error($$select public.log_activity('login')$$, 'anon cannot log');
 reset role;
 
+-- Assigning users to companies
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000e');
+select pg_temp.expect_error($$select public.admin_assign_user_company(auth.uid(), (select id from public.get_my_company()))$$, 'customer cannot assign users');
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000a');
+select public.admin_assign_user_company('00000000-0000-0000-0000-00000000000e', (select id from public.companies where name = 'Sanicura'));
+select pg_temp.expect_error($$select public.admin_assign_user_company('00000000-0000-0000-0000-00000000000a', (select id from public.companies where name = 'Sanicura'))$$, 'admin not assignable to a company');
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000e');
+select pg_temp.expect((select name from public.get_my_company()) = 'Sanicura', 'moved user now belongs to Sanicura');
+select pg_temp.expect((select count(*) from public.get_my_requests()) = 1, 'and sees Sanicura requests');
+reset role;
+
 -- Anonymous visitors ------------------------------------------------------------
 set role anon;
 select pg_temp.expect_error($$select * from public.get_catalog()$$, 'anon reads catalog');

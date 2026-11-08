@@ -52,6 +52,10 @@ export function ApplicationForm({ defaultName }: { defaultName: string }) {
       <p className="mb-6 text-sm text-slate-600">
         Step 2 of 2. We use this information to verify that your company is licensed to trade pharmaceuticals.
       </p>
+      <p className="mb-6 rounded-md bg-brand-50 px-3 py-2 text-sm text-brand-900">
+        Does your company already have access? Then do not fill in this form. Send us a short email to{" "}
+        {process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? "info@bionostix-germany.de"} and we add you to your company&apos;s account.
+      </p>
       <form onSubmit={onSubmit} className="grid gap-4 md:grid-cols-2">
         <div className="md:col-span-2">
           <label className="label" htmlFor="company">Company name</label>

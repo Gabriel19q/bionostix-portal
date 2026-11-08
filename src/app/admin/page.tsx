@@ -1,5 +1,5 @@
 import { getSession } from "@/lib/session";
-import { approveCompany, setCompanyStatus } from "./actions";
+import { approveCompany, assignUser, deleteCompany, setCompanyStatus } from "./actions";
 
 type Company = {
   id: string;
@@ -18,6 +18,7 @@ type Company = {
   created_at: string;
 };
 
+type User = { id: string; email: string; full_name: string | null; company_id: string | null; created_at: string };
 type Doc = { id: string; company_id: string; file_name: string; doc_type: string; storage_path: string };
 
 const STATUS_ORDER = ["applied", "approved", "suspended", "rejected"] as const;
@@ -36,7 +37,7 @@ function daysUntil(date: string) {
 export default async function AdminPage() {
   const { supabase } = await getSession();
 
-  const [{ data: companies }, { data: groups }, { data: docs }] = await Promise.all([
+  const [{ data: companies }, { data: groups }, { data: docs }, { data: users }, { data: requestCompanies }] = await Promise.all([
     supabase.from("companies").select("*").order("created_at", { ascending: false }).returns<Company[]>(),
     supabase.from("customer_groups").select("id, name, default_markup_pct").order("name"),
     supabase
@@ -44,7 +45,14 @@ export default async function AdminPage() {
       .select("id, company_id, file_name, doc_type, storage_path")
       .not("company_id", "is", null)
       .returns<Doc[]>(),
+    supabase.from("profiles").select("id, email, full_name, company_id, created_at").eq("role", "customer")
+      .order("created_at").returns<User[]>(),
+    supabase.from("requests").select("company_id"),
   ]);
+  const allUsers = users ?? [];
+  const companiesWithRequests = new Set((requestCompanies ?? []).map((r) => r.company_id as string));
+  const companyOptions = [...(companies ?? [])].sort((a, b) => a.name.localeCompare(b.name));
+  const usersWithoutCompany = allUsers.filter((u) => !u.company_id);
 
   const paths = (docs ?? []).map((d) => d.storage_path);
   const { data: signed } = paths.length
@@ -67,6 +75,19 @@ export default async function AdminPage() {
       </div>
 
       {sorted.length === 0 && <div className="card text-sm text-slate-600">No customers yet.</div>}
+
+      {usersWithoutCompany.length > 0 && (
+        <div className="card space-y-2">
+          <h2 className="font-semibold">Registered, no company yet</h2>
+          <p className="text-sm text-slate-600">
+            These users confirmed their email but have not entered company details. If one belongs to an existing
+            customer, assign them here.
+          </p>
+          {usersWithoutCompany.map((u) => (
+            <UserRow key={u.id} user={u} companies={companyOptions} />
+          ))}
+        </div>
+      )}
 
       {sorted.map((c) => {
         const companyDocs = (docs ?? []).filter((d) => d.company_id === c.id);
@@ -184,10 +205,42 @@ export default async function AdminPage() {
                 </form>
               )}
             </div>
+            <div className="space-y-1 border-t border-slate-100 pt-3">
+              <h3 className="text-sm font-medium">Users</h3>
+              {allUsers.filter((u) => u.company_id === c.id).length === 0 && (
+                <p className="text-sm text-slate-500">No users.</p>
+              )}
+              {allUsers.filter((u) => u.company_id === c.id).map((u) => (
+                <UserRow key={u.id} user={u} companies={companyOptions} />
+              ))}
+            </div>
+            {allUsers.every((u) => u.company_id !== c.id) && !companiesWithRequests.has(c.id) && (
+              <form action={deleteCompany}>
+                <input type="hidden" name="company_id" value={c.id} />
+                <button className="text-xs text-red-700 underline">Delete this company (no users, no requests)</button>
+              </form>
+            )}
             {c.verified_on && <p className="text-xs text-slate-500">Verified on {c.verified_on}</p>}
           </div>
         );
       })}
     </div>
+  );
+}
+
+// One user line with a "move to company" control
+function UserRow({ user, companies }: { user: User; companies: { id: string; name: string }[] }) {
+  return (
+    <form action={assignUser} className="flex flex-wrap items-center gap-2 text-sm">
+      <input type="hidden" name="user_id" value={user.id} />
+      <span className="min-w-56">
+        {user.full_name ?? "–"} <span className="text-slate-500">· {user.email}</span>
+      </span>
+      <select name="company_id" className="input w-64 py-1" defaultValue={user.company_id ?? ""}>
+        <option value="">No company</option>
+        {companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+      </select>
+      <button className="btn-secondary px-3 py-1">Move</button>
+    </form>
   );
 }

@@ -51,3 +51,26 @@ export async function setCompanyStatus(formData: FormData) {
   if (error) throw new Error(error.message);
   revalidatePath("/admin");
 }
+
+export async function assignUser(formData: FormData) {
+  const { supabase } = await requireAdmin();
+  const userId = String(formData.get("user_id"));
+  const companyId = String(formData.get("company_id") || "") || null;
+  const { error } = await supabase.rpc("admin_assign_user_company", { p_user_id: userId, p_company_id: companyId });
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin");
+}
+
+// Removes a company that has neither users nor requests, e.g. a duplicate created by a second employee
+export async function deleteCompany(formData: FormData) {
+  const { supabase } = await requireAdmin();
+  const id = String(formData.get("company_id"));
+  const [{ count: users }, { count: requests }] = await Promise.all([
+    supabase.from("profiles").select("id", { count: "exact", head: true }).eq("company_id", id),
+    supabase.from("requests").select("id", { count: "exact", head: true }).eq("company_id", id),
+  ]);
+  if ((users ?? 0) > 0 || (requests ?? 0) > 0) throw new Error("This company still has users or requests.");
+  const { error } = await supabase.from("companies").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin");
+}
