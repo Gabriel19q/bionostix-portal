@@ -8,6 +8,6 @@ export const COMPANY = {
   city: "71336 Waiblingen",
   country: "Germany",
   email: "info@bionostix-germany.de",
-  phone: null as string | null,
-  vatId: null as string | null, // Umsatzsteuer-Identifikationsnummer
+  phone: "+49 176 23653213" as string | null,
+  vatId: "DE366214266" as string | null, // Umsatzsteuer-Identifikationsnummer
 };
