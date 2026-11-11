@@ -72,7 +72,8 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             <span>Bionostix Germany · The European trading arm of the Bionostix Group</span>
             <span className="flex gap-4">
               <span>For licensed pharmaceutical wholesalers and importers only.</span>
-              <Link href="/legal-notice" className="underline hover:text-brand-700">Legal notice</Link>
+              <Link href="/terms" className="underline hover:text-brand-600">Terms &amp; conditions</Link>
+              <Link href="/legal-notice" className="underline hover:text-brand-600">Legal notice</Link>
             </span>
           </div>
         </footer>

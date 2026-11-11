@@ -18,6 +18,19 @@ export function displayDate(iso: string | null | undefined) {
   return `${d} ${months[m - 1]} ${y}`;
 }
 
+// Timestamp with seconds in German time, e.g. "11 Nov 2026, 14:03:22 CET"
+const dateTimeFormatter = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "Europe/Berlin",
+  day: "numeric", month: "short", year: "numeric",
+  hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false,
+  timeZoneName: "short",
+});
+
+export function displayDateTime(iso: string | null | undefined) {
+  if (!iso) return "–";
+  return dateTimeFormatter.format(new Date(iso));
+}
+
 export function monthsUntil(iso: string) {
   const [y, m, d] = iso.slice(0, 10).split("-").map(Number);
   const now = new Date();

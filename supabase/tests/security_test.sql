@@ -31,12 +31,13 @@ end $$;
 -- Applicants request access ---------------------------------------------------
 set role authenticated;
 select pg_temp.as_user('00000000-0000-0000-0000-00000000000c');
-select public.apply_for_access('Sanicura', 'Germany', 'Somewhere 1', 'eu_wholesaler', 'Buyer C', '+49 1');
+select public.apply_for_access('Sanicura', 'Germany', 'Somewhere 1', 'eu_wholesaler', 'Buyer C', '+49 7151 123456');
 select pg_temp.expect_error($$select public.apply_for_access('Again', 'DE', null, 'eu_wholesaler', null, null)$$, 'second application');
 select pg_temp.as_user('00000000-0000-0000-0000-00000000000d');
-select public.apply_for_access('Iraq Importer', 'Iraq', null, 'importer', 'Buyer D', null);
+select pg_temp.expect_error($$select public.apply_for_access('Iraq Importer', 'Iraq', null, 'importer', 'Buyer D', '0176 123456')$$, 'phone without country code');
+select public.apply_for_access('Iraq Importer', 'Iraq', null, 'importer', 'Buyer D', '+964 770 123 4567');
 select pg_temp.as_user('00000000-0000-0000-0000-00000000000e');
-select public.apply_for_access('Pending Co', 'Lebanon', null, 'importer', 'Buyer E', null);
+select public.apply_for_access('Pending Co', 'Lebanon', null, 'importer', 'Buyer E', '+961 1 234567');
 reset role;
 
 -- Admin approves and lists stock ----------------------------------------------
@@ -77,19 +78,31 @@ select pg_temp.expect((select can_request from public.get_my_company()), 'approv
 select pg_temp.expect_error($$update public.profiles set role = 'admin' where id = auth.uid()$$, 'self-promotion to admin');
 select pg_temp.expect_error($$update public.profiles set company_id = null where id = auth.uid()$$, 'changing own company');
 select pg_temp.expect_error(
-  $$select public.submit_request(jsonb_build_array(jsonb_build_object('offer_id', (select offer_id from public.get_catalog() where batch = 'B001'), 'qty', 5)))$$,
+  $$select public.submit_request(jsonb_build_array(jsonb_build_object('offer_id', (select offer_id from public.get_catalog() where batch = 'B001'), 'qty', 5)), null, 'Germany', current_date + 30)$$,
   'quantity below MOQ');
 select pg_temp.expect_error(
-  $$select public.submit_request(jsonb_build_array(jsonb_build_object('offer_id', (select offer_id from public.get_catalog() where batch = 'B001'), 'qty', 5000)))$$,
+  $$select public.submit_request(jsonb_build_array(jsonb_build_object('offer_id', (select offer_id from public.get_catalog() where batch = 'B001'), 'qty', 5000)), null, 'Germany', current_date + 30)$$,
   'quantity above available stock');
 select pg_temp.expect_error(
   $$select public.submit_request(jsonb_build_array(
       jsonb_build_object('offer_id', (select offer_id from public.get_catalog() where batch = 'B001'), 'qty', 20),
-      jsonb_build_object('offer_id', (select offer_id from public.get_catalog() where batch = 'B001'), 'qty', 20)))$$,
+      jsonb_build_object('offer_id', (select offer_id from public.get_catalog() where batch = 'B001'), 'qty', 20)), null, 'Germany', current_date + 30)$$,
   'same batch twice');
+select pg_temp.expect_error(
+  $$select public.submit_request(jsonb_build_array(jsonb_build_object('offer_id', (select offer_id from public.get_catalog() where batch = 'B001'), 'qty', 20)), null, 'Germany', null)$$,
+  'delivery deadline missing');
+select pg_temp.expect_error(
+  $$select public.submit_request(jsonb_build_array(jsonb_build_object('offer_id', (select offer_id from public.get_catalog() where batch = 'B001'), 'qty', 20)), null, 'Germany', current_date)$$,
+  'delivery deadline not in the future');
+select pg_temp.expect_error(
+  $$select public.submit_request(jsonb_build_array(jsonb_build_object('offer_id', (select offer_id from public.get_catalog() where batch = 'B001'), 'qty', 20)), null, '', current_date + 30)$$,
+  'delivery country missing');
 select public.submit_request(
-  jsonb_build_array(jsonb_build_object('offer_id', (select offer_id from public.get_catalog() where batch = 'B001'), 'qty', 20)),
-  'Please confirm by Friday', 'Germany');
+  jsonb_build_array(jsonb_build_object('offer_id', (select offer_id from public.get_catalog() where batch = 'B001'), 'qty', 20,
+    'min_expiry', (current_date + 400)::text)),
+  'Please confirm by Friday', 'Germany', current_date + 30);
+select pg_temp.expect((select delivery_deadline from public.get_my_requests()) = current_date + 30, 'delivery deadline stored');
+select pg_temp.expect((select min_expiry_date is null from public.get_my_request_items()), 'min expiry ignored where batch has an expiry date');
 select pg_temp.expect((select unit_price_snapshot from public.get_my_request_items()) = 10.80, 'price snapshot stored');
 select pg_temp.expect((select count(*) from public.request_item_costs) = 0, 'customer cannot read cost snapshot');
 select pg_temp.expect((select count(*) from public.get_my_request_history()) = 1, 'history logged on create');
@@ -112,23 +125,30 @@ select pg_temp.as_user('00000000-0000-0000-0000-00000000000e');
 select pg_temp.expect((select count(*) from public.get_catalog()) = 0, 'pending applicant sees no catalog');
 select pg_temp.expect(not (select can_request from public.get_my_company()), 'pending applicant cannot request');
 select pg_temp.expect_error(
-  $$select public.submit_request(jsonb_build_array(jsonb_build_object('offer_id', gen_random_uuid(), 'qty', 20)))$$,
+  $$select public.submit_request(jsonb_build_array(jsonb_build_object('offer_id', gen_random_uuid(), 'qty', 20)), null, 'Lebanon', current_date + 30)$$,
   'pending applicant submits request');
 reset role;
 
--- Workflow: offer -> accept -> no more cancelling ---------------------------------
+-- Workflow: changes proposed -> customer accepts = order confirmed -> no more cancelling
 set role authenticated;
 select pg_temp.as_user('00000000-0000-0000-0000-00000000000c');
-select pg_temp.expect_error($$select public.admin_set_request_status((select id from public.get_my_requests()), 'offer_sent')$$, 'customer uses admin function');
-select pg_temp.expect_error($$select public.customer_respond((select id from public.get_my_requests()), true)$$, 'accept before offer');
+select pg_temp.expect_error($$select public.admin_set_request_status((select id from public.get_my_requests()), 'changes_proposed')$$, 'customer uses admin function');
+select pg_temp.expect_error($$select public.customer_respond((select id from public.get_my_requests()), true)$$, 'accept before changes are proposed');
 select pg_temp.as_user('00000000-0000-0000-0000-00000000000a');
-select public.admin_set_request_status((select id from public.requests), 'offer_sent', 'Offer for 20 packs');
+select public.admin_set_request_status((select id from public.requests), 'in_review');
+select public.admin_set_request_status((select id from public.requests), 'changes_proposed', 'Only 15 packs available');
 select pg_temp.as_user('00000000-0000-0000-0000-00000000000c');
 select public.customer_respond((select id from public.get_my_requests()), true);
-select pg_temp.expect((select status from public.get_my_requests()) = 'accepted', 'customer accepted offer');
-select pg_temp.expect_error($$select public.customer_respond((select id from public.get_my_requests()), false)$$, 'cancel after accepting');
-select pg_temp.expect((select count(*) from public.get_my_request_history()) = 3, 'three history entries');
-select pg_temp.expect((select note from public.get_my_request_history() where new_status = 'offer_sent') = 'Offer for 20 packs', 'admin note stored');
+select pg_temp.expect((select status from public.get_my_requests()) = 'order_confirmed', 'customer accepted changes: order confirmed');
+select pg_temp.expect_error($$select public.customer_respond((select id from public.get_my_requests()), false)$$, 'cancel after order confirmation');
+select pg_temp.expect((select count(*) from public.get_my_request_history()) = 4, 'four history entries');
+select pg_temp.expect((select note from public.get_my_request_history() where new_status = 'changes_proposed') = 'Only 15 packs available', 'admin note stored');
+select pg_temp.expect(
+  (select array_agg(new_status::text order by created_at, id) from public.get_my_request_history())
+    = array['new', 'in_review', 'changes_proposed', 'order_confirmed'],
+  'history in time order');
+select pg_temp.expect(
+  (select count(distinct created_at) from public.get_my_request_history()) = 4, 'every history entry has its own timestamp');
 reset role;
 
 -- Storage ---------------------------------------------------------------------
@@ -165,10 +185,17 @@ reset role;
 set role authenticated;
 select pg_temp.as_user('00000000-0000-0000-0000-00000000000d');
 select pg_temp.expect_error(
-  $$select public.submit_request(jsonb_build_array(jsonb_build_object('offer_id', (select offer_id from public.get_catalog() where trade_name = 'Upon Request Product'), 'qty', 50)))$$,
+  $$select public.submit_request(jsonb_build_array(jsonb_build_object('offer_id', (select offer_id from public.get_catalog() where trade_name = 'Upon Request Product'), 'qty', 50)), null, 'Iraq', current_date + 30)$$,
   'on-request row below MOQ');
+select pg_temp.expect_error(
+  $$select public.submit_request(jsonb_build_array(jsonb_build_object(
+    'offer_id', (select offer_id from public.get_catalog() where trade_name = 'Upon Request Product'), 'qty', 5000,
+    'min_expiry', current_date::text)), null, 'Iraq', current_date + 30)$$,
+  'minimum expiry in the past');
 select public.submit_request(jsonb_build_array(jsonb_build_object(
-  'offer_id', (select offer_id from public.get_catalog() where trade_name = 'Upon Request Product'), 'qty', 5000)));
+  'offer_id', (select offer_id from public.get_catalog() where trade_name = 'Upon Request Product'), 'qty', 5000,
+  'min_expiry', (current_date + 365)::text)), null, 'Iraq', current_date + 30);
+select pg_temp.expect((select min_expiry_date from public.get_my_request_items()) = current_date + 365, 'min expiry stored for line without expiry date');
 select pg_temp.expect((select unit_price_snapshot is null from public.get_my_request_items()), 'on-request price stays open');
 reset role;
 
@@ -208,7 +235,7 @@ reset role;
 set role anon;
 select pg_temp.expect_error($$select * from public.get_catalog()$$, 'anon reads catalog');
 select pg_temp.expect_error($$select * from public.products$$, 'anon reads products');
-select pg_temp.expect_error($$select public.submit_request('[]'::jsonb)$$, 'anon submits request');
+select pg_temp.expect_error($$select public.submit_request('[]'::jsonb, null, 'Germany', current_date + 30)$$, 'anon submits request');
 reset role;
 
 

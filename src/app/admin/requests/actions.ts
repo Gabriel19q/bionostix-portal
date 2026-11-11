@@ -65,20 +65,26 @@ export async function changeStatus(formData: FormData) {
   const notify = formData.get("notify") === "on";
   if (!(status in STATUS_LABEL)) throw new Error("Unknown status");
 
-  // When the offer goes out, unconfirmed lines are confirmed as requested
-  if (status === "offer_sent") {
+  // Confirming the order or proposing changes: empty confirmed fields mean "as requested".
+  // A direct order confirmation must match the request exactly; anything else needs the
+  // customer's acceptance first ("Changes to accept"), because the confirmation forms the contract.
+  if (status === "order_confirmed" || status === "changes_proposed") {
     const { data: items } = await supabase
       .from("request_items").select("id, requested_qty, unit_price_snapshot, confirmed_qty, confirmed_unit_price")
       .eq("request_id", id);
-    const missing = (items ?? []).filter((i) => i.confirmed_unit_price === null && i.unit_price_snapshot === null);
-    if (missing.length) redirect(`/admin/requests/${id}?error=prices`);
-    for (const i of items ?? []) {
-      if (i.confirmed_qty === null || i.confirmed_unit_price === null) {
-        await supabase.from("request_items").update({
-          confirmed_qty: i.confirmed_qty ?? i.requested_qty,
-          confirmed_unit_price: i.confirmed_unit_price ?? i.unit_price_snapshot,
-        }).eq("id", i.id);
-      }
+    const lines = (items ?? []).map((i) => ({
+      id: i.id as string,
+      qty: (i.confirmed_qty ?? i.requested_qty) as number,
+      price: (i.confirmed_unit_price ?? i.unit_price_snapshot) as number | null,
+      requestedQty: i.requested_qty as number,
+      requestedPrice: i.unit_price_snapshot as number | null,
+    }));
+    if (lines.some((l) => l.price === null)) redirect(`/admin/requests/${id}?error=prices`);
+    const changed = lines.some((l) => l.qty !== l.requestedQty || Number(l.price) !== Number(l.requestedPrice));
+    if (status === "order_confirmed" && changed) redirect(`/admin/requests/${id}?error=changes`);
+    if (status === "changes_proposed" && !changed) redirect(`/admin/requests/${id}?error=nochanges`);
+    for (const l of lines) {
+      await supabase.from("request_items").update({ confirmed_qty: l.qty, confirmed_unit_price: l.price }).eq("id", l.id);
     }
   }
 

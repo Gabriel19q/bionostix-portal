@@ -159,7 +159,7 @@ export function CatalogTable({ items, canRequest, defaultCountry }: {
               <th className="px-2.5 py-2 text-right">MOQ</th>
               <th className="px-2.5 py-2 text-right">Price / pack</th>
               <th className="px-2.5 py-2" title="Certificate of analysis">COA</th>
-              <th className="px-2.5 py-2">Terms</th>
+              <th className="px-2.5 py-2">Incoterm</th>
               {canRequest && <th className="px-2.5 py-2">Request</th>}
             </tr>
           </thead>
@@ -211,7 +211,7 @@ export function CatalogTable({ items, canRequest, defaultCountry }: {
                     {i.coa_available === true ? <span className="label-neutral">Available</span>
                       : i.coa_available === false ? <span className="text-slate-600">Not available</span> : onRequest}
                   </td>
-                  <td className="px-2.5 py-2 text-xs text-slate-600" data-label="Terms">
+                  <td className="px-2.5 py-2 text-xs text-slate-600" data-label="Incoterm">
                     <div>
                       {i.incoterm}
                       <div className="text-slate-500">stock {displayDate(i.stock_as_of)}</div>
@@ -252,7 +252,7 @@ export function CatalogTable({ items, canRequest, defaultCountry }: {
         defaultCountry={defaultCountry} />
       <p className="text-xs text-slate-500">
         Prices per pack in EUR, excluding VAT. Availability as reported by the manufacturer on the date shown and subject
-        to confirmation. “On request” items can be requested as well; we confirm price and availability in our offer.
+        to confirmation. Displayed products are a non-binding offer (subject to availability). “On request” items can be requested as well; we confirm price and availability in our order confirmation.
         Narcotics are supplied only after individual review.
       </p>
     </div>

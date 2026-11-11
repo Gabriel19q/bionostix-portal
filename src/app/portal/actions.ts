@@ -5,21 +5,30 @@ import { getSession } from "@/lib/session";
 import { adminEmails, emails, sendEmail } from "@/lib/email";
 import { logActivity } from "@/lib/activity";
 
-type CartLine = { offer_id: string; qty: number };
+type CartLine = { offer_id: string; qty: number; min_expiry?: string };
 
-export async function submitRequestAction(input: { items: CartLine[]; comment: string; deliveryCountry: string }) {
+export async function submitRequestAction(input: {
+  items: CartLine[]; comment: string; deliveryCountry: string; deliveryDeadline: string; acceptedTerms: boolean;
+}) {
   const { supabase, company } = await getSession();
   if (!company) return { ok: false as const, error: "Not signed in" };
 
   const items = input.items
     .filter((i) => typeof i.offer_id === "string" && Number.isInteger(i.qty) && i.qty > 0)
-    .map((i) => ({ offer_id: i.offer_id, qty: i.qty }));
+    .map((i) => ({
+      offer_id: i.offer_id,
+      qty: i.qty,
+      ...(i.min_expiry && /^\d{4}-\d{2}-\d{2}$/.test(i.min_expiry) ? { min_expiry: i.min_expiry } : {}),
+    }));
   if (items.length === 0) return { ok: false as const, error: "Your request is empty." };
+  if (!input.acceptedTerms) return { ok: false as const, error: "Please accept the terms & conditions." };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.deliveryDeadline)) return { ok: false as const, error: "Please enter a delivery deadline." };
 
   const { data: id, error } = await supabase.rpc("submit_request", {
     p_items: items,
     p_comment: input.comment.slice(0, 2000),
     p_delivery_country: input.deliveryCountry.slice(0, 100),
+    p_delivery_deadline: input.deliveryDeadline,
   });
   if (error) return { ok: false as const, error: friendly(error.message) };
 
@@ -62,7 +71,10 @@ function friendly(message: string) {
     "offer not available": "One of the batches is no longer available. Please remove it and try again.",
     "company not approved or licence expired": "Your access is not active or your licence on file has expired.",
     "request can no longer be cancelled": "This request can no longer be cancelled. Please contact us.",
-    "nothing to accept yet": "There is no offer to accept yet.",
+    "nothing to accept yet": "There are no changes to accept yet.",
+    "delivery deadline must be in the future": "The delivery deadline must be a future date.",
+    "delivery country is required": "Please choose the delivery country.",
+    "minimum expiry must be in the future": "The minimum expiry date must be a future date.",
   };
   return Object.entries(known).find(([k]) => message.includes(k))?.[1] ?? message;
 }

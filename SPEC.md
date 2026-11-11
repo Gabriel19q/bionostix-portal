@@ -14,10 +14,10 @@ Erfolg: ≥ 3 Anfragen von Sanicura über das Portal, Anfrage → Proforma < 1 A
 - Bestandspflege per Excel/CSV-Import mit Spaltenzuordnung und Vorschau
 - Einkaufspreis + Aufschlag → Verkaufspreis automatisch (nur Admin sieht EK und Marge)
 - Kundengruppen mit eigenem Standardaufschlag (z.B. EU Wholesale, Export MENA)
-- Anfrage über Warenkorb, Statusverlauf, Dokumente (Proforma etc.) pro Anfrage
+- Bestellanfrage über Warenkorb (verbindlich, siehe Bestellablauf), mit Lieferland (Auswahlliste), Lieferdeadline (Pflicht) und optionalem Mindest-MHD je Zeile ohne angegebenes MHD; Statusverlauf mit Datum und Uhrzeit, Dokumente (Proforma etc.) pro Anfrage
 - E-Mails: neue Anfrage → Admins; Statusänderung → Kunde
 
-Nicht im MVP: verbindliche Bestellung, Proforma-PDF-Erzeugung, Sourcing-Anfragen, kundenindividuelle Preise/Sichtbarkeit, Zahlungen/Rechnungen, Herstellerzugang, weitere Sprachen, Tender.
+Nicht im MVP: Proforma-PDF-Erzeugung, Sourcing-Anfragen („Gesuche“, geplant als nächster Schritt), kundenindividuelle Preise/Sichtbarkeit, Zahlungen/Rechnungen, Herstellerzugang, weitere Sprachen, Tender.
 
 UI-Sprache: **Englisch**. Währung: **EUR**.
 
@@ -28,7 +28,7 @@ UI-Sprache: **Englisch**. Währung: **EUR**.
 
 ## Freigabeprozess
 1. Interessent registriert sich (E-Mail + Passwort), bestätigt E-Mail.
-2. Füllt Firmendaten aus: Firma, Land, Adresse, Ansprechpartner, Telefon, Kundentyp (EU wholesaler / importer).
+2. Füllt Firmendaten aus: Firma, Land, Adresse, Ansprechpartner, Telefon (Pflicht, internationales Format mit +Ländervorwahl), Kundentyp (EU wholesaler / importer).
 3. Lädt Nachweis hoch (Großhandelserlaubnis bzw. Importlizenz, optional GDP-Zertifikat).
 4. Admin prüft (EU: EudraGMDP, MENA manuell), setzt Kundengruppe, Prüfdatum, Ablaufdatum Nachweis → approved.
 5. Erinnerung 30 Tage vor Ablauf; abgelaufener Nachweis blockiert neue Anfragen.
@@ -41,13 +41,22 @@ Feld `requests.seller`: bionostix_germany | sanicura | manufacturer (Rechtsmodel
 Verkaufspreis = round(EK × (1 + Aufschlag/100), 2). Aufschlag = Override der Angebotsposition, sonst Standardaufschlag der Kundengruppe. Preis wird beim Absenden der Anfrage gespeichert (Snapshot); endgültiger Preis wird im Angebot bestätigt.
 
 ## Anfrage-Status
-new → in_review → offer_sent → accepted → proforma_sent → paid → shipped → completed.
-Abbrüche: declined (wir, nicht lieferbar; aus new/in_review), cancelled (Kunde; aus new/in_review/offer_sent).
-Kunde handelt bei: new (anlegen), accepted/cancelled. Alles andere Admin. Jede Änderung wird protokolliert.
+new → in_review → order_confirmed → proforma_sent → deposit_paid → ordered → shipped → completed.
+Mit Änderungen: in_review → changes_proposed → (Kunde nimmt an) → order_confirmed. „Order confirmed“ direkt nur, wenn Mengen und Preise exakt der Anfrage entsprechen.
+Abbrüche: declined (wir, nicht lieferbar), cancelled (Kunde; aus new/in_review/changes_proposed, also nur vor der Bestellbestätigung).
+Kunde handelt bei: new (anlegen), Annahme der Änderungen (→ order_confirmed), cancelled. Alles andere Admin. Jede Änderung wird mit Zeitstempel (Sekunden) protokolliert.
+
+## Bestellablauf (Feedback 11.11.2026)
+1. Angezeigte Produkte sind ein freibleibendes Angebot.
+2. Die Bestellanfrage des Kunden ist ein verbindliches Kaufangebot zu den angezeigten Bedingungen; Stornierung bis zum Erhalt der Bestellbestätigung möglich. Kunde bestätigt die AGB per Häkchen.
+3. Wir klären die Verfügbarkeit beim Hersteller (Hersteller reserviert x Tage unverbindlich).
+4. Bestellbestätigung an den Kunden = Vertrag (nach unseren AGB). Bei Änderungen muss der Kunde zuerst annehmen.
+5. Proforma (PI) mit Anzahlung an den Kunden; nach Eingang der Anzahlung Bestellung beim Hersteller innerhalb der Reservierungsfrist.
+AGB-Seite /terms ist ein Platzhalter, bis der Anwalt die AGB liefert.
 
 ## Compliance
 - Produkte/Preise nur nach Login (Fachkreise, HWG). Öffentliche Seite: wer wir sind + „Request access“.
-- Portal schließt keinen Kaufvertrag; Vertrag erst mit Angebot/Proforma.
+- Vertrag entsteht erst mit unserer Bestellbestätigung (bzw. mit der Annahme geänderter Bedingungen durch den Kunden), siehe Bestellablauf.
 - BtM-Produkte: sichtbar, gekennzeichnet, nur nach Einzelprüfung lieferbar. Kühlware gekennzeichnet.
 - Daten in der EU (Supabase Frankfurt, Vercel fra1). Keine Patientendaten.
 - Rechtstexte (Impressum, Datenschutz, B2B-Nutzungsbedingungen) liefert der Anwalt.

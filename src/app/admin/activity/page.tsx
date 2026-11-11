@@ -19,7 +19,7 @@ const EVENT_LABEL: Record<string, string> = {
   view_request: "Opened a request",
   export: "Downloaded Excel",
   submit_request: "Sent a request",
-  respond: "Answered an offer",
+  respond: "Answered proposed changes",
 };
 
 const berlin = new Intl.DateTimeFormat("de-DE", {
@@ -41,7 +41,7 @@ function detail(e: Event) {
   const m = e.meta ?? {};
   if (e.event === "export") return `${m.rows ?? "?"} rows${m.prices === false ? ", without prices" : ""}`;
   if (e.event === "submit_request") return `${m.number ?? ""} · ${m.lines ?? "?"} line(s)`;
-  if (e.event === "respond") return `${m.number ?? ""} · ${m.accepted ? "accepted" : "cancelled"}`;
+  if (e.event === "respond") return `${m.number ?? ""} · ${m.accepted ? "accepted changes" : "cancelled"}`;
   if (e.event === "view_request") return String(m.number ?? "");
   if (e.event === "view_catalog") return `${m.items ?? "?"} products shown`;
   return "";

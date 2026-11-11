@@ -1,18 +1,21 @@
+// Order flow (SPEC.md): the customer's order request is a binding offer to buy; the contract is formed
+// with our order confirmation. If quantities or prices change, the customer accepts the changes first.
 export type RequestStatus =
-  | "new" | "in_review" | "offer_sent" | "accepted" | "proforma_sent"
-  | "paid" | "shipped" | "completed" | "declined" | "cancelled";
+  | "new" | "in_review" | "changes_proposed" | "order_confirmed" | "proforma_sent"
+  | "deposit_paid" | "ordered" | "shipped" | "completed" | "declined" | "cancelled";
 
 export const STATUS_FLOW: RequestStatus[] = [
-  "new", "in_review", "offer_sent", "accepted", "proforma_sent", "paid", "shipped", "completed",
+  "new", "in_review", "changes_proposed", "order_confirmed", "proforma_sent", "deposit_paid", "ordered", "shipped", "completed",
 ];
 
 export const STATUS_LABEL: Record<RequestStatus, string> = {
   new: "New",
   in_review: "In review",
-  offer_sent: "Offer sent",
-  accepted: "Accepted",
+  changes_proposed: "Changes to accept",
+  order_confirmed: "Order confirmed",
   proforma_sent: "Proforma sent",
-  paid: "Paid",
+  deposit_paid: "Deposit received",
+  ordered: "Ordered from manufacturer",
   shipped: "Shipped",
   completed: "Completed",
   declined: "Declined",
@@ -21,14 +24,16 @@ export const STATUS_LABEL: Record<RequestStatus, string> = {
 
 // What the customer should understand at each step
 export const STATUS_HINT: Record<RequestStatus, string> = {
-  new: "We have received your request.",
-  in_review: "We are checking availability with the manufacturer.",
-  offer_sent: "Please review the confirmed quantities and prices and accept the offer.",
-  accepted: "Thank you. We are preparing the proforma invoice.",
-  proforma_sent: "The proforma invoice is available below. Delivery starts after payment.",
-  paid: "Payment received. We are arranging shipment.",
+  new: "We have received your order request.",
+  in_review: "We are checking availability and reserving the stock with the manufacturer.",
+  changes_proposed:
+    "We can supply your order with the changes shown below. Please accept them to confirm your order, or cancel the request.",
+  order_confirmed: "Your order is confirmed. We are preparing the proforma invoice.",
+  proforma_sent: "The proforma invoice is available below. We order from the manufacturer once your deposit is received.",
+  deposit_paid: "Deposit received. We are placing the order with the manufacturer.",
+  ordered: "Ordered from the manufacturer. We will inform you as soon as the goods are shipped.",
   shipped: "Your goods are on the way. Shipping documents are available below.",
-  completed: "This request is completed.",
+  completed: "This order is completed.",
   declined: "We could not supply this request.",
   cancelled: "This request was cancelled.",
 };
@@ -40,13 +45,14 @@ export function statusTone(status: RequestStatus, viewer: Viewer): string {
   switch (status) {
     case "new":
       return viewer === "admin" ? "tag-attention" : "tag-info";
-    case "offer_sent":
+    case "changes_proposed":
       return viewer === "customer" ? "tag-attention" : "tag-info";
     case "in_review":
       return "tag-info";
-    case "accepted":
+    case "order_confirmed":
     case "proforma_sent":
-    case "paid":
+    case "deposit_paid":
+    case "ordered":
     case "shipped":
     case "completed":
       return "tag-success";

@@ -33,7 +33,11 @@ export function ApplicationForm({ defaultName }: { defaultName: string }) {
         p_contact_name: String(form.get("contact")),
         p_contact_phone: String(form.get("phone") || ""),
       });
-      if (applyError) throw new Error(applyError.message);
+      if (applyError) {
+        throw new Error(applyError.message.includes("international format")
+          ? "Please enter the phone number in international format, starting with + and the country code (e.g. +49 711 1234567)."
+          : applyError.message);
+      }
 
       await uploadCompanyDocument(supabase, companyId as string, licence, "license");
       if (gdp && gdp.size > 0) await uploadCompanyDocument(supabase, companyId as string, gdp, "gdp_certificate");
@@ -84,8 +88,12 @@ export function ApplicationForm({ defaultName }: { defaultName: string }) {
           <input id="contact" name="contact" className="input" required defaultValue={defaultName} />
         </div>
         <div>
-          <label className="label" htmlFor="phone">Phone</label>
-          <input id="phone" name="phone" className="input" />
+          <label className="label" htmlFor="phone">Phone (international format)</label>
+          <input id="phone" name="phone" type="tel" className="input" required autoComplete="tel"
+            placeholder="+49 711 1234567" pattern="\+[1-9][0-9 \(\)\.\/\-]{6,24}"
+            title="Start with + and the country code, e.g. +49 711 1234567"
+            aria-describedby="phone-hint" />
+          <p id="phone-hint" className="mt-1 text-xs text-slate-600">Start with + and the country code, e.g. +49 or +964.</p>
         </div>
         <div className="md:col-span-2">
           <label className="label" htmlFor="licence">

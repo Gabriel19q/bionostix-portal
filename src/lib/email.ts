@@ -36,12 +36,12 @@ const footer = `\n\nBionostix Germany · The European trading arm of the Bionost
 
 export const emails = {
   newRequest: (number: string, company: string, lines: number, id: string) => ({
-    subject: `New request ${number} from ${company}`,
-    text: `${company} sent request ${number} with ${lines} line(s).\n\nOpen it: ${SITE}/admin/requests/${id}${footer}`,
+    subject: `New order request ${number} from ${company}`,
+    text: `${company} sent order request ${number} with ${lines} line(s).\n\nOpen it: ${SITE}/admin/requests/${id}${footer}`,
   }),
   customerResponded: (number: string, company: string, accepted: boolean, id: string) => ({
-    subject: `${company} ${accepted ? "accepted the offer" : "cancelled"} ${number}`,
-    text: `${company} ${accepted ? "accepted the offer for" : "cancelled"} request ${number}.\n\nOpen it: ${SITE}/admin/requests/${id}${footer}`,
+    subject: `${company} ${accepted ? "accepted the changes" : "cancelled"} ${number}`,
+    text: `${company} ${accepted ? "accepted the proposed changes; the order is confirmed for" : "cancelled"} request ${number}.\n\nOpen it: ${SITE}/admin/requests/${id}${footer}`,
   }),
   statusChanged: (number: string, statusLabel: string, hint: string, message: string | null, id: string) => ({
     subject: `Request ${number}: ${statusLabel}`,

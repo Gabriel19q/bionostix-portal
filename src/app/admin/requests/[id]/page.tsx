@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getSession } from "@/lib/session";
-import { displayDate, eur } from "@/lib/format";
+import { displayDate, displayDateTime, eur } from "@/lib/format";
 import {
   DOC_TYPE_LABEL, SELLER_LABEL, STATUS_FLOW, STATUS_LABEL, StatusBadge, type RequestStatus,
 } from "@/lib/status";
@@ -11,6 +11,7 @@ import { RequestDocumentUpload } from "./request-document-upload";
 type Item = {
   id: string;
   requested_qty: number;
+  min_expiry_date: string | null;
   unit_price_snapshot: number | null;
   confirmed_qty: number | null;
   confirmed_unit_price: number | null;
@@ -25,13 +26,15 @@ type Item = {
 };
 type Req = {
   id: string; number: string; status: RequestStatus; seller: string | null; customer_comment: string | null;
-  delivery_country: string | null; internal_note: string | null; created_at: string;
+  delivery_country: string | null; delivery_deadline: string | null; internal_note: string | null; created_at: string;
   companies: { id: string; name: string; country: string; contact_name: string | null; contact_email: string | null; contact_phone: string | null };
 };
 
+// Suggested next step; "Changes to accept" is only chosen on purpose, so it is skipped here.
 function nextStatus(s: RequestStatus): RequestStatus {
-  const i = STATUS_FLOW.indexOf(s);
-  return i >= 0 && i < STATUS_FLOW.length - 1 ? STATUS_FLOW[i + 1] : s;
+  const flow = STATUS_FLOW.filter((x) => x !== "changes_proposed");
+  const i = flow.indexOf(s === "changes_proposed" ? "in_review" : s);
+  return i >= 0 && i < flow.length - 1 ? flow[i + 1] : s;
 }
 
 export default async function AdminRequestPage({
@@ -45,12 +48,12 @@ export default async function AdminRequestPage({
   const { supabase } = await getSession();
   const [{ data: req }, { data: items }, { data: history }, { data: docs }] = await Promise.all([
     supabase.from("requests")
-      .select("id, number, status, seller, customer_comment, delivery_country, internal_note, created_at, companies(id, name, country, contact_name, contact_email, contact_phone)")
+      .select("id, number, status, seller, customer_comment, delivery_country, delivery_deadline, internal_note, created_at, companies(id, name, country, contact_name, contact_email, contact_phone)")
       .eq("id", id).maybeSingle<Req>(),
     supabase.from("request_items")
-      .select("id, requested_qty, unit_price_snapshot, confirmed_qty, confirmed_unit_price, request_item_costs(purchase_price_snapshot), offers(batch, expiry_date, available_qty, coa_available, products(trade_name, strength, pack_size, is_narcotic, manufacturers(name)))")
+      .select("id, requested_qty, min_expiry_date, unit_price_snapshot, confirmed_qty, confirmed_unit_price, request_item_costs(purchase_price_snapshot), offers(batch, expiry_date, available_qty, coa_available, products(trade_name, strength, pack_size, is_narcotic, manufacturers(name)))")
       .eq("request_id", id).returns<Item[]>(),
-    supabase.from("request_status_history").select("id, new_status, note, created_at, changed_by").eq("request_id", id).order("created_at"),
+    supabase.from("request_status_history").select("id, new_status, note, created_at, changed_by").eq("request_id", id).order("created_at").order("id"),
     supabase.from("documents").select("id, storage_path, file_name, doc_type, created_at").eq("request_id", id).order("created_at"),
   ]);
   if (!req) notFound();
@@ -86,14 +89,28 @@ export default async function AdminRequestPage({
             {c.name} ({c.country}) · {c.contact_name} · {c.contact_email}{c.contact_phone && ` · ${c.contact_phone}`}
           </p>
           <p className="text-sm text-slate-600">
-            Received {displayDate(req.created_at)}{req.delivery_country && ` · delivery to ${req.delivery_country}`}
+            Received {displayDateTime(req.created_at)}{req.delivery_country && ` · delivery to ${req.delivery_country}`}
           </p>
+          {req.delivery_deadline && (
+            <p className="mt-1 text-sm"><span className="font-bold">Delivery deadline:</span> {displayDate(req.delivery_deadline)}</p>
+          )}
         </div>
         <StatusBadge status={req.status} viewer="admin" />
       </div>
       {pageError === "prices" && (
         <div className="notice-error">
-          Some lines have no price yet (“on request”). Enter a confirmed price for every line and save, then send the offer.
+          Some lines have no price yet (“on request”). Enter a confirmed price for every line and save first.
+        </div>
+      )}
+      {pageError === "changes" && (
+        <div className="notice-error">
+          Confirmed quantities or prices differ from the order request. Set “Changes to accept” instead, so the customer
+          can accept the changes. The order is confirmed when they accept.
+        </div>
+      )}
+      {pageError === "nochanges" && (
+        <div className="notice-error">
+          Nothing differs from the order request. Set “Order confirmed” instead.
         </div>
       )}
       {req.customer_comment && (
@@ -131,6 +148,9 @@ export default async function AdminRequestPage({
                     </td>
                     <td className="px-3 py-2 font-mono text-xs">
                       {l.offers.batch || "–"}<div className="font-sans text-slate-500">exp. {displayDate(l.offers.expiry_date)}</div>
+                      {l.min_expiry_date && (
+                        <div className="font-sans"><span className="mark-attention">min. exp. {displayDate(l.min_expiry_date)}</span></div>
+                      )}
                       <div className="font-sans text-slate-500">
                         COA: {l.offers.coa_available === true ? "yes" : l.offers.coa_available === false ? "no" : "not specified"}
                       </div>
@@ -193,7 +213,9 @@ export default async function AdminRequestPage({
           </label>
           <button className="btn-primary">Update status</button>
           <p className="text-xs text-slate-500">
-            “Offer sent” fills empty confirmed fields with the requested values. Upload the proforma below before setting “Proforma sent”.
+            “Order confirmed” is only possible if nothing differs from the order request (it forms the contract). If you changed
+            quantities or prices, set “Changes to accept”: the order is confirmed when the customer accepts. Upload the proforma
+            below before setting “Proforma sent”.
           </p>
         </form>
 
@@ -240,7 +262,7 @@ export default async function AdminRequestPage({
           {(history ?? []).map((h) => (
             <li key={h.id}>
               <span className="font-medium">{STATUS_LABEL[h.new_status as RequestStatus]}</span>
-              <span className="text-slate-500"> · {displayDate(h.created_at)}</span>
+              <span className="text-slate-500"> · {displayDateTime(h.created_at)}</span>
               {h.note && <p className="mt-0.5 whitespace-pre-line text-slate-600">{h.note}</p>}
             </li>
           ))}

@@ -2,12 +2,12 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { logActivity } from "@/lib/activity";
-import { displayDate, eur } from "@/lib/format";
+import { displayDate, displayDateTime, eur } from "@/lib/format";
 import { DOC_TYPE_LABEL, SELLER_LABEL, STATUS_HINT, STATUS_LABEL, StatusBadge, type RequestStatus } from "@/lib/status";
 import { respondAction } from "../../actions";
 
-type Req = { id: string; number: string; status: RequestStatus; seller: string | null; customer_comment: string | null; delivery_country: string | null; created_at: string };
-type Item = { id: string; trade_name: string; strength: string | null; pack_size: string | null; manufacturer: string; batch: string; expiry_date: string | null; requested_qty: number; unit_price_snapshot: number | null; confirmed_qty: number | null; confirmed_unit_price: number | null };
+type Req = { id: string; number: string; status: RequestStatus; seller: string | null; customer_comment: string | null; delivery_country: string | null; delivery_deadline: string | null; created_at: string };
+type Item = { id: string; trade_name: string; strength: string | null; pack_size: string | null; manufacturer: string; batch: string; expiry_date: string | null; min_expiry_date: string | null; requested_qty: number; unit_price_snapshot: number | null; confirmed_qty: number | null; confirmed_unit_price: number | null };
 type History = { id: number; new_status: RequestStatus; note: string | null; created_at: string };
 type Doc = { id: string; storage_path: string; file_name: string; doc_type: string; created_at: string };
 
@@ -25,7 +25,7 @@ export default async function RequestDetailPage({
   const [{ data: req }, { data: items }, { data: history }, { data: docs }] = await Promise.all([
     supabase.rpc("get_my_requests").eq("id", id).maybeSingle(),
     supabase.rpc("get_my_request_items").eq("request_id", id),
-    supabase.rpc("get_my_request_history").eq("request_id", id).order("created_at"),
+    supabase.rpc("get_my_request_history").eq("request_id", id).order("created_at").order("id"),
     supabase.rpc("get_my_documents").eq("request_id", id).order("created_at"),
   ]);
   if (!req) notFound();
@@ -42,22 +42,23 @@ export default async function RequestDetailPage({
   const priceOf = (l: Item) => l.confirmed_unit_price ?? l.unit_price_snapshot;
   const total = lines.reduce((s, l) => s + (l.confirmed_qty ?? l.requested_qty) * Number(priceOf(l) ?? 0), 0);
   const openPrices = lines.some((l) => priceOf(l) === null);
-  const canCancel = ["new", "in_review", "offer_sent"].includes(r.status);
+  const canCancel = ["new", "in_review", "changes_proposed"].includes(r.status);
 
   return (
     <div className="space-y-6">
       {sent && (
         <div className="notice-success">
-          Thank you, your request was sent. We will get back to you with an offer.
+          Thank you, your order request was sent. We check availability with the manufacturer and confirm your order.
         </div>
       )}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <Link href="/portal/requests" className="text-sm text-slate-500 hover:underline">← My requests</Link>
-          <h1 className="text-2xl font-bold">Request {r.number}</h1>
+          <h1 className="text-2xl font-bold">Order request {r.number}</h1>
           <p className="text-sm text-slate-600">
-            Sent {displayDate(r.created_at)}
+            Sent {displayDateTime(r.created_at)}
             {r.delivery_country && ` · delivery to ${r.delivery_country}`}
+            {r.delivery_deadline && ` · deliver by ${displayDate(r.delivery_deadline)}`}
             {r.seller && ` · invoiced by ${SELLER_LABEL[r.seller] ?? r.seller}`}
           </p>
         </div>
@@ -66,12 +67,12 @@ export default async function RequestDetailPage({
 
       <div className="card space-y-3">
         <p className="text-sm">{STATUS_HINT[r.status]}</p>
-        {r.status === "offer_sent" && (
+        {r.status === "changes_proposed" && (
           <div className="flex flex-wrap gap-2">
             <form action={respondAction}>
               <input type="hidden" name="request_id" value={r.id} />
               <input type="hidden" name="accept" value="true" />
-              <button className="btn-primary">Accept offer</button>
+              <button className="btn-primary">Accept changes and confirm order</button>
             </form>
           </div>
         )}
@@ -100,7 +101,12 @@ export default async function RequestDetailPage({
                     <div className="text-xs text-slate-500">{[l.strength, l.pack_size, l.manufacturer].filter(Boolean).join(" · ")}</div>
                   </td>
                   <td className="px-3 py-2 font-mono text-xs" data-label="Batch">{l.batch || "–"}</td>
-                  <td className="px-3 py-2" data-label="Expiry">{displayDate(l.expiry_date)}</td>
+                  <td className="px-3 py-2" data-label="Expiry">
+                    <div>
+                      {displayDate(l.expiry_date)}
+                      {l.min_expiry_date && <div className="text-xs text-slate-600">min. {displayDate(l.min_expiry_date)}</div>}
+                    </div>
+                  </td>
                   <td className="px-3 py-2 text-right" data-label="Requested">{l.requested_qty}</td>
                   {confirmed && (
                     <td className={`px-3 py-2 text-right ${l.confirmed_qty !== null && l.confirmed_qty !== l.requested_qty ? "font-bold" : ""}`} data-label="Confirmed">
@@ -155,7 +161,7 @@ export default async function RequestDetailPage({
             {((history ?? []) as History[]).map((h) => (
               <li key={h.id}>
                 <span className="font-medium">{STATUS_LABEL[h.new_status]}</span>
-                <span className="text-slate-500"> · {displayDate(h.created_at)}</span>
+                <span className="text-slate-500"> · {displayDateTime(h.created_at)}</span>
                 {h.note && <p className="mt-0.5 whitespace-pre-line text-slate-600">{h.note}</p>}
               </li>
             ))}
