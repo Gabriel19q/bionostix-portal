@@ -20,7 +20,7 @@ export default async function EditOfferPage({ params }: { params: Promise<{ id: 
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">Edit {p.trade_name}{offer.batch ? ` · batch ${offer.batch}` : ""}</h1>
+      <h1 className="text-2xl font-bold">Edit {p.trade_name}{offer.batch ? ` · batch ${offer.batch}` : ""}</h1>
       <OfferForm
         manufacturers={(manufacturers ?? []).map((m) => m.name)}
         values={{

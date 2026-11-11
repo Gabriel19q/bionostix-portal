@@ -25,19 +25,19 @@ export default function ForgotPasswordPage() {
   if (sent) {
     return (
       <div className="card mx-auto max-w-md space-y-3">
-        <h1 className="text-xl font-semibold">Check your email</h1>
+        <h1 className="text-xl font-bold">Check your email</h1>
         <p className="text-sm text-slate-600">
           If an account exists for <strong>{email}</strong>, we sent a link to set a new password. It may take a few
           minutes and can end up in your spam folder.
         </p>
-        <Link href="/login" className="text-sm text-brand-700 underline">Back to sign in</Link>
+        <Link href="/login" className="text-sm text-brand-600 underline">Back to sign in</Link>
       </div>
     );
   }
 
   return (
     <div className="card mx-auto max-w-md">
-      <h1 className="mb-1 text-xl font-semibold">Forgot your password?</h1>
+      <h1 className="mb-1 text-xl font-bold">Forgot your password?</h1>
       <p className="mb-6 text-sm text-slate-600">Enter your email and we send you a link to set a new one.</p>
       <form onSubmit={onSubmit} className="space-y-4">
         <div>
@@ -48,7 +48,7 @@ export default function ForgotPasswordPage() {
         <button className="btn-primary w-full" disabled={busy}>{busy ? "Sending…" : "Send link"}</button>
       </form>
       <p className="mt-4 text-center text-sm">
-        <Link href="/login" className="text-brand-700 underline">Back to sign in</Link>
+        <Link href="/login" className="text-brand-600 underline">Back to sign in</Link>
       </p>
     </div>
   );

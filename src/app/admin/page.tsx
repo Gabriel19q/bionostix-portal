@@ -68,7 +68,7 @@ export default async function AdminPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">Customers</h1>
+        <h1 className="text-2xl font-bold">Customers</h1>
         <p className="text-sm text-slate-600">
           {openCount === 0 ? "No applications waiting." : `${openCount} application(s) waiting for review.`}
         </p>
@@ -78,7 +78,7 @@ export default async function AdminPage() {
 
       {usersWithoutCompany.length > 0 && (
         <div className="card space-y-2">
-          <h2 className="font-semibold">Registered, no company yet</h2>
+          <h2 className="font-bold">Registered, no company yet</h2>
           <p className="text-sm text-slate-600">
             These users confirmed their email but have not entered company details. If one belongs to an existing
             customer, assign them here.
@@ -96,7 +96,7 @@ export default async function AdminPage() {
           <div key={c.id} className="card space-y-4">
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
-                <h2 className="text-lg font-semibold">{c.name}</h2>
+                <h2 className="text-lg font-bold">{c.name}</h2>
                 <p className="text-sm text-slate-600">
                   {TYPE_LABEL[c.customer_type]} · {c.country}
                   {c.address ? ` · ${c.address}` : ""}
@@ -130,7 +130,7 @@ export default async function AdminPage() {
                         href={urlByPath.get(d.storage_path) ?? "#"}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-brand-700 underline"
+                        className="text-brand-600 underline"
                       >
                         {d.file_name}
                       </a>{" "}

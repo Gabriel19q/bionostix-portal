@@ -39,7 +39,7 @@ export default async function AdminRequestsPage({ searchParams }: { searchParams
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">Requests</h1>
+          <h1 className="text-2xl font-bold">Requests</h1>
           <p className="text-sm text-slate-600">{newCount === 0 ? "No new requests." : `${newCount} new request(s) waiting.`}</p>
         </div>
         <div className="flex gap-1 text-sm">
@@ -80,7 +80,7 @@ export default async function AdminRequestsPage({ searchParams }: { searchParams
               return (
                 <tr key={r.id} className={r.status === "new" ? "bg-amber-50/50" : ""}>
                   <td className="px-3 py-2">
-                    <Link href={`/admin/requests/${r.id}`} className="font-medium text-brand-700 hover:underline">{r.number}</Link>
+                    <Link href={`/admin/requests/${r.id}`} className="font-medium text-brand-600 hover:underline">{r.number}</Link>
                   </td>
                   <td className="px-3 py-2">
                     {r.companies?.name}

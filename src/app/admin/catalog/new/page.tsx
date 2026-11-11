@@ -6,7 +6,7 @@ export default async function NewOfferPage() {
   const { data } = await supabase.from("manufacturers").select("name").order("name");
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">Add batch</h1>
+      <h1 className="text-2xl font-bold">Add batch</h1>
       <OfferForm values={{}} manufacturers={(data ?? []).map((m) => m.name)} />
     </div>
   );

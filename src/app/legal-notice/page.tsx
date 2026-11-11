@@ -7,9 +7,9 @@ export default function LegalNoticePage() {
   const c = COMPANY;
   return (
     <div className="card mx-auto max-w-2xl space-y-6 text-sm leading-relaxed">
-      <h1 className="text-2xl font-semibold">Legal notice (Impressum)</h1>
+      <h1 className="text-2xl font-bold">Legal notice (Impressum)</h1>
       <section>
-        <h2 className="mb-1 font-semibold">Information according to § 5 DDG</h2>
+        <h2 className="mb-1 font-bold">Information according to § 5 DDG</h2>
         <p>
           {c.name}
           <br />
@@ -25,9 +25,9 @@ export default function LegalNoticePage() {
         </p>
       </section>
       <section>
-        <h2 className="mb-1 font-semibold">Contact</h2>
+        <h2 className="mb-1 font-bold">Contact</h2>
         <p>
-          Email: <a href={`mailto:${c.email}`} className="text-brand-700 underline">{c.email}</a>
+          Email: <a href={`mailto:${c.email}`} className="text-brand-600 underline">{c.email}</a>
           {c.phone && (
             <>
               <br />
@@ -38,12 +38,12 @@ export default function LegalNoticePage() {
       </section>
       {c.vatId && (
         <section>
-          <h2 className="mb-1 font-semibold">VAT ID</h2>
+          <h2 className="mb-1 font-bold">VAT ID</h2>
           <p>VAT identification number according to § 27a UStG: {c.vatId}</p>
         </section>
       )}
       <section>
-        <h2 className="mb-1 font-semibold">Responsible for content</h2>
+        <h2 className="mb-1 font-bold">Responsible for content</h2>
         <p>{c.owner}, address as above</p>
       </section>
     </div>

@@ -61,7 +61,7 @@ export function OfferForm({ values, manufacturers }: { values: OfferFormValues; 
       </datalist>
 
       <div className="card space-y-4">
-        <h2 className="font-semibold">Product</h2>
+        <h2 className="font-bold">Product</h2>
         {v.product_id && (
           <p className="text-xs text-amber-700">Changes to the product apply to all its batches.</p>
         )}
@@ -88,7 +88,7 @@ export function OfferForm({ values, manufacturers }: { values: OfferFormValues; 
       </div>
 
       <div className="card space-y-4">
-        <h2 className="font-semibold">Batch and price</h2>
+        <h2 className="font-bold">Batch and price</h2>
         <div className="grid gap-4 md:grid-cols-3">
           <Field label="Batch" name="batch" defaultValue={v.batch} hint="Leave empty if unknown." />
           <Field label="Expiry date" name="expiry_date" type="date" defaultValue={v.expiry_date} hint="Leave empty if unknown." />

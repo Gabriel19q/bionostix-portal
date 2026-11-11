@@ -27,14 +27,14 @@ export default async function PortalPage() {
     return (
       <div className="mx-auto max-w-2xl space-y-6">
         <div className="card space-y-2">
-          <h1 className="text-xl font-semibold">Your application is being reviewed</h1>
+          <h1 className="text-xl font-bold">Your application is being reviewed</h1>
           <p className="text-sm text-slate-600">
             Thank you, {company.contact_name ?? "there"}. We are verifying the licence of{" "}
             <strong>{company.name}</strong>. You will receive an email as soon as your access is active.
           </p>
         </div>
         <div className="card space-y-4">
-          <h2 className="font-semibold">Submitted documents</h2>
+          <h2 className="font-bold">Submitted documents</h2>
           {docs && docs.length > 0 ? (
             <ul className="divide-y divide-slate-100 text-sm">
               {docs.map((d) => (
@@ -56,7 +56,7 @@ export default async function PortalPage() {
   if (company.status === "rejected" || company.status === "suspended") {
     return (
       <div className="card mx-auto max-w-2xl space-y-2">
-        <h1 className="text-xl font-semibold">Access not active</h1>
+        <h1 className="text-xl font-bold">Access not active</h1>
         <p className="text-sm text-slate-600">
           Access for {company.name} is currently not active. Please contact us at {process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? "info@bionostix-germany.de"}.
         </p>
@@ -70,7 +70,7 @@ export default async function PortalPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">Available products</h1>
+        <h1 className="text-2xl font-bold">Available products</h1>
         <p className="text-sm text-slate-600">{company.name}</p>
       </div>
       {!company.can_request && (

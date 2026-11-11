@@ -1,36 +1,78 @@
 @import "tailwindcss";
 
+/*
+  Bionostix brand guidelines v1.5 (November 2026).
+  Palette: Blue #1245BB (actions, links), Green #5EA249 (logo, small accents),
+  Sand #F5EDE4 (warm backgrounds), Kraft #D7B793 (details, sparingly).
+  Neutrals: Body #202020, Secondary #555555, Divider #D6D6D6, Light grey #F5F5F5.
+  Typeface: Montserrat Regular 400 and Bold 700 only.
+*/
 @theme {
-  --color-brand-50: #eef6f7;
-  --color-brand-100: #d5e9ec;
-  --color-brand-600: #1f6b77;
-  --color-brand-700: #18545e;
-  --color-brand-900: #0e2f35;
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --color-brand-50: #eef3fc;
+  --color-brand-100: #d6e2f8;
+  --color-brand-600: #1245bb;
+  --color-brand-700: #0e3693;
+  --color-brand-900: #0a2563;
+
+  --color-green: #5ea249;
+  --color-sand: #f5ede4;
+  --color-kraft: #d7b793;
+
+  /* The app uses Tailwind's "slate" scale for greys. Mapped to the neutral CI greys
+     so every page follows the guideline without renaming classes. */
+  --color-slate-50: #f5f5f5;
+  --color-slate-100: #ededed;
+  --color-slate-200: #d6d6d6;
+  --color-slate-300: #c4c4c4;
+  --color-slate-400: #767676;
+  --color-slate-500: #5c5c5c;
+  --color-slate-600: #555555;
+  --color-slate-700: #3d3d3d;
+  --color-slate-800: #2b2b2b;
+  --color-slate-900: #202020;
+
+  --font-sans: var(--font-montserrat), Arial, "Helvetica Neue", sans-serif;
 }
 
 body {
   @apply bg-slate-50 text-slate-900 antialiased;
+  line-height: 1.55;
 }
 
+h1,
+h2,
+h3 {
+  line-height: 1.12;
+}
+
+a {
+  text-underline-offset: 2px;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-brand-600);
+  outline-offset: 3px;
+}
+
+/* Buttons: bold 14 px, at least 44 px high, 4 px corners. */
 @utility btn {
-  @apply inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50;
+  @apply inline-flex min-h-11 items-center justify-center rounded px-5 py-2 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-50;
 }
 @utility btn-primary {
-  @apply btn bg-brand-600 text-white hover:bg-brand-700;
+  @apply btn border border-brand-600 bg-brand-600 text-white hover:border-brand-700 hover:bg-brand-700;
 }
 @utility btn-secondary {
-  @apply btn border border-slate-300 bg-white text-slate-800 hover:bg-slate-100;
+  @apply btn border border-brand-600 bg-white text-brand-600 hover:bg-brand-50;
 }
 @utility btn-danger {
   @apply btn border border-red-300 bg-white text-red-700 hover:bg-red-50;
 }
 @utility input {
-  @apply w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-100;
+  @apply min-h-11 w-full rounded-[3px] border border-slate-600 bg-white px-3 py-2 text-base focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-100;
 }
 @utility label {
-  @apply mb-1 block text-sm font-medium text-slate-700;
+  @apply mb-1 block text-sm font-bold text-slate-900;
 }
 @utility card {
-  @apply rounded-lg border border-slate-200 bg-white p-6 shadow-sm;
+  @apply border border-slate-200 bg-white p-6;
 }

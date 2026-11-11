@@ -63,7 +63,7 @@ export default async function ActivityPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">Activity</h1>
+        <h1 className="text-2xl font-bold">Activity</h1>
         <p className="text-sm text-slate-600">
           How customers use the portal. A visit is a period of activity with no break longer than 30 minutes.
           Admin activity is not recorded. Times in Berlin time.
@@ -107,7 +107,7 @@ export default async function ActivityPage() {
       <p className="text-xs text-slate-500">Counts cover the last 30 days. Requests are listed in detail under <Link href="/admin/requests" className="underline">Requests</Link>.</p>
 
       <div className="space-y-2">
-        <h2 className="text-lg font-semibold">Latest activity</h2>
+        <h2 className="text-lg font-bold">Latest activity</h2>
         <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
           <table className="min-w-full text-sm">
             <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">

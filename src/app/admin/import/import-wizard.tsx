@@ -136,7 +136,7 @@ export function ImportWizard({ manufacturers }: { manufacturers: string[] }) {
     const c = done.counts;
     return (
       <div className="card space-y-3">
-        <h2 className="text-lg font-semibold">Import finished</h2>
+        <h2 className="text-lg font-bold">Import finished</h2>
         <p className="text-sm text-slate-700">
           {c.new_product} new product(s), {c.new_batch} new batch(es), {c.update} updated, {c.unchanged} unchanged
           {c.hidden ? `, ${c.hidden} hidden` : ""}{c.error ? `, ${c.error} row(s) skipped because of errors` : ""}.
@@ -156,7 +156,7 @@ export function ImportWizard({ manufacturers }: { manufacturers: string[] }) {
   return (
     <div className="space-y-6">
       <div className="card space-y-3">
-        <h2 className="font-semibold">1. Choose file</h2>
+        <h2 className="font-bold">1. Choose file</h2>
         <input type="file" accept=".xlsx,.xls,.csv,.txt" className="input" onChange={(e) => onFile(e.target.files?.[0])} />
         {sheet && (
           <p className="text-sm text-slate-600">
@@ -167,7 +167,7 @@ export function ImportWizard({ manufacturers }: { manufacturers: string[] }) {
 
       {sheet && (
         <div className="card space-y-4">
-          <h2 className="font-semibold">2. Check the columns</h2>
+          <h2 className="font-bold">2. Check the columns</h2>
           <p className="text-sm text-slate-600">We guessed which column is which. Please check, especially price and quantity.</p>
           <div className="grid gap-3 md:grid-cols-2">
             {IMPORT_FIELDS.map((f) => {
@@ -196,7 +196,7 @@ export function ImportWizard({ manufacturers }: { manufacturers: string[] }) {
             })}
           </div>
 
-          <h2 className="pt-2 font-semibold">3. Details for the whole list</h2>
+          <h2 className="pt-2 font-bold">3. Details for the whole list</h2>
           <datalist id="import-manufacturers">
             {manufacturers.map((m) => <option key={m} value={m} />)}
           </datalist>
@@ -259,7 +259,7 @@ export function ImportWizard({ manufacturers }: { manufacturers: string[] }) {
 
       {preview && (
         <div className="card space-y-4">
-          <h2 className="font-semibold">4. Preview: nothing is saved yet</h2>
+          <h2 className="font-bold">4. Preview: nothing is saved yet</h2>
           {preview.newManufacturers.length > 0 && (
             <p className="text-sm text-amber-700">New manufacturer(s) will be created: {preview.newManufacturers.join(", ")}.</p>
           )}

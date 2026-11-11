@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import localFont from "next/font/local";
+import Image from "next/image";
 import Link from "next/link";
 import "./globals.css";
 import { getSession } from "@/lib/session";
@@ -9,31 +11,45 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+// Montserrat, self-hosted (SIL Open Font License, see fonts/OFL.txt).
+const montserrat = localFont({
+  src: [
+    { path: "./fonts/Montserrat-Regular.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/Montserrat-Bold.woff2", weight: "700", style: "normal" },
+  ],
+  variable: "--font-montserrat",
+  display: "swap",
+});
+
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const { user, profile } = await getSession();
 
   return (
-    <html lang="en">
+    <html lang="en" className={montserrat.variable}>
       <body className="flex min-h-screen flex-col">
         <header className="border-b border-slate-200 bg-white">
-          <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-            <Link href="/" className="flex items-baseline gap-2">
-              <span className="text-lg font-semibold text-brand-900">Bionostix Germany</span>
-              <span className="text-sm text-slate-500">Partner Portal</span>
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-3 px-6 py-3">
+            {/* Wordmark: min. 120 px wide, clear space of 1/4 of its height on every side (CI v1.5). */}
+            <Link href="/" className="flex items-center gap-4 p-[11px]" aria-label="Bionostix Germany Partner Portal, home">
+              <Image src="/brand/Bionostix-Colour.svg" alt="" width={152} height={42} priority className="h-auto w-[152px]" />
+              <span className="hidden border-l border-slate-200 pl-4 text-sm leading-tight text-slate-600 sm:block">
+                <span className="block font-bold text-slate-900">Bionostix Germany</span>
+                Partner Portal
+              </span>
             </Link>
-            <nav className="flex items-center gap-3 text-sm">
+            <nav className="flex flex-wrap items-center gap-3 text-sm">
               {user ? (
                 <>
                   {profile?.role === "admin" ? (
-                    <Link href="/admin/requests" className="text-slate-700 hover:text-brand-700">
+                    <Link href="/admin/requests" className="inline-flex min-h-11 items-center font-bold text-slate-900 hover:text-brand-600">
                       Admin
                     </Link>
                   ) : (
                     <>
-                      <Link href="/portal" className="text-slate-700 hover:text-brand-700">
+                      <Link href="/portal" className="inline-flex min-h-11 items-center font-bold text-slate-900 hover:text-brand-600">
                         Catalog
                       </Link>
-                      <Link href="/portal/requests" className="text-slate-700 hover:text-brand-700">
+                      <Link href="/portal/requests" className="inline-flex min-h-11 items-center font-bold text-slate-900 hover:text-brand-600">
                         My requests
                       </Link>
                     </>

@@ -54,7 +54,7 @@ export default async function RequestDetailPage({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <Link href="/portal/requests" className="text-sm text-slate-500 hover:underline">← My requests</Link>
-          <h1 className="text-2xl font-semibold">Request {r.number}</h1>
+          <h1 className="text-2xl font-bold">Request {r.number}</h1>
           <p className="text-sm text-slate-600">
             Sent {displayDate(r.created_at)}
             {r.delivery_country && ` · delivery to ${r.delivery_country}`}
@@ -122,7 +122,7 @@ export default async function RequestDetailPage({
                 {confirmed ? "Total" : "Indicative total"}
                 {openPrices && <span className="font-normal text-slate-500"> (plus items with price on request)</span>}
               </td>
-              <td className="px-3 py-2 text-right font-semibold">{eur(total)}</td>
+              <td className="px-3 py-2 text-right font-bold">{eur(total)}</td>
             </tr>
           </tfoot>
         </table>
@@ -131,14 +131,14 @@ export default async function RequestDetailPage({
 
       <div className="grid gap-6 md:grid-cols-2">
         <div className="card space-y-3">
-          <h2 className="font-semibold">Documents</h2>
+          <h2 className="font-bold">Documents</h2>
           {files.length === 0 ? (
             <p className="text-sm text-slate-500">No documents yet. Proforma and shipping documents will appear here.</p>
           ) : (
             <ul className="space-y-1 text-sm">
               {files.map((d) => (
                 <li key={d.id}>
-                  <a href={urlByPath.get(d.storage_path) ?? "#"} target="_blank" rel="noreferrer" className="text-brand-700 underline">
+                  <a href={urlByPath.get(d.storage_path) ?? "#"} target="_blank" rel="noreferrer" className="text-brand-600 underline">
                     {d.file_name}
                   </a>{" "}
                   <span className="text-slate-500">· {DOC_TYPE_LABEL[d.doc_type] ?? d.doc_type} · {displayDate(d.created_at)}</span>
@@ -148,7 +148,7 @@ export default async function RequestDetailPage({
           )}
         </div>
         <div className="card space-y-3">
-          <h2 className="font-semibold">History</h2>
+          <h2 className="font-bold">History</h2>
           <ol className="space-y-2 text-sm">
             {((history ?? []) as History[]).map((h) => (
               <li key={h.id}>

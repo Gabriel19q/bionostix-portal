@@ -22,10 +22,10 @@ export default async function MyRequestsPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">My requests</h1>
+      <h1 className="text-2xl font-bold">My requests</h1>
       {reqs.length === 0 ? (
         <div className="card text-sm text-slate-600">
-          No requests yet. <Link href="/portal" className="text-brand-700 underline">Browse the catalog</Link> to send one.
+          No requests yet. <Link href="/portal" className="text-brand-600 underline">Browse the catalog</Link> to send one.
         </div>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
@@ -45,7 +45,7 @@ export default async function MyRequestsPage() {
                 return (
                   <tr key={r.id}>
                     <td className="px-3 py-2">
-                      <Link href={`/portal/requests/${r.id}`} className="font-medium text-brand-700 hover:underline">{r.number}</Link>
+                      <Link href={`/portal/requests/${r.id}`} className="font-medium text-brand-600 hover:underline">{r.number}</Link>
                     </td>
                     <td className="px-3 py-2">{displayDate(r.created_at)}</td>
                     <td className="px-3 py-2 text-right">{lines.length}</td>

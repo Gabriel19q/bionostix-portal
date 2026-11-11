@@ -92,7 +92,7 @@ export function CartPanel({
   return (
     <div className="card sticky bottom-4 space-y-4 border-brand-600 shadow-lg">
       <div className="flex items-baseline justify-between">
-        <h2 className="text-lg font-semibold">Your request</h2>
+        <h2 className="text-lg font-bold">Your request</h2>
         <button className="text-sm text-slate-500 underline" onClick={clear}>Clear</button>
       </div>
       <table className="min-w-full text-sm">
@@ -131,7 +131,7 @@ export function CartPanel({
             <td colSpan={4} className="pt-2 text-right font-medium">
               Indicative total{openPrices && <span className="font-normal text-slate-500"> (plus items with price on request)</span>}
             </td>
-            <td className="pt-2 text-right font-semibold">{eur(total)}</td>
+            <td className="pt-2 text-right font-bold">{eur(total)}</td>
             <td></td>
           </tr>
         </tfoot>

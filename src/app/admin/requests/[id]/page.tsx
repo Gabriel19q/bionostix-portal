@@ -81,7 +81,7 @@ export default async function AdminRequestPage({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <Link href="/admin/requests" className="text-sm text-slate-500 hover:underline">← Requests</Link>
-          <h1 className="text-2xl font-semibold">Request {req.number}</h1>
+          <h1 className="text-2xl font-bold">Request {req.number}</h1>
           <p className="text-sm text-slate-600">
             {c.name} ({c.country}) · {c.contact_name} · {c.contact_email}{c.contact_phone && ` · ${c.contact_phone}`}
           </p>
@@ -159,7 +159,7 @@ export default async function AdminRequestPage({
                 <td colSpan={7} className="px-3 py-2 text-right">
                   Value {eur(value)}{openPrices && <span className="text-amber-700"> · some prices still open</span>}
                 </td>
-                <td colSpan={2} className="px-3 py-2 text-right font-semibold">
+                <td colSpan={2} className="px-3 py-2 text-right font-bold">
                   Margin {eur(marginValue - cost)}{marginValue > 0 && ` (${Math.round(((marginValue - cost) / marginValue) * 100)}%)`}
                 </td>
               </tr>
@@ -175,7 +175,7 @@ export default async function AdminRequestPage({
       <div className="grid gap-6 md:grid-cols-2">
         <form action={changeStatus} className="card space-y-3">
           <input type="hidden" name="request_id" value={req.id} />
-          <h2 className="font-semibold">Change status</h2>
+          <h2 className="font-bold">Change status</h2>
           <div>
             <label className="label">New status</label>
             <select name="status" className="input" defaultValue={nextStatus(req.status)}>
@@ -200,7 +200,7 @@ export default async function AdminRequestPage({
         <div className="space-y-6">
           <form action={saveMeta} className="card space-y-3">
             <input type="hidden" name="request_id" value={req.id} />
-            <h2 className="font-semibold">Internal</h2>
+            <h2 className="font-bold">Internal</h2>
             <div>
               <label className="label">Seller on the invoice</label>
               <select name="seller" className="input" defaultValue={req.seller ?? ""}>
@@ -216,14 +216,14 @@ export default async function AdminRequestPage({
           </form>
 
           <div className="card space-y-3">
-            <h2 className="font-semibold">Documents</h2>
+            <h2 className="font-bold">Documents</h2>
             {files.length === 0 ? (
               <p className="text-sm text-slate-500">No documents yet.</p>
             ) : (
               <ul className="space-y-1 text-sm">
                 {files.map((d) => (
                   <li key={d.id}>
-                    <a href={urlByPath.get(d.storage_path) ?? "#"} target="_blank" rel="noreferrer" className="text-brand-700 underline">{d.file_name}</a>
+                    <a href={urlByPath.get(d.storage_path) ?? "#"} target="_blank" rel="noreferrer" className="text-brand-600 underline">{d.file_name}</a>
                     <span className="text-slate-500"> · {DOC_TYPE_LABEL[d.doc_type] ?? d.doc_type} · {displayDate(d.created_at)}</span>
                   </li>
                 ))}
@@ -235,7 +235,7 @@ export default async function AdminRequestPage({
       </div>
 
       <div className="card space-y-2">
-        <h2 className="font-semibold">History</h2>
+        <h2 className="font-bold">History</h2>
         <ol className="space-y-2 text-sm">
           {(history ?? []).map((h) => (
             <li key={h.id}>

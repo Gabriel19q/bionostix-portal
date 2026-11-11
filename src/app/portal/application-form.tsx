@@ -48,7 +48,7 @@ export function ApplicationForm({ defaultName }: { defaultName: string }) {
 
   return (
     <div className="card mx-auto max-w-2xl">
-      <h1 className="mb-1 text-xl font-semibold">Company details</h1>
+      <h1 className="mb-1 text-xl font-bold">Company details</h1>
       <p className="mb-6 text-sm text-slate-600">
         Step 2 of 2. We use this information to verify that your company is licensed to trade pharmaceuticals.
       </p>

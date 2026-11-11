@@ -18,35 +18,35 @@ const steps = [
 export default function Home() {
   return (
     <div className="space-y-14">
-      <section className="max-w-3xl space-y-5">
-        <p className="text-sm font-medium uppercase tracking-wide text-brand-600">
-          The European trading arm of the Bionostix Group
-        </p>
-        <h1 className="text-4xl font-semibold leading-tight text-brand-900">
-          EU-sourced pharmaceuticals for licensed wholesalers and importers
-        </h1>
-        <p className="text-lg text-slate-600">
-          Current availability from European manufacturers, with batch, expiry date and price, in one place.
-          Request quotes directly instead of chasing spreadsheets.
-        </p>
-        <div className="flex gap-3">
-          <Link href="/signup" className="btn-primary">
-            Request access
-          </Link>
-          <Link href="/login" className="btn-secondary">
-            Sign in
-          </Link>
+      <section className="bg-sand px-6 py-12 md:px-14 md:py-16">
+        <div className="max-w-3xl space-y-5">
+          <p className="text-base font-bold text-brand-600">Bionostix Germany</p>
+          <h1 className="hyphens-auto text-4xl font-bold text-slate-900 md:text-[56px]">
+            EU-sourced pharmaceuticals for licensed wholesalers and importers
+          </h1>
+          <p className="text-base text-slate-700 md:text-lg">
+            Current availability from European manufacturers, with batch, expiry date and price, in one place.
+            Request quotes directly instead of chasing spreadsheets.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <Link href="/signup" className="btn-primary">
+              Request access
+            </Link>
+            <Link href="/login" className="btn-secondary">
+              Sign in
+            </Link>
+          </div>
         </div>
       </section>
 
       <section className="grid gap-4 md:grid-cols-3">
         {steps.map((s, i) => (
           <div key={s.title} className="card">
-            <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-full bg-brand-50 text-sm font-semibold text-brand-700">
+            <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-white">
               {i + 1}
             </div>
-            <h2 className="mb-1 font-semibold">{s.title}</h2>
-            <p className="text-sm text-slate-600">{s.text}</p>
+            <h2 className="mb-2 text-xl font-bold">{s.title}</h2>
+            <p className="text-base text-slate-600">{s.text}</p>
           </div>
         ))}
       </section>

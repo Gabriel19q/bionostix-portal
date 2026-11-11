@@ -30,7 +30,7 @@ export default function LoginPage() {
 
   return (
     <div className="card mx-auto max-w-md">
-      <h1 className="mb-6 text-xl font-semibold">Sign in</h1>
+      <h1 className="mb-6 text-xl font-bold">Sign in</h1>
       <form onSubmit={onSubmit} className="space-y-4">
         <div>
           <label className="label" htmlFor="email">Email</label>
@@ -48,7 +48,7 @@ export default function LoginPage() {
           />
         </div>
         <p className="text-right text-sm">
-          <Link href="/forgot-password" className="text-brand-700 underline">Forgot password?</Link>
+          <Link href="/forgot-password" className="text-brand-600 underline">Forgot password?</Link>
         </p>
         {error && <p className="text-sm text-red-700">{error}</p>}
         <button className="btn-primary w-full" disabled={busy}>
@@ -57,7 +57,7 @@ export default function LoginPage() {
       </form>
       <p className="mt-4 text-center text-sm text-slate-600">
         No account yet?{" "}
-        <Link href="/signup" className="text-brand-700 underline">
+        <Link href="/signup" className="text-brand-600 underline">
           Request access
         </Link>
       </p>

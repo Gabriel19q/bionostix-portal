@@ -29,7 +29,7 @@ export default async function GroupsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">Customer groups</h1>
+        <h1 className="text-2xl font-bold">Customer groups</h1>
         <p className="text-sm text-slate-600">
           Each customer belongs to one group. The group&apos;s markup is added to the purchase price, unless a batch has
           its own markup.

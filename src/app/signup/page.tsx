@@ -33,7 +33,7 @@ export default function SignupPage() {
   if (sent) {
     return (
       <div className="card mx-auto max-w-md space-y-3">
-        <h1 className="text-xl font-semibold">Check your email</h1>
+        <h1 className="text-xl font-bold">Check your email</h1>
         <p className="text-sm text-slate-600">
           We sent a confirmation link to <strong>{email}</strong>. Open it to continue with your company details and
           licence upload.
@@ -44,7 +44,7 @@ export default function SignupPage() {
 
   return (
     <div className="card mx-auto max-w-md">
-      <h1 className="mb-1 text-xl font-semibold">Request access</h1>
+      <h1 className="mb-1 text-xl font-bold">Request access</h1>
       <p className="mb-6 text-sm text-slate-600">
         Step 1 of 2: create your account. Next you add your company details and licence.
       </p>
@@ -77,7 +77,7 @@ export default function SignupPage() {
       </form>
       <p className="mt-4 text-center text-sm text-slate-600">
         Already have an account?{" "}
-        <Link href="/login" className="text-brand-700 underline">
+        <Link href="/login" className="text-brand-600 underline">
           Sign in
         </Link>
       </p>

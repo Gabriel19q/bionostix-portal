@@ -58,7 +58,7 @@ export default async function AdminCatalogPage({
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">Catalog</h1>
+          <h1 className="text-2xl font-bold">Catalog</h1>
           <p className="text-sm text-slate-600">{rows.length} batch(es) shown. Purchase prices are visible to admins only.</p>
         </div>
         <div className="flex gap-2">
@@ -137,7 +137,7 @@ export default async function AdminCatalogPage({
                     <input type="checkbox" name="offer_id" value={o.id} aria-label={`Select ${o.products.trade_name}`} />
                   </td>
                   <td className="px-3 py-2">
-                    <Link href={`/admin/catalog/${o.id}`} className="font-medium text-brand-700 hover:underline">
+                    <Link href={`/admin/catalog/${o.id}`} className="font-medium text-brand-600 hover:underline">
                       {o.products.trade_name}
                     </Link>
                     <div className="text-xs text-slate-500">
