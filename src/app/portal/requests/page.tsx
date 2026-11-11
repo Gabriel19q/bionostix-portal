@@ -29,7 +29,7 @@ export default async function MyRequestsPage() {
         </div>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
-          <table className="min-w-full text-sm">
+          <table className="table-stack min-w-full text-sm">
             <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
               <tr>
                 <th className="px-3 py-2">Request</th><th className="px-3 py-2">Sent</th>
@@ -44,14 +44,14 @@ export default async function MyRequestsPage() {
                   (s, i) => s + (i.confirmed_qty ?? i.requested_qty) * Number(i.confirmed_unit_price ?? i.unit_price_snapshot ?? 0), 0);
                 return (
                   <tr key={r.id}>
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-2" data-label="Request">
                       <Link href={`/portal/requests/${r.id}`} className="font-medium text-brand-600 hover:underline">{r.number}</Link>
                     </td>
-                    <td className="px-3 py-2">{displayDate(r.created_at)}</td>
-                    <td className="px-3 py-2 text-right">{lines.length}</td>
-                    <td className="px-3 py-2 text-right">{eur(value)}</td>
-                    <td className="px-3 py-2"><StatusBadge status={r.status} viewer="customer" /></td>
-                    <td className="px-3 py-2 text-slate-500">{displayDate(r.updated_at)}</td>
+                    <td className="px-3 py-2" data-label="Sent">{displayDate(r.created_at)}</td>
+                    <td className="px-3 py-2 text-right" data-label="Lines">{lines.length}</td>
+                    <td className="px-3 py-2 text-right" data-label="Value">{eur(value)}</td>
+                    <td className="px-3 py-2" data-label="Status"><StatusBadge status={r.status} viewer="customer" /></td>
+                    <td className="px-3 py-2 text-slate-500" data-label="Last update">{displayDate(r.updated_at)}</td>
                   </tr>
                 );
               })}

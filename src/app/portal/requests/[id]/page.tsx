@@ -78,7 +78,7 @@ export default async function RequestDetailPage({
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
-        <table className="min-w-full text-sm">
+        <table className="table-stack min-w-full text-sm">
           <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
             <tr>
               <th className="px-3 py-2">Product</th><th className="px-3 py-2">Batch</th><th className="px-3 py-2">Expiry</th>
@@ -99,19 +99,21 @@ export default async function RequestDetailPage({
                     <div className="font-medium">{l.trade_name}</div>
                     <div className="text-xs text-slate-500">{[l.strength, l.pack_size, l.manufacturer].filter(Boolean).join(" · ")}</div>
                   </td>
-                  <td className="px-3 py-2 font-mono text-xs">{l.batch || "–"}</td>
-                  <td className="px-3 py-2">{displayDate(l.expiry_date)}</td>
-                  <td className="px-3 py-2 text-right">{l.requested_qty}</td>
+                  <td className="px-3 py-2 font-mono text-xs" data-label="Batch">{l.batch || "–"}</td>
+                  <td className="px-3 py-2" data-label="Expiry">{displayDate(l.expiry_date)}</td>
+                  <td className="px-3 py-2 text-right" data-label="Requested">{l.requested_qty}</td>
                   {confirmed && (
-                    <td className={`px-3 py-2 text-right ${l.confirmed_qty !== null && l.confirmed_qty !== l.requested_qty ? "font-bold" : ""}`}>
+                    <td className={`px-3 py-2 text-right ${l.confirmed_qty !== null && l.confirmed_qty !== l.requested_qty ? "font-bold" : ""}`} data-label="Confirmed">
                       {l.confirmed_qty ?? "–"}
                     </td>
                   )}
-                  <td className="px-3 py-2 text-right">
-                    {price === null ? <span className="text-slate-500">On request</span> : eur(price)}
-                    {priceChanged && <div className="text-xs text-slate-400 line-through">{eur(l.unit_price_snapshot)}</div>}
+                  <td className="px-3 py-2 text-right" data-label="Price / pack">
+                    <div>
+                      {price === null ? <span className="text-slate-500">On request</span> : eur(price)}
+                      {priceChanged && <div className="text-xs text-slate-400 line-through">{eur(l.unit_price_snapshot)}</div>}
+                    </div>
                   </td>
-                  <td className="px-3 py-2 text-right">{price === null ? "–" : eur(qty * Number(price))}</td>
+                  <td className="px-3 py-2 text-right" data-label="Line total">{price === null ? "–" : eur(qty * Number(price))}</td>
                 </tr>
               );
             })}

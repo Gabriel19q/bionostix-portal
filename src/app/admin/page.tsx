@@ -177,34 +177,22 @@ export default async function AdminPage() {
                 <label className="label">Internal note</label>
                 <input name="internal_note" className="input" defaultValue={c.internal_note ?? ""} />
               </div>
+              {/* Status buttons sit next to Approve/Save; each submits its own small form below via the form attribute. */}
               <div className="flex flex-wrap gap-2 md:col-span-4">
                 <button className="btn-primary">{c.status === "approved" ? "Save" : "Approve"}</button>
+                {c.status === "approved" && <button form={`status-${c.id}`} className="btn-secondary">Suspend</button>}
+                {c.status === "applied" && <button form={`status-${c.id}`} className="btn-danger">Reject</button>}
+                {(c.status === "suspended" || c.status === "rejected") && (
+                  <button form={`status-${c.id}`} className="btn-secondary">Move back to review</button>
+                )}
               </div>
             </form>
 
-            <div className="flex flex-wrap gap-2">
-              {c.status === "approved" && (
-                <form action={setCompanyStatus}>
-                  <input type="hidden" name="company_id" value={c.id} />
-                  <input type="hidden" name="status" value="suspended" />
-                  <button className="btn-secondary">Suspend</button>
-                </form>
-              )}
-              {c.status === "applied" && (
-                <form action={setCompanyStatus}>
-                  <input type="hidden" name="company_id" value={c.id} />
-                  <input type="hidden" name="status" value="rejected" />
-                  <button className="btn-danger">Reject</button>
-                </form>
-              )}
-              {(c.status === "suspended" || c.status === "rejected") && (
-                <form action={setCompanyStatus}>
-                  <input type="hidden" name="company_id" value={c.id} />
-                  <input type="hidden" name="status" value="applied" />
-                  <button className="btn-secondary">Move back to review</button>
-                </form>
-              )}
-            </div>
+            <form id={`status-${c.id}`} action={setCompanyStatus} hidden>
+              <input type="hidden" name="company_id" value={c.id} />
+              <input type="hidden" name="status"
+                value={c.status === "approved" ? "suspended" : c.status === "applied" ? "rejected" : "applied"} />
+            </form>
             <div className="space-y-1 border-t border-slate-100 pt-3">
               <h3 className="text-sm font-medium">Users</h3>
               {allUsers.filter((u) => u.company_id === c.id).length === 0 && (

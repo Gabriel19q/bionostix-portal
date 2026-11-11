@@ -136,10 +136,10 @@ export function CatalogTable({ items, canRequest, defaultCountry }: {
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
-        <table className="min-w-full text-sm">
+        <table className="table-stack min-w-full text-sm">
           <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
             <tr>
-              <th className="px-3 py-2">
+              <th className="px-2.5 py-2">
                 <input type="checkbox" aria-label="Select all shown"
                   checked={rows.length > 0 && rows.every((r) => selected.has(r.offer_id))}
                   onChange={(e) => {
@@ -151,16 +151,16 @@ export function CatalogTable({ items, canRequest, defaultCountry }: {
                     setSelected(next);
                   }} />
               </th>
-              <th className="px-3 py-2">Product</th>
-              <th className="px-3 py-2">Manufacturer</th>
-              <th className="px-3 py-2">Batch</th>
-              <th className="px-3 py-2">Expiry</th>
-              <th className="px-3 py-2 text-right">Available</th>
-              <th className="px-3 py-2 text-right">MOQ</th>
-              <th className="px-3 py-2 text-right">Price / pack</th>
-              <th className="px-3 py-2" title="Certificate of analysis">COA</th>
-              <th className="px-3 py-2">Terms</th>
-              {canRequest && <th className="px-3 py-2">Request</th>}
+              <th className="px-2.5 py-2">Product</th>
+              <th className="px-2.5 py-2">Manufacturer</th>
+              <th className="px-2.5 py-2">Batch</th>
+              <th className="px-2.5 py-2">Expiry</th>
+              <th className="px-2.5 py-2 text-right">Available</th>
+              <th className="px-2.5 py-2 text-right">MOQ</th>
+              <th className="px-2.5 py-2 text-right">Price / pack</th>
+              <th className="px-2.5 py-2" title="Certificate of analysis">COA</th>
+              <th className="px-2.5 py-2">Terms</th>
+              {canRequest && <th className="px-2.5 py-2">Request</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -168,7 +168,7 @@ export function CatalogTable({ items, canRequest, defaultCountry }: {
               const months = i.expiry_date ? monthsUntil(i.expiry_date) : null;
               return (
                 <tr key={i.offer_id} className={selected.has(i.offer_id) ? "[&>td]:bg-slate-50" : ""}>
-                  <td className="px-3 py-2">
+                  <td className="px-2.5 py-2" data-label="Select">
                     <input type="checkbox" aria-label={`Select ${i.trade_name}`} checked={selected.has(i.offer_id)}
                       onChange={(e) => {
                         const next = new Set(selected);
@@ -177,7 +177,7 @@ export function CatalogTable({ items, canRequest, defaultCountry }: {
                         setSelected(next);
                       }} />
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-2.5 py-2">
                     <div className="font-medium">{i.trade_name}</div>
                     <div className="text-xs text-slate-500">
                       {[i.active_ingredient, i.strength, i.dosage_form, i.pack_size, i.pzn && `PZN ${i.pzn}`]
@@ -192,31 +192,33 @@ export function CatalogTable({ items, canRequest, defaultCountry }: {
                       )}
                     </div>
                   </td>
-                  <td className="px-3 py-2">{i.manufacturer}</td>
-                  <td className="px-3 py-2 font-mono text-xs">{i.batch || "–"}</td>
-                  <td className="px-3 py-2">
+                  <td className="px-2.5 py-2" data-label="Manufacturer">{i.manufacturer}</td>
+                  <td className="px-2.5 py-2 font-mono text-xs" data-label="Batch">{i.batch || "–"}</td>
+                  <td className="px-2.5 py-2" data-label="Expiry">
                     {months === null ? onRequest : (
-                      <>
+                      <div>
                         <div className={months < 6 ? "font-bold text-danger" : months < 12 ? "mark-attention inline-block" : ""}>
                           {displayDate(i.expiry_date)}
                         </div>
                         <div className="text-xs text-slate-500">{months} months left</div>
-                      </>
+                      </div>
                     )}
                   </td>
-                  <td className="px-3 py-2 text-right">{i.available_qty === null ? onRequest : i.available_qty.toLocaleString("en")}</td>
-                  <td className="px-3 py-2 text-right">{i.moq}</td>
-                  <td className="px-3 py-2 text-right font-medium">{i.unit_price === null ? onRequest : eur(i.unit_price)}</td>
-                  <td className="px-3 py-2 text-xs">
+                  <td className="px-2.5 py-2 text-right" data-label="Available">{i.available_qty === null ? onRequest : i.available_qty.toLocaleString("en")}</td>
+                  <td className="px-2.5 py-2 text-right" data-label="MOQ">{i.moq}</td>
+                  <td className="px-2.5 py-2 text-right font-bold" data-label="Price / pack">{i.unit_price === null ? onRequest : eur(i.unit_price)}</td>
+                  <td className="px-2.5 py-2 text-xs" data-label="COA">
                     {i.coa_available === true ? <span className="label-neutral">Available</span>
                       : i.coa_available === false ? <span className="text-slate-600">Not available</span> : onRequest}
                   </td>
-                  <td className="px-3 py-2 text-xs text-slate-600">
-                    {i.incoterm}
-                    <div className="text-slate-400">stock {displayDate(i.stock_as_of)}</div>
+                  <td className="px-2.5 py-2 text-xs text-slate-600" data-label="Terms">
+                    <div>
+                      {i.incoterm}
+                      <div className="text-slate-500">stock {displayDate(i.stock_as_of)}</div>
+                    </div>
                   </td>
                   {canRequest && (
-                    <td className="px-3 py-2">
+                    <td className="px-2.5 py-2" data-label="Request">
                       {cart[i.offer_id] ? (
                         <div className="text-xs">
                           <span className="font-bold text-success">{cart[i.offer_id]} packs added</span>
