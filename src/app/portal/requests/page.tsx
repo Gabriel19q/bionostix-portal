@@ -50,7 +50,7 @@ export default async function MyRequestsPage() {
                     <td className="px-3 py-2">{displayDate(r.created_at)}</td>
                     <td className="px-3 py-2 text-right">{lines.length}</td>
                     <td className="px-3 py-2 text-right">{eur(value)}</td>
-                    <td className="px-3 py-2"><StatusBadge status={r.status} /></td>
+                    <td className="px-3 py-2"><StatusBadge status={r.status} viewer="customer" /></td>
                     <td className="px-3 py-2 text-slate-500">{displayDate(r.updated_at)}</td>
                   </tr>
                 );

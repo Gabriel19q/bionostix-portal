@@ -41,7 +41,7 @@ function Field({ label, name, defaultValue, required, type = "text", hint, list 
     <div>
       <label className="label" htmlFor={name}>
         {label}
-        {required && <span className="text-red-600"> *</span>}
+        {required && <span aria-hidden="true"> *</span>}
       </label>
       <input id={name} name={name} type={type} className="input" required={required} list={list}
         defaultValue={defaultValue ?? ""} />
@@ -63,7 +63,7 @@ export function OfferForm({ values, manufacturers }: { values: OfferFormValues; 
       <div className="card space-y-4">
         <h2 className="font-bold">Product</h2>
         {v.product_id && (
-          <p className="text-xs text-amber-700">Changes to the product apply to all its batches.</p>
+          <p className="text-xs text-slate-600">Changes to the product apply to all its batches.</p>
         )}
         <div className="grid gap-4 md:grid-cols-3">
           <Field label="Manufacturer" name="manufacturer" defaultValue={v.manufacturer} required list="manufacturers" />

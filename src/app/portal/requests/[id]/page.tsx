@@ -47,7 +47,7 @@ export default async function RequestDetailPage({
   return (
     <div className="space-y-6">
       {sent && (
-        <div className="card border-emerald-300 bg-emerald-50 text-sm text-emerald-900">
+        <div className="notice-success">
           Thank you, your request was sent. We will get back to you with an offer.
         </div>
       )}
@@ -61,7 +61,7 @@ export default async function RequestDetailPage({
             {r.seller && ` · invoiced by ${SELLER_LABEL[r.seller] ?? r.seller}`}
           </p>
         </div>
-        <StatusBadge status={r.status} />
+        <StatusBadge status={r.status} viewer="customer" />
       </div>
 
       <div className="card space-y-3">
@@ -103,7 +103,7 @@ export default async function RequestDetailPage({
                   <td className="px-3 py-2">{displayDate(l.expiry_date)}</td>
                   <td className="px-3 py-2 text-right">{l.requested_qty}</td>
                   {confirmed && (
-                    <td className={`px-3 py-2 text-right ${l.confirmed_qty !== null && l.confirmed_qty !== l.requested_qty ? "font-medium text-amber-700" : ""}`}>
+                    <td className={`px-3 py-2 text-right ${l.confirmed_qty !== null && l.confirmed_qty !== l.requested_qty ? "font-bold" : ""}`}>
                       {l.confirmed_qty ?? "–"}
                     </td>
                   )}

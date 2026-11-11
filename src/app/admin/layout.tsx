@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
+import { NavLink } from "@/components/nav-link";
 
 const tabs = [
   { href: "/admin/requests", label: "Requests" },
@@ -17,15 +17,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="space-y-6">
-      <nav className="flex flex-wrap gap-1 border-b border-slate-200">
+      <nav aria-label="Admin" className="flex flex-wrap gap-1 border-b border-slate-200">
         {tabs.map((t) => (
-          <Link
-            key={t.href}
-            href={t.href}
-            className="rounded-t-md px-4 py-2 text-sm font-medium text-slate-600 hover:bg-white hover:text-brand-700"
-          >
+          <NavLink key={t.href} href={t.href} exact={t.href === "/admin"} className="-mb-px px-4 text-sm">
             {t.label}
-          </Link>
+          </NavLink>
         ))}
       </nav>
       {children}

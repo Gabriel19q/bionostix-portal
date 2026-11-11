@@ -70,7 +70,7 @@ export default function SignupPage() {
           />
           <p className="mt-1 text-xs text-slate-500">At least 10 characters.</p>
         </div>
-        {error && <p className="text-sm text-red-700">{error}</p>}
+        {error && <p className="text-sm text-danger">{error}</p>}
         <button className="btn-primary w-full" disabled={busy}>
           {busy ? "Creating account…" : "Create account"}
         </button>

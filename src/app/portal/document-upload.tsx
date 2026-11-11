@@ -55,7 +55,7 @@ export function DocumentUpload({ companyId }: { companyId: string }) {
       <button className="btn-secondary" disabled={!file || busy} onClick={onUpload}>
         {busy ? "Uploading…" : "Upload"}
       </button>
-      {error && <p className="w-full text-sm text-red-700">{error}</p>}
+      {error && <p className="w-full text-sm text-danger">{error}</p>}
     </div>
   );
 }

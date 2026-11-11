@@ -33,18 +33,29 @@ export const STATUS_HINT: Record<RequestStatus, string> = {
   cancelled: "This request was cancelled.",
 };
 
-export const STATUS_STYLE: Record<RequestStatus, string> = {
-  new: "bg-amber-100 text-amber-900",
-  in_review: "bg-sky-100 text-sky-900",
-  offer_sent: "bg-violet-100 text-violet-900",
-  accepted: "bg-emerald-100 text-emerald-900",
-  proforma_sent: "bg-emerald-100 text-emerald-900",
-  paid: "bg-emerald-100 text-emerald-900",
-  shipped: "bg-emerald-100 text-emerald-900",
-  completed: "bg-slate-200 text-slate-800",
-  declined: "bg-red-100 text-red-900",
-  cancelled: "bg-slate-100 text-slate-600",
-};
+// Colour per CI v1.9 page 13: it shows what the status means for the viewer.
+// Sand = the viewer has to act, blue = informational, green = confirmed, red = declined, grey = closed.
+type Viewer = "admin" | "customer";
+export function statusTone(status: RequestStatus, viewer: Viewer): string {
+  switch (status) {
+    case "new":
+      return viewer === "admin" ? "tag-attention" : "tag-info";
+    case "offer_sent":
+      return viewer === "customer" ? "tag-attention" : "tag-info";
+    case "in_review":
+      return "tag-info";
+    case "accepted":
+    case "proforma_sent":
+    case "paid":
+    case "shipped":
+    case "completed":
+      return "tag-success";
+    case "declined":
+      return "tag-danger";
+    case "cancelled":
+      return "tag-neutral";
+  }
+}
 
 export const SELLER_LABEL: Record<string, string> = {
   bionostix_germany: "Bionostix Germany",
@@ -62,10 +73,6 @@ export const DOC_TYPE_LABEL: Record<string, string> = {
   other: "Other",
 };
 
-export function StatusBadge({ status }: { status: RequestStatus }) {
-  return (
-    <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLE[status]}`}>
-      {STATUS_LABEL[status]}
-    </span>
-  );
+export function StatusBadge({ status, viewer }: { status: RequestStatus; viewer: Viewer }) {
+  return <span className={statusTone(status, viewer)}>{STATUS_LABEL[status]}</span>;
 }

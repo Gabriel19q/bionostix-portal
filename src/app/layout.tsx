@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import "./globals.css";
 import { getSession } from "@/lib/session";
+import { NavLink } from "@/components/nav-link";
 
 export const metadata: Metadata = {
   title: "Bionostix Germany · Partner Portal",
@@ -31,7 +32,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-3 px-6 py-3">
             {/* Wordmark: min. 120 px wide, clear space of 1/4 of its height on every side (CI v1.5). */}
             <Link href="/" className="flex items-center gap-4 p-[11px]" aria-label="Bionostix Germany Partner Portal, home">
-              <Image src="/brand/Bionostix-Colour.svg" alt="" width={152} height={42} priority className="h-auto w-[152px]" />
+              <Image src="/brand/Bionostix-Colour.svg" alt="" width={152} height={45} priority className="h-auto w-[152px]" />
               <span className="hidden border-l border-slate-200 pl-4 text-sm leading-tight text-slate-600 sm:block">
                 <span className="block font-bold text-slate-900">Bionostix Germany</span>
                 Partner Portal
@@ -41,17 +42,11 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
               {user ? (
                 <>
                   {profile?.role === "admin" ? (
-                    <Link href="/admin/requests" className="inline-flex min-h-11 items-center font-bold text-slate-900 hover:text-brand-600">
-                      Admin
-                    </Link>
+                    <NavLink href="/admin/requests" match="/admin">Admin</NavLink>
                   ) : (
                     <>
-                      <Link href="/portal" className="inline-flex min-h-11 items-center font-bold text-slate-900 hover:text-brand-600">
-                        Catalog
-                      </Link>
-                      <Link href="/portal/requests" className="inline-flex min-h-11 items-center font-bold text-slate-900 hover:text-brand-600">
-                        My requests
-                      </Link>
+                      <NavLink href="/portal" exact>Catalog</NavLink>
+                      <NavLink href="/portal/requests">My requests</NavLink>
                     </>
                   )}
                   <form action="/auth/signout" method="post">

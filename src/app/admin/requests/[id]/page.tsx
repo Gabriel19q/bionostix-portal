@@ -89,10 +89,10 @@ export default async function AdminRequestPage({
             Received {displayDate(req.created_at)}{req.delivery_country && ` · delivery to ${req.delivery_country}`}
           </p>
         </div>
-        <StatusBadge status={req.status} />
+        <StatusBadge status={req.status} viewer="admin" />
       </div>
       {pageError === "prices" && (
-        <div className="card border-red-300 bg-red-50 text-sm text-red-900">
+        <div className="notice-error">
           Some lines have no price yet (“on request”). Enter a confirmed price for every line and save, then send the offer.
         </div>
       )}
@@ -126,7 +126,7 @@ export default async function AdminRequestPage({
                       <div className="font-medium">{p.trade_name}</div>
                       <div className="text-xs text-slate-500">
                         {[p.strength, p.pack_size, p.manufacturers?.name].filter(Boolean).join(" · ")}
-                        {p.is_narcotic && <span className="ml-1 font-medium text-amber-700">· BtM: check permits</span>}
+                        {p.is_narcotic && <span className="ml-1 font-bold text-slate-900">· BtM: check permits</span>}
                       </div>
                     </td>
                     <td className="px-3 py-2 font-mono text-xs">
@@ -136,7 +136,7 @@ export default async function AdminRequestPage({
                       </div>
                     </td>
                     <td className="px-3 py-2 text-right">{l.requested_qty}</td>
-                    <td className={`px-3 py-2 text-right ${l.offers.available_qty !== null && l.offers.available_qty < l.requested_qty ? "text-red-700" : "text-slate-500"}`}>
+                    <td className={`px-3 py-2 text-right ${l.offers.available_qty !== null && l.offers.available_qty < l.requested_qty ? "font-bold text-danger" : "text-slate-500"}`}>
                       {l.offers.available_qty ?? "on request"}
                     </td>
                     <td className="px-3 py-2 text-right">
@@ -149,7 +149,7 @@ export default async function AdminRequestPage({
                       <input name={`price_${l.id}`} className="input w-28 py-1 text-right" defaultValue={l.confirmed_unit_price ?? ""}
                         placeholder={l.unit_price_snapshot === null ? "enter price" : String(l.unit_price_snapshot)} />
                     </td>
-                    <td className="px-3 py-2 text-right">{price === null || purchase === null ? "–" : eur(qty * (Number(price) - Number(purchase)))}</td>
+                    <td className={`px-3 py-2 text-right ${price !== null && purchase !== null && Number(price) < Number(purchase) ? "font-bold text-danger" : ""}`}>{price === null || purchase === null ? "–" : eur(qty * (Number(price) - Number(purchase)))}</td>
                   </tr>
                 );
               })}
@@ -157,9 +157,9 @@ export default async function AdminRequestPage({
             <tfoot className="text-sm">
               <tr>
                 <td colSpan={7} className="px-3 py-2 text-right">
-                  Value {eur(value)}{openPrices && <span className="text-amber-700"> · some prices still open</span>}
+                  Value {eur(value)}{openPrices && <> · <span className="mark-attention">some prices still open</span></>}
                 </td>
-                <td colSpan={2} className="px-3 py-2 text-right font-bold">
+                <td colSpan={2} className={`px-3 py-2 text-right font-bold ${marginValue - cost < 0 ? "text-danger" : ""}`}>
                   Margin {eur(marginValue - cost)}{marginValue > 0 && ` (${Math.round(((marginValue - cost) / marginValue) * 100)}%)`}
                 </td>
               </tr>

@@ -44,7 +44,7 @@ export default function ForgotPasswordPage() {
           <label className="label" htmlFor="email">Email</label>
           <input id="email" type="email" className="input" required value={email} onChange={(e) => setEmail(e.target.value)} />
         </div>
-        {error && <p className="text-sm text-red-700">{error}</p>}
+        {error && <p className="text-sm text-danger">{error}</p>}
         <button className="btn-primary w-full" disabled={busy}>{busy ? "Sending…" : "Send link"}</button>
       </form>
       <p className="mt-4 text-center text-sm">

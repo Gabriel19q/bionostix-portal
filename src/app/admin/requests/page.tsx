@@ -78,7 +78,7 @@ export default async function AdminRequestsPage({ searchParams }: { searchParams
                 }
               }
               return (
-                <tr key={r.id} className={r.status === "new" ? "bg-amber-50/50" : ""}>
+                <tr key={r.id} className={r.status === "new" ? "[&>td]:bg-sand" : ""}>
                   <td className="px-3 py-2">
                     <Link href={`/admin/requests/${r.id}`} className="font-medium text-brand-600 hover:underline">{r.number}</Link>
                   </td>
@@ -89,11 +89,11 @@ export default async function AdminRequestsPage({ searchParams }: { searchParams
                   <td className="px-3 py-2">{displayDate(r.created_at)}</td>
                   <td className="px-3 py-2 text-right">{r.request_items.length}</td>
                   <td className="px-3 py-2 text-right">{eur(value)}</td>
-                  <td className="px-3 py-2 text-right">
+                  <td className={`px-3 py-2 text-right ${marginValue - cost < 0 ? "font-bold text-danger" : ""}`}>
                     {eur(marginValue - cost)}
                     {marginValue > 0 && <span className="text-xs text-slate-500"> ({Math.round(((marginValue - cost) / marginValue) * 100)}%)</span>}
                   </td>
-                  <td className="px-3 py-2"><StatusBadge status={r.status} /></td>
+                  <td className="px-3 py-2"><StatusBadge status={r.status} viewer="admin" /></td>
                 </tr>
               );
             })}

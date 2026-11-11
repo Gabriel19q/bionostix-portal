@@ -167,7 +167,7 @@ export function CatalogTable({ items, canRequest, defaultCountry }: {
             {rows.map((i) => {
               const months = i.expiry_date ? monthsUntil(i.expiry_date) : null;
               return (
-                <tr key={i.offer_id} className={selected.has(i.offer_id) ? "bg-brand-50/60" : ""}>
+                <tr key={i.offer_id} className={selected.has(i.offer_id) ? "[&>td]:bg-slate-50" : ""}>
                   <td className="px-3 py-2">
                     <input type="checkbox" aria-label={`Select ${i.trade_name}`} checked={selected.has(i.offer_id)}
                       onChange={(e) => {
@@ -184,10 +184,10 @@ export function CatalogTable({ items, canRequest, defaultCountry }: {
                         .filter(Boolean).join(" · ")}
                     </div>
                     <div className="mt-1 flex gap-1">
-                      {i.is_rx && <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-700">Rx</span>}
-                      {i.is_cold_chain && <span className="rounded bg-sky-100 px-1.5 py-0.5 text-[11px] text-sky-900">Cold chain</span>}
+                      {i.is_rx && <span className="label-neutral">Rx</span>}
+                      {i.is_cold_chain && <span className="label-neutral">Cold chain</span>}
                       {i.is_narcotic && (
-                        <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] text-amber-900"
+                        <span className="label-neutral"
                           title="Narcotic: supplied only after individual review of permits">Narcotic</span>
                       )}
                     </div>
@@ -197,7 +197,7 @@ export function CatalogTable({ items, canRequest, defaultCountry }: {
                   <td className="px-3 py-2">
                     {months === null ? onRequest : (
                       <>
-                        <div className={months < 6 ? "font-medium text-red-700" : months < 12 ? "text-amber-700" : ""}>
+                        <div className={months < 6 ? "font-bold text-danger" : months < 12 ? "mark-attention inline-block" : ""}>
                           {displayDate(i.expiry_date)}
                         </div>
                         <div className="text-xs text-slate-500">{months} months left</div>
@@ -208,7 +208,7 @@ export function CatalogTable({ items, canRequest, defaultCountry }: {
                   <td className="px-3 py-2 text-right">{i.moq}</td>
                   <td className="px-3 py-2 text-right font-medium">{i.unit_price === null ? onRequest : eur(i.unit_price)}</td>
                   <td className="px-3 py-2 text-xs">
-                    {i.coa_available === true ? <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-emerald-900">Available</span>
+                    {i.coa_available === true ? <span className="label-neutral">Available</span>
                       : i.coa_available === false ? <span className="text-slate-600">Not available</span> : onRequest}
                   </td>
                   <td className="px-3 py-2 text-xs text-slate-600">
@@ -219,7 +219,7 @@ export function CatalogTable({ items, canRequest, defaultCountry }: {
                     <td className="px-3 py-2">
                       {cart[i.offer_id] ? (
                         <div className="text-xs">
-                          <span className="font-medium text-emerald-700">{cart[i.offer_id]} packs added</span>
+                          <span className="font-bold text-success">{cart[i.offer_id]} packs added</span>
                           <button className="ml-2 text-slate-500 underline" onClick={() => set(i.offer_id, 0)}>Remove</button>
                         </div>
                       ) : (

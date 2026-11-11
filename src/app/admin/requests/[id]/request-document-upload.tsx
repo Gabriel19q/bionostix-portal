@@ -58,7 +58,7 @@ export function RequestDocumentUpload({ requestId }: { requestId: string }) {
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" checked={notify} onChange={(e) => setNotify(e.target.checked)} /> Email the customer
       </label>
-      {error && <p className="text-sm text-red-700">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
     </div>
   );
 }

@@ -146,12 +146,14 @@ export default async function AdminCatalogPage({
                       {o.products.is_cold_chain && " · cold chain"}
                       {o.products.is_narcotic && " · BtM"}
                     </div>
-                    {o.internal_note && <div className="text-xs italic text-amber-700">{o.internal_note}</div>}
+                    {o.internal_note && <div className="text-xs italic text-slate-600">Internal: {o.internal_note}</div>}
                   </td>
                   <td className="px-3 py-2">{o.products.manufacturers?.name}</td>
                   <td className="px-3 py-2 font-mono text-xs">{o.batch || "–"}</td>
-                  <td className={`px-3 py-2 whitespace-nowrap ${months === null ? "text-slate-400" : months < 6 ? "font-medium text-red-700" : months < 12 ? "text-amber-700" : ""}`}>
-                    {o.expiry_date ? displayDate(o.expiry_date) : "open"}
+                  <td className={`px-3 py-2 whitespace-nowrap ${months === null ? "text-slate-400" : months < 6 ? "font-bold text-danger" : ""}`}>
+                    {o.expiry_date
+                      ? <span className={months !== null && months >= 6 && months < 12 ? "mark-attention" : ""}>{displayDate(o.expiry_date)}</span>
+                      : "open"}
                   </td>
                   <td className="px-3 py-2 text-right">{o.available_qty ?? <span className="text-slate-400">on request</span>}</td>
                   <td className="px-3 py-2 text-right">{o.moq}</td>
@@ -166,7 +168,7 @@ export default async function AdminCatalogPage({
                     </td>
                   ))}
                   <td className="px-3 py-2 text-xs">
-                    {o.coa_available === true ? <span className="text-emerald-700">yes</span>
+                    {o.coa_available === true ? <span className="label-neutral">yes</span>
                       : o.coa_available === false ? "no" : <span className="text-slate-400">–</span>}
                   </td>
                   <td className="px-3 py-2 text-xs">{displayDate(o.stock_as_of)}</td>
@@ -198,5 +200,5 @@ function Notice({ msg }: { msg: string }) {
     if (Number(b) > 0) text += ` ${b} batch(es) appear in customer requests and were hidden instead, so the request history stays complete.`;
   }
   if (!text) return null;
-  return <div className="card border-brand-100 bg-brand-50 py-3 text-sm text-brand-900">{text}</div>;
+  return <div className="notice-info">{text}</div>;
 }

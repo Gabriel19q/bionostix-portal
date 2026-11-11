@@ -45,7 +45,7 @@ export default function ResetPasswordPage() {
           <input id="repeat" type="password" className="input" required minLength={10}
             value={repeat} onChange={(e) => setRepeat(e.target.value)} />
         </div>
-        {error && <p className="text-sm text-red-700">{error}</p>}
+        {error && <p className="text-sm text-danger">{error}</p>}
         <button className="btn-primary w-full" disabled={busy}>{busy ? "Saving…" : "Save new password"}</button>
       </form>
     </div>

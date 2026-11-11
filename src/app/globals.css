@@ -1,24 +1,28 @@
 @import "tailwindcss";
 
 /*
-  Bionostix brand guidelines v1.5 (November 2026).
-  Palette: Blue #1245BB (actions, links), Green #5EA249 (logo, small accents),
-  Sand #F5EDE4 (warm backgrounds), Kraft #D7B793 (details, sparingly).
-  Neutrals: Body #202020, Secondary #555555, Divider #D6D6D6, Light grey #F5F5F5.
-  Typeface: Montserrat Regular 400 and Bold 700 only.
+  Bionostix brand guidelines v1.9 (November 2026). All colours below come from the CI;
+  do not add new ones without updating the guidelines first.
+  Blue: actions, links, focus, informational status · Success green: confirmed / approved
+  Signal red: errors, blocked states, destructive actions · Sand: warm backgrounds and attention
+  Logo green: wordmark only · Neutrals: body #202020, secondary #555555, divider #D6D6D6,
+  light grey #F5F5F5 (neutral fields and table rows).
+  Typeface: Montserrat Regular 400 and Bold 700, self-hosted.
 */
 @theme {
-  --color-brand-50: #eef3fc;
-  --color-brand-100: #d6e2f8;
+  --color-brand-50: #f5f5f5; /* no blue tint in the CI: light grey is used for neutral areas */
   --color-brand-600: #1245bb;
-  --color-brand-700: #0e3693;
-  --color-brand-900: #0a2563;
+  --color-brand-700: #103ca4; /* Blue Hover */
+  --color-brand-800: #0d3287; /* Blue Pressed */
 
-  --color-green: #5ea249;
+  --color-success: #39632d;
+  --color-danger: #ab2935;
+  --color-danger-hover: #94232e;
+  --color-danger-pressed: #7b1d26;
   --color-sand: #f5ede4;
-  --color-kraft: #d7b793;
+  --color-logo-green: #5ea249;
 
-  /* The app uses Tailwind's "slate" scale for greys. Mapped to the neutral CI greys
+  /* The app uses Tailwind's "slate" scale for greys. Mapped to the CI neutrals
      so every page follows the guideline without renaming classes. */
   --color-slate-50: #f5f5f5;
   --color-slate-100: #ededed;
@@ -31,12 +35,12 @@
   --color-slate-800: #2b2b2b;
   --color-slate-900: #202020;
 
-  --font-sans: var(--font-montserrat), Arial, "Helvetica Neue", sans-serif;
+  --font-sans: var(--font-montserrat), Arial, sans-serif;
 }
 
 body {
   @apply bg-slate-50 text-slate-900 antialiased;
-  line-height: 1.55;
+  line-height: 1.75;
 }
 
 h1,
@@ -54,21 +58,40 @@ a {
   outline-offset: 3px;
 }
 
-/* Buttons: bold 14 px, at least 44 px high, 4 px corners. */
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--color-brand-600);
+}
+
+/* Table rows: neutral light grey on hover (CI: "Neutral fields and table rows"). */
+tbody tr:hover > td {
+  background-color: var(--color-slate-50);
+}
+
+/* Buttons (CI page 11): bold 14 px, min. 44 px high, 5 px corners, 1.5 px border. */
 @utility btn {
-  @apply inline-flex min-h-11 items-center justify-center rounded px-5 py-2 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-50;
+  @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-[5px] border-[1.5px] px-[22px] py-2 text-sm font-bold leading-tight transition-colors;
+  @apply disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-50 disabled:text-slate-600;
 }
 @utility btn-primary {
-  @apply btn border border-brand-600 bg-brand-600 text-white hover:border-brand-700 hover:bg-brand-700;
+  @apply btn border-brand-600 bg-brand-600 text-white not-disabled:hover:border-brand-700 not-disabled:hover:bg-brand-700 not-disabled:active:border-brand-800 not-disabled:active:bg-brand-800;
 }
 @utility btn-secondary {
-  @apply btn border border-brand-600 bg-white text-brand-600 hover:bg-brand-50;
+  @apply btn border-brand-600 bg-white text-brand-600 not-disabled:hover:bg-slate-50 not-disabled:active:bg-slate-200;
 }
 @utility btn-danger {
-  @apply btn border border-red-300 bg-white text-red-700 hover:bg-red-50;
+  @apply btn border-danger bg-danger text-white not-disabled:hover:border-danger-hover not-disabled:hover:bg-danger-hover not-disabled:active:border-danger-pressed not-disabled:active:bg-danger-pressed;
 }
+
+/* Form fields (CI page 12). */
 @utility input {
-  @apply min-h-11 w-full rounded-[3px] border border-slate-600 bg-white px-3 py-2 text-base focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-100;
+  @apply min-h-11 w-full rounded-[5px] border border-slate-600 bg-white px-3 py-2 text-base focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20 disabled:bg-slate-50 disabled:text-slate-600;
+}
+@utility input-error {
+  @apply border-2 border-danger focus:border-danger;
+}
+@utility field-error {
+  @apply mt-1 text-sm text-danger;
 }
 @utility label {
   @apply mb-1 block text-sm font-bold text-slate-900;
@@ -77,11 +100,58 @@ a {
   @apply border border-slate-200 bg-white p-6;
 }
 
-/* File pickers: CI-style secondary button instead of the browser default. */
+/* Messages (CI page 12): light grey with a coloured bar; Sand for attention. */
+@utility notice {
+  @apply border-l-4 bg-slate-50 px-4 py-3 text-sm text-slate-900;
+}
+@utility notice-success {
+  @apply notice border-success;
+}
+@utility notice-error {
+  @apply notice border-danger;
+}
+@utility notice-info {
+  @apply notice border-brand-600;
+}
+@utility notice-attention {
+  @apply notice border-slate-900 bg-sand;
+}
+
+/* Status labels (CI page 13): left bar + bold label. */
+@utility tag {
+  @apply inline-flex items-center border-l-[3px] px-2 py-0.5 text-sm leading-snug font-bold whitespace-nowrap;
+}
+@utility tag-attention {
+  @apply tag border-slate-900 bg-sand text-slate-900;
+}
+@utility tag-info {
+  @apply tag border-brand-600 text-brand-600;
+}
+@utility tag-success {
+  @apply tag border-success text-success;
+}
+@utility tag-danger {
+  @apply tag border-danger text-danger;
+}
+@utility tag-neutral {
+  @apply tag border-slate-600 bg-slate-50 text-slate-600;
+}
+
+/* Small neutral product labels (Rx, cold chain, narcotic, COA): grey with text, no own colour. */
+@utility label-neutral {
+  @apply inline-block rounded-[3px] bg-slate-100 px-1.5 py-0.5 text-[11px] font-bold whitespace-nowrap text-slate-700;
+}
+
+/* Attention highlight inside tables (expiry 6–12 months, changed quantity, open prices). */
+@utility mark-attention {
+  @apply rounded-[3px] bg-sand px-1.5 py-0.5 text-slate-900;
+}
+
+/* File pickers: CI secondary button instead of the browser default. */
 input[type="file"]::file-selector-button {
   margin-right: 12px;
-  border: 1px solid var(--color-brand-600);
-  border-radius: 4px;
+  border: 1.5px solid var(--color-brand-600);
+  border-radius: 5px;
   background: white;
   padding: 6px 12px;
   color: var(--color-brand-600);
@@ -89,4 +159,7 @@ input[type="file"]::file-selector-button {
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
+}
+input[type="file"]::file-selector-button:hover {
+  background: var(--color-slate-50);
 }

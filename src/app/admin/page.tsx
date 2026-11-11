@@ -23,10 +23,10 @@ type Doc = { id: string; company_id: string; file_name: string; doc_type: string
 
 const STATUS_ORDER = ["applied", "approved", "suspended", "rejected"] as const;
 const STATUS_STYLE: Record<Company["status"], string> = {
-  applied: "bg-amber-100 text-amber-900",
-  approved: "bg-emerald-100 text-emerald-900",
-  suspended: "bg-slate-200 text-slate-800",
-  rejected: "bg-red-100 text-red-900",
+  applied: "tag-attention",
+  approved: "tag-success",
+  suspended: "tag-danger",
+  rejected: "tag-danger",
 };
 const TYPE_LABEL = { eu_wholesaler: "EU wholesaler", importer: "Importer" };
 
@@ -107,11 +107,11 @@ export default async function AdminPage() {
                 </p>
               </div>
               <div className="flex flex-col items-end gap-1">
-                <span className={`rounded-full px-3 py-1 text-xs font-medium ${STATUS_STYLE[c.status]}`}>
+                <span className={`capitalize ${STATUS_STYLE[c.status]}`}>
                   {c.status}
                 </span>
                 {expiresIn !== null && expiresIn <= 30 && (
-                  <span className="text-xs font-medium text-red-700">
+                  <span className={`text-xs font-bold ${expiresIn < 0 ? "text-danger" : "mark-attention"}`}>
                     {expiresIn < 0 ? "Licence expired" : `Licence expires in ${expiresIn} days`}
                   </span>
                 )}
@@ -121,7 +121,7 @@ export default async function AdminPage() {
             <div>
               <h3 className="mb-1 text-sm font-medium">Documents</h3>
               {companyDocs.length === 0 ? (
-                <p className="text-sm text-amber-700">No documents uploaded.</p>
+                <p className="notice-attention">No documents uploaded.</p>
               ) : (
                 <ul className="text-sm">
                   {companyDocs.map((d) => (
@@ -217,7 +217,7 @@ export default async function AdminPage() {
             {allUsers.every((u) => u.company_id !== c.id) && !companiesWithRequests.has(c.id) && (
               <form action={deleteCompany}>
                 <input type="hidden" name="company_id" value={c.id} />
-                <button className="text-xs text-red-700 underline">Delete this company (no users, no requests)</button>
+                <button className="text-xs text-danger underline">Delete this company (no users, no requests)</button>
               </form>
             )}
             {c.verified_on && <p className="text-xs text-slate-500">Verified on {c.verified_on}</p>}

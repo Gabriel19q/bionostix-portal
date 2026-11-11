@@ -50,7 +50,7 @@ export default function LoginPage() {
         <p className="text-right text-sm">
           <Link href="/forgot-password" className="text-brand-600 underline">Forgot password?</Link>
         </p>
-        {error && <p className="text-sm text-red-700">{error}</p>}
+        {error && <p className="text-sm text-danger">{error}</p>}
         <button className="btn-primary w-full" disabled={busy}>
           {busy ? "Signing in…" : "Sign in"}
         </button>

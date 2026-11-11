@@ -52,7 +52,7 @@ export function ApplicationForm({ defaultName }: { defaultName: string }) {
       <p className="mb-6 text-sm text-slate-600">
         Step 2 of 2. We use this information to verify that your company is licensed to trade pharmaceuticals.
       </p>
-      <p className="mb-6 rounded-md bg-brand-50 px-3 py-2 text-sm text-brand-900">
+      <p className="notice-info mb-6">
         Does your company already have access? Then do not fill in this form. Send us a short email to{" "}
         {process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? "info@bionostix-germany.de"} and we add you to your company&apos;s account.
       </p>
@@ -98,7 +98,7 @@ export function ApplicationForm({ defaultName }: { defaultName: string }) {
           <label className="label" htmlFor="gdp">GDP certificate (optional)</label>
           <input id="gdp" name="gdp" type="file" accept={ACCEPTED_TYPES} className="input" />
         </div>
-        {error && <p className="text-sm text-red-700 md:col-span-2">{error}</p>}
+        {error && <p className="text-sm text-danger md:col-span-2">{error}</p>}
         <div className="md:col-span-2">
           <button className="btn-primary" disabled={busy}>
             {busy ? "Submitting…" : "Submit for verification"}

@@ -18,11 +18,11 @@ const STATUS_LABEL: Record<RowResult["status"], string> = {
   error: "Error",
 };
 const STATUS_STYLE: Record<RowResult["status"], string> = {
-  new_product: "bg-emerald-100 text-emerald-900",
-  new_batch: "bg-emerald-50 text-emerald-800",
-  update: "bg-sky-100 text-sky-900",
+  new_product: "bg-slate-100 text-slate-900",
+  new_batch: "bg-slate-100 text-slate-900",
+  update: "bg-slate-100 text-slate-900",
   unchanged: "bg-slate-100 text-slate-600",
-  error: "bg-red-100 text-red-900",
+  error: "bg-white text-danger font-bold border border-danger",
 };
 
 // First row with at least 3 filled cells is taken as the header row
@@ -178,7 +178,7 @@ export function ImportWizard({ manufacturers }: { manufacturers: string[] }) {
                 <div key={f.key}>
                   <label className="label">
                     {f.label}
-                    {f.required && <span className="text-red-600"> *</span>}
+                    {f.required && <span aria-hidden="true"> *</span>}
                   </label>
                   <select
                     className="input"
@@ -203,7 +203,7 @@ export function ImportWizard({ manufacturers }: { manufacturers: string[] }) {
           <div className="grid gap-3 md:grid-cols-4">
             <div className="md:col-span-2">
               <label className="label">
-                {mapping.manufacturer ? "Manufacturer for rows without one (optional)" : <>Manufacturer <span className="text-red-600">*</span></>}
+                {mapping.manufacturer ? "Manufacturer for rows without one (optional)" : <>Manufacturer <span aria-hidden="true">*</span></>}
               </label>
               <input className="input" list="import-manufacturers" value={manufacturer}
                 onChange={(e) => { setManufacturer(e.target.value); setPreview(null); }} />
@@ -249,7 +249,7 @@ export function ImportWizard({ manufacturers }: { manufacturers: string[] }) {
           </div>
 
           {missingRequired.length > 0 && (
-            <p className="text-sm text-amber-700">Still missing: {missingRequired.join(", ")}.</p>
+            <p className="notice-attention">Still missing: {missingRequired.join(", ")}.</p>
           )}
           <button className="btn-primary" disabled={busy || missingRequired.length > 0} onClick={onPreview}>
             {busy && !preview ? "Checking…" : "Show preview"}
@@ -261,7 +261,7 @@ export function ImportWizard({ manufacturers }: { manufacturers: string[] }) {
         <div className="card space-y-4">
           <h2 className="font-bold">4. Preview: nothing is saved yet</h2>
           {preview.newManufacturers.length > 0 && (
-            <p className="text-sm text-amber-700">New manufacturer(s) will be created: {preview.newManufacturers.join(", ")}.</p>
+            <p className="notice-info">New manufacturer(s) will be created: {preview.newManufacturers.join(", ")}.</p>
           )}
           <div className="flex flex-wrap gap-2 text-sm">
             {(["all", "new_product", "new_batch", "update", "unchanged", "error"] as const).map((s) => (
@@ -271,7 +271,7 @@ export function ImportWizard({ manufacturers }: { manufacturers: string[] }) {
               </button>
             ))}
             {preview.counts.hidden > 0 && (
-              <span className="rounded-full bg-amber-100 px-3 py-1 text-amber-900">{preview.counts.hidden} batch(es) will be hidden</span>
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-900">{preview.counts.hidden} batch(es) will be hidden</span>
             )}
           </div>
           <div className="max-h-96 overflow-auto rounded border border-slate-200">
@@ -315,7 +315,7 @@ export function ImportWizard({ manufacturers }: { manufacturers: string[] }) {
         </div>
       )}
 
-      {error && <p className="text-sm text-red-700">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
     </div>
   );
 }

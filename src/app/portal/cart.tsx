@@ -114,8 +114,8 @@ export function CartPanel({
                 <td className="py-1.5 text-right">
                   <input type="number" min={i.moq} max={i.available_qty ?? undefined} value={qty}
                     onChange={(e) => setQty(i.offer_id, Math.max(0, Math.floor(Number(e.target.value) || 0)))}
-                    className={`input w-24 text-right ${bad ? "border-red-400" : ""}`} />
-                  {bad && <div className="text-xs text-red-700">{i.available_qty === null ? `min. ${i.moq}` : `${i.moq}–${i.available_qty}`}</div>}
+                    className={`input w-24 text-right ${bad ? "input-error" : ""}`} />
+                  {bad && <div className="text-xs text-danger">{i.available_qty === null ? `min. ${i.moq}` : `${i.moq}–${i.available_qty}`}</div>}
                 </td>
                 <td className="py-1.5 text-right">{i.unit_price === null ? "On request" : eur(i.unit_price)}</td>
                 <td className="py-1.5 text-right">{i.unit_price === null ? "–" : eur(qty * Number(i.unit_price))}</td>
@@ -147,7 +147,7 @@ export function CartPanel({
             placeholder="e.g. needed by end of month, partial delivery OK" />
         </div>
       </div>
-      {error && <p className="text-sm text-red-700">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
       <div className="flex flex-wrap items-center gap-3">
         <button className="btn-primary" disabled={busy || !canRequest || problems.length > 0} onClick={onSubmit}>
           {busy ? "Sending…" : "Send request"}

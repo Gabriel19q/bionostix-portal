@@ -45,7 +45,7 @@ export default async function PortalPage() {
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-amber-700">No licence uploaded yet. Please add it below.</p>
+            <p className="notice-attention">No licence uploaded yet. Please add it below.</p>
           )}
           <DocumentUpload companyId={company.id} />
         </div>
@@ -74,7 +74,7 @@ export default async function PortalPage() {
         <p className="text-sm text-slate-600">{company.name}</p>
       </div>
       {!company.can_request && (
-        <div className="card border-amber-300 bg-amber-50 text-sm text-amber-900">
+        <div className="notice-attention">
           Your licence on file expired on {company.license_expires_on}. Please send us the renewed licence to see current
           stock and to request products.
         </div>

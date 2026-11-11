@@ -49,7 +49,7 @@ export default async function EditOfferPage({ params }: { params: Promise<{ id: 
           coa_available: offer.coa_available,
         }}
       />
-      <form action={offerAction} className="card flex flex-wrap items-center justify-between gap-3 border-red-200">
+      <form action={offerAction} className="card flex flex-wrap items-center justify-between gap-3">
         <input type="hidden" name="offer_id" value={offer.id} />
         <p className="text-sm text-slate-600">
           Delete this batch permanently. If it appears in a customer request, it is hidden instead.
