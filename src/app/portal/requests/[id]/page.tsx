@@ -6,7 +6,7 @@ import { displayDate, displayDateTime, eur } from "@/lib/format";
 import { DOC_TYPE_LABEL, SELLER_LABEL, STATUS_HINT, STATUS_LABEL, StatusBadge, type RequestStatus } from "@/lib/status";
 import { respondAction } from "../../actions";
 
-type Req = { id: string; number: string; status: RequestStatus; seller: string | null; customer_comment: string | null; delivery_country: string | null; delivery_deadline: string | null; created_at: string };
+type Req = { id: string; number: string; status: RequestStatus; seller: string | null; customer_comment: string | null; delivery_country: string | null; delivery_deadline: string | null; payment_due_date: string | null; created_at: string };
 type Item = { id: string; trade_name: string; strength: string | null; pack_size: string | null; manufacturer: string; batch: string; expiry_date: string | null; min_expiry_date: string | null; requested_qty: number; unit_price_snapshot: number | null; confirmed_qty: number | null; confirmed_unit_price: number | null };
 type History = { id: number; new_status: RequestStatus; note: string | null; created_at: string };
 type Doc = { id: string; storage_path: string; file_name: string; doc_type: string; created_at: string };
@@ -42,13 +42,13 @@ export default async function RequestDetailPage({
   const priceOf = (l: Item) => l.confirmed_unit_price ?? l.unit_price_snapshot;
   const total = lines.reduce((s, l) => s + (l.confirmed_qty ?? l.requested_qty) * Number(priceOf(l) ?? 0), 0);
   const openPrices = lines.some((l) => priceOf(l) === null);
-  const canCancel = ["new", "in_review", "changes_proposed"].includes(r.status);
+  const canCancel = ["new", "in_review", "changes_proposed", "changes_accepted"].includes(r.status);
 
   return (
     <div className="space-y-6">
       {sent && (
         <div className="notice-success">
-          Thank you, your order request was sent. We check availability with the manufacturer and confirm your order.
+          Thank you, your order request was sent. We check availability with the manufacturer and confirm your order with the proforma invoice.
         </div>
       )}
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -67,12 +67,18 @@ export default async function RequestDetailPage({
 
       <div className="card space-y-3">
         <p className="text-sm">{STATUS_HINT[r.status]}</p>
+        {r.status === "proforma_sent" && r.payment_due_date && (
+          <div className="notice-attention">
+            <p className="font-bold">Please pay the deposit by {displayDate(r.payment_due_date)}.</p>
+            <p>If no payment is received by then, the proforma invoice will be cancelled.</p>
+          </div>
+        )}
         {r.status === "changes_proposed" && (
           <div className="flex flex-wrap gap-2">
             <form action={respondAction}>
               <input type="hidden" name="request_id" value={r.id} />
               <input type="hidden" name="accept" value="true" />
-              <button className="btn-primary">Accept changes and confirm order</button>
+              <button className="btn-primary">Accept changes</button>
             </form>
           </div>
         )}

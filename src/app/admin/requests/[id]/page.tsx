@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getSession } from "@/lib/session";
-import { displayDate, displayDateTime, eur } from "@/lib/format";
+import { displayDate, displayDateTime, eur, today } from "@/lib/format";
 import {
   DOC_TYPE_LABEL, SELLER_LABEL, STATUS_FLOW, STATUS_LABEL, StatusBadge, type RequestStatus,
 } from "@/lib/status";
@@ -26,14 +26,15 @@ type Item = {
 };
 type Req = {
   id: string; number: string; status: RequestStatus; seller: string | null; customer_comment: string | null;
-  delivery_country: string | null; delivery_deadline: string | null; internal_note: string | null; created_at: string;
+  delivery_country: string | null; delivery_deadline: string | null; payment_due_date: string | null; internal_note: string | null; created_at: string;
   companies: { id: string; name: string; country: string; contact_name: string | null; contact_email: string | null; contact_phone: string | null };
 };
 
 // Suggested next step; "Changes to accept" is only chosen on purpose, so it is skipped here.
 function nextStatus(s: RequestStatus): RequestStatus {
-  const flow = STATUS_FLOW.filter((x) => x !== "changes_proposed");
-  const i = flow.indexOf(s === "changes_proposed" ? "in_review" : s);
+  // Changes are only proposed on purpose; from "in review" the usual next step is the proforma
+  const flow = STATUS_FLOW.filter((x) => x !== "changes_proposed" && x !== "changes_accepted");
+  const i = flow.indexOf(s === "changes_proposed" || s === "changes_accepted" ? "in_review" : s);
   return i >= 0 && i < flow.length - 1 ? flow[i + 1] : s;
 }
 
@@ -48,7 +49,7 @@ export default async function AdminRequestPage({
   const { supabase } = await getSession();
   const [{ data: req }, { data: items }, { data: history }, { data: docs }] = await Promise.all([
     supabase.from("requests")
-      .select("id, number, status, seller, customer_comment, delivery_country, delivery_deadline, internal_note, created_at, companies(id, name, country, contact_name, contact_email, contact_phone)")
+      .select("id, number, status, seller, customer_comment, delivery_country, delivery_deadline, payment_due_date, internal_note, created_at, companies(id, name, country, contact_name, contact_email, contact_phone)")
       .eq("id", id).maybeSingle<Req>(),
     supabase.from("request_items")
       .select("id, requested_qty, min_expiry_date, unit_price_snapshot, confirmed_qty, confirmed_unit_price, request_item_costs(purchase_price_snapshot), offers(batch, expiry_date, available_qty, coa_available, products(trade_name, strength, pack_size, is_narcotic, manufacturers(name)))")
@@ -57,6 +58,7 @@ export default async function AdminRequestPage({
     supabase.from("documents").select("id, storage_path, file_name, doc_type, created_at").eq("request_id", id).order("created_at"),
   ]);
   if (!req) notFound();
+  const overdue = req.status === "proforma_sent" && !!req.payment_due_date && req.payment_due_date < today();
   const lines = items ?? [];
   const files = docs ?? [];
   const { data: signed } = files.length
@@ -94,6 +96,14 @@ export default async function AdminRequestPage({
           {req.delivery_deadline && (
             <p className="mt-1 text-sm"><span className="font-bold">Delivery deadline:</span> {displayDate(req.delivery_deadline)}</p>
           )}
+          {req.payment_due_date && (
+            <p className="mt-1 text-sm">
+              <span className="font-bold">Reserved until / payment due:</span>{" "}
+              {overdue ? (
+                <span className="font-bold text-danger">{displayDate(req.payment_due_date)} · Payment overdue: cancel the proforma?</span>
+              ) : displayDate(req.payment_due_date)}
+            </p>
+          )}
         </div>
         <StatusBadge status={req.status} viewer="admin" />
       </div>
@@ -104,14 +114,22 @@ export default async function AdminRequestPage({
       )}
       {pageError === "changes" && (
         <div className="notice-error">
-          Confirmed quantities or prices differ from the order request. Set “Changes to accept” instead, so the customer
-          can accept the changes. The order is confirmed when they accept.
+          Confirmed quantities or prices differ from the order request. Set “Changes to accept” first, so the customer
+          can accept the changes. Send the proforma after they accepted.
         </div>
       )}
       {pageError === "nochanges" && (
         <div className="notice-error">
-          Nothing differs from the order request. Set “Order confirmed” instead.
+          Nothing differs from the order request. Upload the proforma and set “Proforma sent” instead.
         </div>
+      )}
+      {pageError === "due" && (
+        <div className="notice-error">
+          Enter the date until which the manufacturer reserves the goods. It is the payment deadline on the proforma.
+        </div>
+      )}
+      {pageError === "proforma" && (
+        <div className="notice-error">Upload the proforma invoice below (type “Proforma invoice”) before setting “Proforma sent”.</div>
       )}
       {req.customer_comment && (
         <div className="card text-sm"><span className="font-medium">Customer comment:</span> {req.customer_comment}</div>
@@ -205,6 +223,15 @@ export default async function AdminRequestPage({
             </select>
           </div>
           <div>
+            <label className="label" htmlFor="payment_due">Reserved until = payment deadline (for “Proforma sent”)</label>
+            <input id="payment_due" name="payment_due" type="date" className="input" min={today()}
+              defaultValue={req.payment_due_date ?? ""} />
+            <p className="mt-1 text-xs text-slate-600">
+              Date until which the manufacturer reserves the goods (e.g. 3 days). The customer sees it only as payment
+              deadline: without payment by then, the proforma is cancelled. State the same deadline on the proforma PDF.
+            </p>
+          </div>
+          <div>
             <label className="label">Message to the customer (optional, visible to them)</label>
             <textarea name="message" rows={3} className="input" placeholder="e.g. Batch B2 only 80 packs available, confirmed 80." />
           </div>
@@ -213,9 +240,9 @@ export default async function AdminRequestPage({
           </label>
           <button className="btn-primary">Update status</button>
           <p className="text-xs text-slate-500">
-            “Order confirmed” is only possible if nothing differs from the order request (it forms the contract). If you changed
-            quantities or prices, set “Changes to accept”: the order is confirmed when the customer accepts. Upload the proforma
-            below before setting “Proforma sent”.
+            The proforma is the order confirmation (it forms the contract). If you changed quantities or prices, set
+            “Changes to accept” first and send the proforma once the customer accepted. Upload the proforma below and enter
+            the payment deadline before setting “Proforma sent”.
           </p>
         </form>
 

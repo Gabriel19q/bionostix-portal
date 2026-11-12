@@ -41,22 +41,23 @@ Feld `requests.seller`: bionostix_germany | sanicura | manufacturer (Rechtsmodel
 Verkaufspreis = round(EK × (1 + Aufschlag/100), 2). Aufschlag = Override der Angebotsposition, sonst Standardaufschlag der Kundengruppe. Preis wird beim Absenden der Anfrage gespeichert (Snapshot); endgültiger Preis wird im Angebot bestätigt.
 
 ## Anfrage-Status
-new → in_review → order_confirmed → proforma_sent → deposit_paid → ordered → shipped → completed.
-Mit Änderungen: in_review → changes_proposed → (Kunde nimmt an) → order_confirmed. „Order confirmed“ direkt nur, wenn Mengen und Preise exakt der Anfrage entsprechen.
-Abbrüche: declined (wir, nicht lieferbar), cancelled (Kunde; aus new/in_review/changes_proposed, also nur vor der Bestellbestätigung).
-Kunde handelt bei: new (anlegen), Annahme der Änderungen (→ order_confirmed), cancelled. Alles andere Admin. Jede Änderung wird mit Zeitstempel (Sekunden) protokolliert.
+new → in_review → proforma_sent (= Bestellbestätigung/Vertrag) → deposit_paid → ordered → shipped → completed.
+Mit Änderungen: in_review → changes_proposed → (Kunde nimmt an) changes_accepted → proforma_sent. „Proforma sent“ direkt aus in_review nur, wenn Mengen und Preise exakt der Anfrage entsprechen. Für „Proforma sent“ müssen das PI-Dokument hochgeladen und die Zahlungsfrist eingetragen sein.
+Abbrüche: declined (wir, nicht lieferbar), cancelled (Kunde; aus new/in_review/changes_proposed/changes_accepted, also nur vor der PI).
+Kunde handelt bei: new (anlegen), Annahme der Änderungen (→ changes_accepted), cancelled. Alles andere Admin. Jede Änderung wird mit Zeitstempel (Sekunden) protokolliert.
 
 ## Bestellablauf (Feedback 11.11.2026)
 1. Angezeigte Produkte sind ein freibleibendes Angebot.
 2. Die Bestellanfrage des Kunden ist ein verbindliches Kaufangebot zu den angezeigten Bedingungen; Stornierung bis zum Erhalt der Bestellbestätigung möglich. Kunde bestätigt die AGB per Häkchen.
-3. Wir klären die Verfügbarkeit beim Hersteller (Hersteller reserviert x Tage unverbindlich).
-4. Bestellbestätigung an den Kunden = Vertrag (nach unseren AGB). Bei Änderungen muss der Kunde zuerst annehmen.
-5. Proforma (PI) mit Anzahlung an den Kunden; nach Eingang der Anzahlung Bestellung beim Hersteller innerhalb der Reservierungsfrist.
+3. Wir klären Bestand und Preis beim Hersteller; der Hersteller reserviert die Ware unverbindlich (i. d. R. 3 Tage).
+4. Bei Änderungen (Menge/Preis) muss der Kunde zuerst annehmen.
+5. Die Proforma (PI) mit Anzahlung ist die Bestellbestätigung = Vertrag (nach unseren AGB). Zahlungsfrist auf der PI = Ende der Reservierung („Reserved until“, nur im Admin so benannt; Kunde sieht nur die Zahlungsfrist). Ohne Zahlung bis zur Frist wird die PI storniert: Das Portal markiert „Payment overdue“, Admins stornieren von Hand.
+6. Nach Eingang der Anzahlung Bestellung beim Hersteller innerhalb der Reservierungsfrist.
 AGB-Seite /terms ist ein Platzhalter, bis der Anwalt die AGB liefert.
 
 ## Compliance
 - Produkte/Preise nur nach Login (Fachkreise, HWG). Öffentliche Seite: wer wir sind + „Request access“.
-- Vertrag entsteht erst mit unserer Bestellbestätigung (bzw. mit der Annahme geänderter Bedingungen durch den Kunden), siehe Bestellablauf.
+- Vertrag entsteht erst mit unserer Proforma (Bestellbestätigung), siehe Bestellablauf.
 - BtM-Produkte: sichtbar, gekennzeichnet, nur nach Einzelprüfung lieferbar. Kühlware gekennzeichnet.
 - Daten in der EU (Supabase Frankfurt, Vercel fra1). Keine Patientendaten.
 - Rechtstexte (Impressum, Datenschutz, B2B-Nutzungsbedingungen) liefert der Anwalt.

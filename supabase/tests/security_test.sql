@@ -139,16 +139,26 @@ select public.admin_set_request_status((select id from public.requests), 'in_rev
 select public.admin_set_request_status((select id from public.requests), 'changes_proposed', 'Only 15 packs available');
 select pg_temp.as_user('00000000-0000-0000-0000-00000000000c');
 select public.customer_respond((select id from public.get_my_requests()), true);
-select pg_temp.expect((select status from public.get_my_requests()) = 'order_confirmed', 'customer accepted changes: order confirmed');
-select pg_temp.expect_error($$select public.customer_respond((select id from public.get_my_requests()), false)$$, 'cancel after order confirmation');
+select pg_temp.expect((select status from public.get_my_requests()) = 'changes_accepted', 'customer accepted changes');
 select pg_temp.expect((select count(*) from public.get_my_request_history()) = 4, 'four history entries');
 select pg_temp.expect((select note from public.get_my_request_history() where new_status = 'changes_proposed') = 'Only 15 packs available', 'admin note stored');
 select pg_temp.expect(
   (select array_agg(new_status::text order by created_at, id) from public.get_my_request_history())
-    = array['new', 'in_review', 'changes_proposed', 'order_confirmed'],
+    = array['new', 'in_review', 'changes_proposed', 'changes_accepted'],
   'history in time order');
 select pg_temp.expect(
   (select count(distinct created_at) from public.get_my_request_history()) = 4, 'every history entry has its own timestamp');
+-- Proforma = order confirmation: needs the payment deadline and the uploaded proforma
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000a');
+select pg_temp.expect_error($$select public.admin_set_request_status((select id from public.requests), 'proforma_sent')$$, 'proforma without payment deadline');
+update public.requests set payment_due_date = current_date + 3;
+select pg_temp.expect_error($$select public.admin_set_request_status((select id from public.requests), 'proforma_sent')$$, 'proforma without document');
+insert into public.documents (storage_path, file_name, doc_type, request_id)
+  select 'request/' || id || '/pi.pdf', 'pi.pdf', 'proforma', id from public.requests;
+select public.admin_set_request_status((select id from public.requests), 'proforma_sent');
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000c');
+select pg_temp.expect((select payment_due_date from public.get_my_requests()) = current_date + 3, 'customer sees payment deadline');
+select pg_temp.expect_error($$select public.customer_respond((select id from public.get_my_requests()), false)$$, 'cancel after proforma (order confirmation)');
 reset role;
 
 -- Storage ---------------------------------------------------------------------
@@ -166,7 +176,7 @@ select pg_temp.expect_error(
 select pg_temp.expect_error(
   $$select public.add_company_document('company/' || public.my_company_id() || '/p.pdf', 'p.pdf', 'proforma')$$,
   'customer registers a proforma');
-select pg_temp.expect((select count(*) from public.get_my_documents()) = 1, 'customer sees own document');
+select pg_temp.expect((select count(*) from public.get_my_documents() where company_id is not null) = 1, 'customer sees own document');
 reset role;
 
 -- Request documents: admin uploads a proforma, only the requesting company can read it

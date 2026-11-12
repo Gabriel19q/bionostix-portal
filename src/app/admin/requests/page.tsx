@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { getSession } from "@/lib/session";
-import { displayDate, eur } from "@/lib/format";
+import { displayDate, eur, today } from "@/lib/format";
 import { StatusBadge, type RequestStatus } from "@/lib/status";
 
 type Row = {
   id: string;
   number: string;
   status: RequestStatus;
+  payment_due_date: string | null;
   created_at: string;
   updated_at: string;
   delivery_country: string | null;
@@ -27,7 +28,7 @@ export default async function AdminRequestsPage({ searchParams }: { searchParams
   const { supabase } = await getSession();
   const { data } = await supabase
     .from("requests")
-    .select("id, number, status, created_at, updated_at, delivery_country, companies(name), request_items(requested_qty, unit_price_snapshot, confirmed_qty, confirmed_unit_price, request_item_costs(purchase_price_snapshot))")
+    .select("id, number, status, payment_due_date, created_at, updated_at, delivery_country, companies(name), request_items(requested_qty, unit_price_snapshot, confirmed_qty, confirmed_unit_price, request_item_costs(purchase_price_snapshot))")
     .order("created_at", { ascending: false })
     .returns<Row[]>();
 
@@ -93,7 +94,12 @@ export default async function AdminRequestsPage({ searchParams }: { searchParams
                     {eur(marginValue - cost)}
                     {marginValue > 0 && <span className="text-xs text-slate-500"> ({Math.round(((marginValue - cost) / marginValue) * 100)}%)</span>}
                   </td>
-                  <td className="px-3 py-2"><StatusBadge status={r.status} viewer="admin" /></td>
+                  <td className="px-3 py-2">
+                    <StatusBadge status={r.status} viewer="admin" />
+                    {r.status === "proforma_sent" && r.payment_due_date && r.payment_due_date < today() && (
+                      <div className="mt-1 text-xs font-bold text-danger">Payment overdue since {displayDate(r.payment_due_date)}</div>
+                    )}
+                  </td>
                 </tr>
               );
             })}

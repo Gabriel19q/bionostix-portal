@@ -32,13 +32,14 @@ export default function TermsPage() {
           </li>
           <li>
             We check availability with the manufacturer. If we can only supply with changes (for example quantity or
-            price), we send you the changes and the order is confirmed when you accept them.
+            price), we send you the changes for your acceptance.
           </li>
-          <li>A contract is formed when you receive our order confirmation.</li>
           <li>
-            We then send a proforma invoice with a deposit. We place the order with the manufacturer once the deposit
-            is received.
+            Our proforma invoice is the order confirmation: a contract is formed when you receive it. The proforma
+            states the deposit and a payment deadline. If no payment is received by that date, the proforma invoice is
+            cancelled.
           </li>
+          <li>We place the order with the manufacturer once the deposit is received.</li>
         </ol>
       </section>
 

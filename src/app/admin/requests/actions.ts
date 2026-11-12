@@ -6,6 +6,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSession } from "@/lib/session";
 import { emails, sendEmail } from "@/lib/email";
 import { parseNumber, parseText } from "@/lib/parse";
+import { displayDate, today } from "@/lib/format";
 import { DOC_TYPE_LABEL, STATUS_HINT, STATUS_LABEL, type RequestStatus } from "@/lib/status";
 
 async function requireAdmin() {
@@ -65,10 +66,10 @@ export async function changeStatus(formData: FormData) {
   const notify = formData.get("notify") === "on";
   if (!(status in STATUS_LABEL)) throw new Error("Unknown status");
 
-  // Confirming the order or proposing changes: empty confirmed fields mean "as requested".
-  // A direct order confirmation must match the request exactly; anything else needs the
-  // customer's acceptance first ("Changes to accept"), because the confirmation forms the contract.
-  if (status === "order_confirmed" || status === "changes_proposed") {
+  // Proposing changes or sending the proforma (= order confirmation, contract): empty confirmed fields mean
+  // "as requested". The proforma may only differ from the request if the customer accepted the changes first.
+  if (status === "proforma_sent" || status === "changes_proposed") {
+    const { data: current } = await supabase.from("requests").select("status").eq("id", id).single();
     const { data: items } = await supabase
       .from("request_items").select("id, requested_qty, unit_price_snapshot, confirmed_qty, confirmed_unit_price")
       .eq("request_id", id);
@@ -81,8 +82,21 @@ export async function changeStatus(formData: FormData) {
     }));
     if (lines.some((l) => l.price === null)) redirect(`/admin/requests/${id}?error=prices`);
     const changed = lines.some((l) => l.qty !== l.requestedQty || Number(l.price) !== Number(l.requestedPrice));
-    if (status === "order_confirmed" && changed) redirect(`/admin/requests/${id}?error=changes`);
+    if (status === "proforma_sent" && changed && current?.status !== "changes_accepted") {
+      redirect(`/admin/requests/${id}?error=changes`);
+    }
     if (status === "changes_proposed" && !changed) redirect(`/admin/requests/${id}?error=nochanges`);
+
+    if (status === "proforma_sent") {
+      // Reservation at the manufacturer = payment deadline on the proforma
+      const due = String(formData.get("payment_due") ?? "");
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(due) || due < today()) redirect(`/admin/requests/${id}?error=due`);
+      const { data: docs } = await supabase.from("documents").select("id").eq("request_id", id).eq("doc_type", "proforma");
+      if (!docs?.length) redirect(`/admin/requests/${id}?error=proforma`);
+      const { error: dueError } = await supabase.from("requests").update({ payment_due_date: due }).eq("id", id);
+      if (dueError) throw new Error(dueError.message);
+    }
+
     for (const l of lines) {
       await supabase.from("request_items").update({ confirmed_qty: l.qty, confirmed_unit_price: l.price }).eq("id", l.id);
     }
@@ -95,7 +109,12 @@ export async function changeStatus(formData: FormData) {
 
   if (notify) {
     const { number, to } = await customerEmailsFor(supabase, id);
-    await sendEmail({ to, ...emails.statusChanged(number, STATUS_LABEL[status], STATUS_HINT[status], message, id) });
+    let hint = STATUS_HINT[status];
+    if (status === "proforma_sent") {
+      const due = displayDate(String(formData.get("payment_due")));
+      hint += ` Please pay the deposit by ${due}. If no payment is received by then, the proforma invoice will be cancelled.`;
+    }
+    await sendEmail({ to, ...emails.statusChanged(number, STATUS_LABEL[status], hint, message, id) });
   }
   refresh(id);
 }

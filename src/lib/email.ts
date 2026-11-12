@@ -40,8 +40,10 @@ export const emails = {
     text: `${company} sent order request ${number} with ${lines} line(s).\n\nOpen it: ${SITE}/admin/requests/${id}${footer}`,
   }),
   customerResponded: (number: string, company: string, accepted: boolean, id: string) => ({
-    subject: `${company} ${accepted ? "accepted the changes" : "cancelled"} ${number}`,
-    text: `${company} ${accepted ? "accepted the proposed changes; the order is confirmed for" : "cancelled"} request ${number}.\n\nOpen it: ${SITE}/admin/requests/${id}${footer}`,
+    subject: accepted
+      ? `${company} accepted the changes for ${number}: please send the proforma`
+      : `${company} cancelled ${number}`,
+    text: `${company} ${accepted ? "accepted the proposed changes for" : "cancelled"} request ${number}.\n\nOpen it: ${SITE}/admin/requests/${id}${footer}`,
   }),
   statusChanged: (number: string, statusLabel: string, hint: string, message: string | null, id: string) => ({
     subject: `Request ${number}: ${statusLabel}`,
