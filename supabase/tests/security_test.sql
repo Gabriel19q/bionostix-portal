@@ -209,8 +209,10 @@ select pg_temp.expect_error(
 select pg_temp.expect(array_length(public.submit_request(jsonb_build_array(
   jsonb_build_object('offer_id', (select offer_id from public.get_catalog() where trade_name = 'Upon Request Product'), 'qty', 5000,
     'min_expiry', (current_date + 365)::text),
-  jsonb_build_object('offer_id', (select offer_id from public.get_catalog() where batch = 'B001'), 'qty', 20)),
+  jsonb_build_object('offer_id', (select offer_id from public.get_catalog() where batch = 'B001'), 'qty', 20, 'coa', true)),
   null, 'Iraq', current_date + 30), 1) = 2, 'mixed sellers: two request ids returned');
+select pg_temp.expect((select coa_requested from public.get_my_request_items() where trade_name = 'Testamol'), 'COA wish stored per line');
+select pg_temp.expect((select not coa_requested from public.get_my_request_items() where trade_name = 'Upon Request Product'), 'no COA wish by default');
 select pg_temp.expect((select count(*) from public.get_my_requests()) = 2, 'one request per seller');
 select pg_temp.expect((select array_agg(seller::text order by seller::text) from public.get_my_requests())
   = array['bionostix_germany', 'sanicura'], 'each request carries its seller');

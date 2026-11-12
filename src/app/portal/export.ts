@@ -13,18 +13,17 @@ export async function downloadCatalogExcel(items: CatalogItem[], opts: { include
     "Product", "Active ingredient", "Strength", "Dosage form", "Pack size", "PZN", "Manufacturer", "Seller",
     "Batch", "Expiry date", "Available (packs)", "MOQ (packs)",
     ...(opts.includePrices ? ["Price per pack (EUR)"] : []),
-    "Incoterm", "COA", "Rx", "Cold chain", "Narcotic", "Stock as of",
+    "Incoterm", "Stock as of",
   ];
 
   const toDate = (iso: string | null) => (iso ? new Date(`${iso}T00:00:00Z`) : "");
-  const yesNo = (v: boolean | null, unknown = "") => (v === true ? "yes" : v === false ? "no" : unknown);
 
   const rows = items.map((i) => [
     i.trade_name, i.active_ingredient ?? "", i.strength ?? "", i.dosage_form ?? "", i.pack_size ?? "", i.pzn ?? "",
     i.manufacturer, SELLER_LABEL[i.seller] ?? i.seller, i.batch || "", toDate(i.expiry_date),
     i.available_qty ?? "on request", i.moq,
     ...(opts.includePrices ? [i.unit_price === null ? "on request" : Number(i.unit_price)] : []),
-    i.incoterm, yesNo(i.coa_available, "on request"), yesNo(i.is_rx), yesNo(i.is_cold_chain), yesNo(i.is_narcotic),
+    i.incoterm,
     toDate(i.stock_as_of),
   ]);
 

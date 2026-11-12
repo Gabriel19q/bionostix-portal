@@ -5,7 +5,7 @@ import { getSession } from "@/lib/session";
 import { adminEmails, emails, sendEmail } from "@/lib/email";
 import { logActivity } from "@/lib/activity";
 
-type CartLine = { offer_id: string; qty: number; min_expiry?: string };
+type CartLine = { offer_id: string; qty: number; min_expiry?: string; coa?: boolean };
 
 export async function submitRequestAction(input: {
   items: CartLine[]; comment: string; deliveryCountry: string; deliveryDeadline: string; acceptedTerms: boolean;
@@ -19,6 +19,7 @@ export async function submitRequestAction(input: {
       offer_id: i.offer_id,
       qty: i.qty,
       ...(i.min_expiry && /^\d{4}-\d{2}-\d{2}$/.test(i.min_expiry) ? { min_expiry: i.min_expiry } : {}),
+      ...(i.coa === true ? { coa: true } : {}),
     }));
   if (items.length === 0) return { ok: false as const, error: "Your request is empty." };
   if (!input.acceptedTerms) return { ok: false as const, error: "Please accept the terms & conditions." };

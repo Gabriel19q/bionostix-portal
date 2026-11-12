@@ -67,6 +67,7 @@ export function CartPanel({
   const [country, setCountry] = useState(matchCountry(defaultCountry));
   const [deadline, setDeadline] = useState("");
   const [minExpiry, setMinExpiry] = useState<Record<string, string>>({});
+  const [coa, setCoa] = useState<Record<string, boolean>>({});
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -89,7 +90,9 @@ export function CartPanel({
     setBusy(true);
     setError(null);
     const res = await submitRequestAction({
-      items: lines.map((i) => ({ offer_id: i.offer_id, qty: cart[i.offer_id], min_expiry: minExpiry[i.offer_id] || undefined })),
+      items: lines.map((i) => ({
+        offer_id: i.offer_id, qty: cart[i.offer_id], min_expiry: minExpiry[i.offer_id] || undefined, coa: !!coa[i.offer_id],
+      })),
       comment,
       deliveryCountry: country,
       deliveryDeadline: deadline,
@@ -140,6 +143,11 @@ export function CartPanel({
                 <td className="py-1.5">
                   {i.trade_name} <span className="text-xs text-slate-500">{i.strength} {i.pack_size}</span>
                   <div className="text-xs text-slate-600">Seller: {SELLER_LABEL[i.seller] ?? i.seller}</div>
+                  <label className="mt-1 flex items-center gap-2 text-xs">
+                    <input type="checkbox" checked={!!coa[i.offer_id]}
+                      onChange={(e) => setCoa({ ...coa, [i.offer_id]: e.target.checked })} />
+                    COA required (certificate of analysis)
+                  </label>
                 </td>
                 <td className="py-1.5 text-xs" data-label="Batch / expiry">
                   <div>

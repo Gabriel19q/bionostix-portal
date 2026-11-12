@@ -10,7 +10,7 @@ Erfolg: ≥ 3 Anfragen von Sanicura über das Portal, Anfrage → Proforma < 1 A
 ## Umfang MVP
 - Zugang beantragen (Konto + Firmendaten + Upload Großhandelserlaubnis/Importlizenz), Freigabe durch Admin
 - Login nur für freigegebene Kunden; nicht freigegebene sehen „pending approval“
-- Katalog: Produkt, Hersteller, Charge, Verfall, verfügbare Menge, Mindestmenge, Verkaufspreis, Incoterm, Stand der Bestandsabfrage
+- Katalog (Spalten): Produkt (Stärke, Form, PZN), Wirkstoff, Packungsgröße, Hersteller, Verkäufer, Verfall, Preis/Packung, Verfügbar, MOQ, Incoterm (mit Stand der Bestandsabfrage). Charge nicht im Katalog, nur in Bestellung/Anfrage. COA-Wunsch per Häkchen je Zeile in der Bestellanfrage.
 - Bestandspflege per Excel/CSV-Import mit Spaltenzuordnung und Vorschau
 - Einkaufspreis + Aufschlag → Verkaufspreis automatisch (nur Admin sieht EK und Marge)
 - Kundengruppen mit eigenem Standardaufschlag (z.B. EU Wholesale, Export MENA)
@@ -58,7 +58,7 @@ AGB-Seite /terms ist ein Platzhalter, bis der Anwalt die AGB liefert.
 ## Compliance
 - Produkte/Preise nur nach Login (Fachkreise, HWG). Öffentliche Seite: wer wir sind + „Request access“.
 - Vertrag entsteht erst mit unserer Proforma (Bestellbestätigung), siehe Bestellablauf.
-- BtM-Produkte: sichtbar, gekennzeichnet, nur nach Einzelprüfung lieferbar. Kühlware gekennzeichnet.
+- BtM-Produkte: nur nach Einzelprüfung lieferbar (Hinweis unter dem Katalog; Admin sieht „BtM: check permits“). Entscheidung 12.11.2026: Kennzeichnungen Rx, Kühlware und BtM werden im Kundenkatalog nicht angezeigt; die Angaben bleiben intern am Produkt gespeichert.
 - Daten in der EU (Supabase Frankfurt, Vercel fra1). Keine Patientendaten.
 - Rechtstexte (Impressum, Datenschutz, B2B-Nutzungsbedingungen) liefert der Anwalt.
 

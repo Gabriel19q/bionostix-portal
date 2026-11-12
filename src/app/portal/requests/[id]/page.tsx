@@ -7,7 +7,7 @@ import { DOC_TYPE_LABEL, SELLER_LABEL, STATUS_HINT, STATUS_LABEL, StatusBadge, t
 import { respondAction } from "../../actions";
 
 type Req = { id: string; number: string; status: RequestStatus; seller: string | null; customer_comment: string | null; delivery_country: string | null; delivery_deadline: string | null; payment_due_date: string | null; created_at: string };
-type Item = { id: string; trade_name: string; strength: string | null; pack_size: string | null; manufacturer: string; batch: string; expiry_date: string | null; min_expiry_date: string | null; requested_qty: number; unit_price_snapshot: number | null; confirmed_qty: number | null; confirmed_unit_price: number | null };
+type Item = { id: string; trade_name: string; strength: string | null; pack_size: string | null; manufacturer: string; batch: string; expiry_date: string | null; min_expiry_date: string | null; requested_qty: number; unit_price_snapshot: number | null; confirmed_qty: number | null; confirmed_unit_price: number | null; coa_requested: boolean };
 type History = { id: number; new_status: RequestStatus; note: string | null; created_at: string };
 type Doc = { id: string; storage_path: string; file_name: string; doc_type: string; created_at: string };
 
@@ -105,6 +105,7 @@ export default async function RequestDetailPage({
                   <td className="px-3 py-2">
                     <div className="font-medium">{l.trade_name}</div>
                     <div className="text-xs text-slate-500">{[l.strength, l.pack_size, l.manufacturer].filter(Boolean).join(" · ")}</div>
+                    {l.coa_requested && <div className="text-xs font-bold text-slate-700">COA requested</div>}
                   </td>
                   <td className="px-3 py-2 font-mono text-xs" data-label="Batch">{l.batch || "–"}</td>
                   <td className="px-3 py-2" data-label="Expiry">

@@ -13,6 +13,7 @@ type Item = {
   id: string;
   requested_qty: number;
   min_expiry_date: string | null;
+  coa_requested: boolean;
   unit_price_snapshot: number | null;
   confirmed_qty: number | null;
   confirmed_unit_price: number | null;
@@ -53,7 +54,7 @@ export default async function AdminRequestPage({
       .select("id, number, status, seller, customer_comment, delivery_country, delivery_deadline, payment_due_date, internal_note, created_at, companies(id, name, country, contact_name, contact_email, contact_phone)")
       .eq("id", id).maybeSingle<Req>(),
     supabase.from("request_items")
-      .select("id, requested_qty, min_expiry_date, unit_price_snapshot, confirmed_qty, confirmed_unit_price, request_item_costs(purchase_price_snapshot), offers(batch, expiry_date, available_qty, coa_available, products(trade_name, strength, pack_size, is_narcotic, manufacturers(name)))")
+      .select("id, requested_qty, min_expiry_date, coa_requested, unit_price_snapshot, confirmed_qty, confirmed_unit_price, request_item_costs(purchase_price_snapshot), offers(batch, expiry_date, available_qty, coa_available, products(trade_name, strength, pack_size, is_narcotic, manufacturers(name)))")
       .eq("request_id", id).returns<Item[]>(),
     supabase.from("request_status_history").select("id, new_status, note, created_at, changed_by").eq("request_id", id).order("created_at").order("id"),
     supabase.from("documents").select("id, storage_path, file_name, doc_type, created_at").eq("request_id", id).order("created_at"),
@@ -175,6 +176,7 @@ export default async function AdminRequestPage({
                         {[p.strength, p.pack_size, p.manufacturers?.name].filter(Boolean).join(" · ")}
                         {p.is_narcotic && <span className="ml-1 font-bold text-slate-900">· BtM: check permits</span>}
                       </div>
+                      {l.coa_requested && <div className="mt-0.5 text-xs"><span className="mark-attention font-bold">COA requested</span></div>}
                     </td>
                     <td className="px-3 py-2 font-mono text-xs">
                       {l.offers.batch || "–"}<div className="font-sans text-slate-500">exp. {displayDate(l.offers.expiry_date)}</div>

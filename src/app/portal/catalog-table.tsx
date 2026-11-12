@@ -48,7 +48,6 @@ export function CatalogTable({ items, canRequest, defaultCountry }: {
   const [q, setQ] = useState("");
   const [manufacturer, setManufacturer] = useState("");
   const [sort, setSort] = useState<SortKey>("name");
-  const [coaOnly, setCoaOnly] = useState(false);
 
   async function exportRows(list: CatalogItem[], mode: "all" | "view" | "selected") {
     if (list.length === 0) return;
@@ -67,7 +66,6 @@ export function CatalogTable({ items, canRequest, defaultCountry }: {
     const needle = q.trim().toLowerCase();
     const filtered = items.filter((i) => {
       if (manufacturer && i.manufacturer !== manufacturer) return false;
-      if (coaOnly && i.coa_available !== true) return false;
       if (!needle) return true;
       return [i.trade_name, i.active_ingredient, i.strength, i.pzn, i.manufacturer]
         .some((v) => v?.toLowerCase().includes(needle));
@@ -78,7 +76,7 @@ export function CatalogTable({ items, canRequest, defaultCountry }: {
       if (sort === "price") return (a.unit_price ?? Infinity) - (b.unit_price ?? Infinity);
       return a.trade_name.localeCompare(b.trade_name) || exp(a).localeCompare(exp(b));
     });
-  }, [items, q, manufacturer, sort, coaOnly]);
+  }, [items, q, manufacturer, sort]);
 
   if (items.length === 0) {
     return <div className="card text-sm text-slate-600">No products are available at the moment. Please check back soon.</div>;
@@ -107,11 +105,7 @@ export function CatalogTable({ items, canRequest, defaultCountry }: {
             <option value="price">Price</option>
           </select>
         </div>
-        <label className="flex items-center gap-2 pb-2 text-sm">
-          <input type="checkbox" checked={coaOnly} onChange={(e) => setCoaOnly(e.target.checked)} />
-          With COA only
-        </label>
-        <p className="pb-2 text-sm text-slate-500">{rows.length} of {items.length} batches</p>
+        <p className="pb-2 text-sm text-slate-500">{rows.length} of {items.length} offers</p>
       </div>
 
       <div className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
@@ -154,14 +148,14 @@ export function CatalogTable({ items, canRequest, defaultCountry }: {
                   }} />
               </th>
               <th className="px-2.5 py-2">Product</th>
+              <th className="px-2.5 py-2">Active ingredient</th>
+              <th className="px-2.5 py-2">Pack size</th>
               <th className="px-2.5 py-2">Manufacturer</th>
               <th className="px-2.5 py-2">Seller</th>
-              <th className="px-2.5 py-2">Batch</th>
               <th className="px-2.5 py-2">Expiry</th>
+              <th className="px-2.5 py-2 text-right">Price / pack</th>
               <th className="px-2.5 py-2 text-right">Available</th>
               <th className="px-2.5 py-2 text-right">MOQ</th>
-              <th className="px-2.5 py-2 text-right">Price / pack</th>
-              <th className="px-2.5 py-2" title="Certificate of analysis">COA</th>
               <th className="px-2.5 py-2">Incoterm</th>
               {canRequest && <th className="px-2.5 py-2">Request</th>}
             </tr>
@@ -183,21 +177,13 @@ export function CatalogTable({ items, canRequest, defaultCountry }: {
                   <td className="px-2.5 py-2">
                     <div className="font-medium">{i.trade_name}</div>
                     <div className="text-xs text-slate-500">
-                      {[i.active_ingredient, i.strength, i.dosage_form, i.pack_size, i.pzn && `PZN ${i.pzn}`]
-                        .filter(Boolean).join(" · ")}
-                    </div>
-                    <div className="mt-1 flex gap-1">
-                      {i.is_rx && <span className="label-neutral">Rx</span>}
-                      {i.is_cold_chain && <span className="label-neutral">Cold chain</span>}
-                      {i.is_narcotic && (
-                        <span className="label-neutral"
-                          title="Narcotic: supplied only after individual review of permits">Narcotic</span>
-                      )}
+                      {[i.strength, i.dosage_form, i.pzn && `PZN ${i.pzn}`].filter(Boolean).join(" · ")}
                     </div>
                   </td>
+                  <td className="px-2.5 py-2" data-label="Active ingredient">{i.active_ingredient || "–"}</td>
+                  <td className="px-2.5 py-2" data-label="Pack size">{i.pack_size || "–"}</td>
                   <td className="px-2.5 py-2" data-label="Manufacturer">{i.manufacturer}</td>
                   <td className="px-2.5 py-2" data-label="Seller">{SELLER_LABEL[i.seller] ?? i.seller}</td>
-                  <td className="px-2.5 py-2 font-mono text-xs" data-label="Batch">{i.batch || "–"}</td>
                   <td className="px-2.5 py-2" data-label="Expiry">
                     {months === null ? onRequest : (
                       <div>
@@ -208,13 +194,9 @@ export function CatalogTable({ items, canRequest, defaultCountry }: {
                       </div>
                     )}
                   </td>
+                  <td className="px-2.5 py-2 text-right font-bold" data-label="Price / pack">{i.unit_price === null ? onRequest : eur(i.unit_price)}</td>
                   <td className="px-2.5 py-2 text-right" data-label="Available">{i.available_qty === null ? onRequest : i.available_qty.toLocaleString("en")}</td>
                   <td className="px-2.5 py-2 text-right" data-label="MOQ">{i.moq}</td>
-                  <td className="px-2.5 py-2 text-right font-bold" data-label="Price / pack">{i.unit_price === null ? onRequest : eur(i.unit_price)}</td>
-                  <td className="px-2.5 py-2 text-xs" data-label="COA">
-                    {i.coa_available === true ? <span className="label-neutral">Available</span>
-                      : i.coa_available === false ? <span className="text-slate-600">Not available</span> : onRequest}
-                  </td>
                   <td className="px-2.5 py-2 text-xs text-slate-600" data-label="Incoterm">
                     <div>
                       {i.incoterm}
