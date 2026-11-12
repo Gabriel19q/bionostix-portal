@@ -92,6 +92,7 @@ export async function sendCounterOffer(formData: FormData) {
   const { number, to } = await customerEmailsFor(supabase, id);
   await sendEmail({ to, ...emails.counterOffer(number, summary, message, id) });
   refresh(id);
+  redirect(`/admin/requests/${id}?updated=changes_proposed`);
 }
 
 export async function saveMeta(formData: FormData) {
@@ -165,6 +166,7 @@ export async function changeStatus(formData: FormData) {
     await sendEmail({ to, ...emails.statusChanged(number, STATUS_LABEL[status], hint, message, id) });
   }
   refresh(id);
+  redirect(`/admin/requests/${id}?updated=${status}`);
 }
 
 export async function registerRequestDocument(input: {

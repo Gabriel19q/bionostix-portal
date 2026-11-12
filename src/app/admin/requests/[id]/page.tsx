@@ -7,6 +7,7 @@ import {
 } from "@/lib/status";
 import { changeStatus, saveItems, saveMeta, sendCounterOffer } from "../actions";
 import { RequestDocumentUpload } from "./request-document-upload";
+import { SubmitButton } from "@/components/submit-button";
 
 type Item = {
   id: string;
@@ -42,10 +43,10 @@ export default async function AdminRequestPage({
   params, searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; updated?: string }>;
 }) {
   const { id } = await params;
-  const { error: pageError } = await searchParams;
+  const { error: pageError, updated } = await searchParams;
   const { supabase } = await getSession();
   const [{ data: req }, { data: items }, { data: history }, { data: docs }] = await Promise.all([
     supabase.from("requests")
@@ -107,6 +108,11 @@ export default async function AdminRequestPage({
         </div>
         <StatusBadge status={req.status} viewer="admin" />
       </div>
+      {updated && updated in STATUS_LABEL && updated === req.status && (
+        <div className="notice-success" role="status">
+          Status changed to <strong>{STATUS_LABEL[updated as RequestStatus]}</strong>.
+        </div>
+      )}
       {pageError === "prices" && (
         <div className="notice-error">
           Some lines have no price yet (“on request”). Enter a confirmed price for every line and save first.
@@ -223,7 +229,7 @@ export default async function AdminRequestPage({
               <textarea id="counter_message" name="counter_message" rows={2} className="input"
                 placeholder="e.g. Only 80 pens available now, the rest in 3 weeks." />
             </div>
-            <button formAction={sendCounterOffer} className="btn-primary">Send counter-offer</button>
+            <SubmitButton formAction={sendCounterOffer} pendingText="Sending…">Send counter-offer</SubmitButton>
           </div>
         )}
       </form>
@@ -234,7 +240,7 @@ export default async function AdminRequestPage({
           <h2 className="font-bold">Change status</h2>
           <div>
             <label className="label">New status</label>
-            <select name="status" className="input" defaultValue={nextStatus(req.status)}>
+            <select key={req.status} name="status" className="input" defaultValue={nextStatus(req.status)}>
               {(Object.keys(STATUS_LABEL) as RequestStatus[]).map((s) => (
                 <option key={s} value={s}>{STATUS_LABEL[s]}</option>
               ))}
@@ -256,7 +262,7 @@ export default async function AdminRequestPage({
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" name="notify" defaultChecked /> Email the customer
           </label>
-          <button className="btn-primary">Update status</button>
+          <SubmitButton>Update status</SubmitButton>
           <p className="text-xs text-slate-500">
             The proforma is the order confirmation (it forms the contract). If you changed quantities or prices, set
             “Changes to accept” first and send the proforma once the customer accepted. Upload the proforma below and enter
