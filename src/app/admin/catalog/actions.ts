@@ -1,5 +1,6 @@
 "use server";
 
+import { SELLER_LABEL } from "@/lib/status";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
@@ -27,7 +28,8 @@ export async function saveOffer(formData: FormData) {
   if (!manufacturerName || !tradeName) throw new Error("Manufacturer and product name are required.");
 
   const manufacturer_id = await findOrCreateManufacturer(supabase, manufacturerName);
-  const product: ProductFields & { is_rx: boolean; is_cold_chain: boolean; is_narcotic: boolean } = {
+  const sellerInput = String(get("seller") ?? "sanicura");
+  const product: ProductFields & { is_rx: boolean; is_cold_chain: boolean; is_narcotic: boolean; seller: string } = {
     trade_name: tradeName,
     active_ingredient: parseText(get("active_ingredient")),
     strength: parseText(get("strength")),
@@ -38,6 +40,7 @@ export async function saveOffer(formData: FormData) {
     is_rx: get("is_rx") === "on",
     is_cold_chain: get("is_cold_chain") === "on",
     is_narcotic: get("is_narcotic") === "on",
+    seller: sellerInput in SELLER_LABEL ? sellerInput : "sanicura",
   };
 
   let pid = productId ?? (await findProduct(supabase, product));

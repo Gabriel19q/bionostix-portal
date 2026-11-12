@@ -36,6 +36,7 @@ export default async function EditOfferPage({ params }: { params: Promise<{ id: 
           is_rx: p.is_rx,
           is_cold_chain: p.is_cold_chain,
           is_narcotic: p.is_narcotic,
+          seller: p.seller,
           batch: offer.batch,
           expiry_date: offer.expiry_date,
           available_qty: offer.available_qty,

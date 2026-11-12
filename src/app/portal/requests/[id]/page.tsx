@@ -59,7 +59,7 @@ export default async function RequestDetailPage({
             Sent {displayDateTime(r.created_at)}
             {r.delivery_country && ` · delivery to ${r.delivery_country}`}
             {r.delivery_deadline && ` · deliver by ${displayDate(r.delivery_deadline)}`}
-            {r.seller && ` · invoiced by ${SELLER_LABEL[r.seller] ?? r.seller}`}
+            {r.seller && ` · seller: ${SELLER_LABEL[r.seller] ?? r.seller}`}
           </p>
         </div>
         <StatusBadge status={r.status} viewer="customer" />

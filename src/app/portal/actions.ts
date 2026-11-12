@@ -24,7 +24,7 @@ export async function submitRequestAction(input: {
   if (!input.acceptedTerms) return { ok: false as const, error: "Please accept the terms & conditions." };
   if (!/^\d{4}-\d{2}-\d{2}$/.test(input.deliveryDeadline)) return { ok: false as const, error: "Please enter a delivery deadline." };
 
-  const { data: id, error } = await supabase.rpc("submit_request", {
+  const { data: ids, error } = await supabase.rpc("submit_request", {
     p_items: items,
     p_comment: input.comment.slice(0, 2000),
     p_delivery_country: input.deliveryCountry.slice(0, 100),
@@ -32,13 +32,17 @@ export async function submitRequestAction(input: {
   });
   if (error) return { ok: false as const, error: friendly(error.message) };
 
-  const { data: req } = await supabase.rpc("get_my_requests").eq("id", id).maybeSingle<{ number: string }>();
-  const mail = emails.newRequest(req?.number ?? "", company.name, items.length, id as string);
-  await sendEmail({ to: adminEmails(), ...mail });
-  await logActivity(supabase, "submit_request", "/portal", { number: req?.number, lines: items.length });
+  // One request per seller (products of different sellers are split)
+  const requestIds = (ids ?? []) as string[];
+  const { data: reqs } = await supabase.rpc("get_my_requests").in("id", requestIds);
+  for (const r of (reqs ?? []) as { id: string; number: string }[]) {
+    const { count } = await supabase.rpc("get_my_request_items", {}, { count: "exact", head: true }).eq("request_id", r.id);
+    await sendEmail({ to: adminEmails(), ...emails.newRequest(r.number, company.name, count ?? 0, r.id) });
+    await logActivity(supabase, "submit_request", "/portal", { number: r.number, lines: count ?? undefined });
+  }
 
   revalidatePath("/portal/requests");
-  return { ok: true as const, id: id as string };
+  return { ok: true as const, ids: requestIds };
 }
 
 export async function respondAction(formData: FormData) {

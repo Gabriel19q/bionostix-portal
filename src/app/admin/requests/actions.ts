@@ -98,10 +98,10 @@ export async function sendCounterOffer(formData: FormData) {
 export async function saveMeta(formData: FormData) {
   const supabase = await requireAdmin();
   const id = String(formData.get("request_id"));
-  const seller = parseText(formData.get("seller"));
+
   const { error } = await supabase
     .from("requests")
-    .update({ seller, internal_note: parseText(formData.get("internal_note")) })
+    .update({ internal_note: parseText(formData.get("internal_note")) })
     .eq("id", id);
   if (error) throw new Error(error.message);
   refresh(id);

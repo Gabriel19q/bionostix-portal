@@ -1,3 +1,4 @@
+import { SELLER_LABEL } from "@/lib/status";
 import Link from "next/link";
 import { today } from "@/lib/format";
 import { saveOffer } from "./actions";
@@ -15,6 +16,7 @@ export type OfferFormValues = {
   is_rx?: boolean;
   is_cold_chain?: boolean;
   is_narcotic?: boolean;
+  seller?: string | null;
   batch?: string;
   expiry_date?: string | null;
   available_qty?: number | null;
@@ -73,6 +75,12 @@ export function OfferForm({ values, manufacturers }: { values: OfferFormValues; 
           <Field label="Dosage form" name="dosage_form" defaultValue={v.dosage_form} hint="e.g. tablets" />
           <Field label="Pack size" name="pack_size" defaultValue={v.pack_size} hint="e.g. 20 tablets" />
           <Field label="PZN" name="pzn" defaultValue={v.pzn} />
+          <div>
+            <label className="label" htmlFor="seller">Seller (contract partner)</label>
+            <select id="seller" name="seller" className="input" defaultValue={v.seller ?? "sanicura"}>
+              {Object.entries(SELLER_LABEL).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+            </select>
+          </div>
         </div>
         <div className="flex flex-wrap gap-6 text-sm">
           <label className="flex items-center gap-2">

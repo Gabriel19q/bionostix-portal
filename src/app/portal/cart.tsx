@@ -1,5 +1,6 @@
 "use client";
 
+import { SELLER_LABEL } from "@/lib/status";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -79,6 +80,7 @@ export function CartPanel({
   const total = lines.reduce((sum, i) => sum + (i.unit_price === null ? 0 : cart[i.offer_id] * Number(i.unit_price)), 0);
   const openPrices = lines.some((i) => i.unit_price === null);
   const packs = lines.reduce((sum, i) => sum + cart[i.offer_id], 0);
+  const sellers = [...new Set(lines.map((i) => i.seller))];
   const ready = canRequest && problems.length === 0 && country !== "" && deadline !== "" && acceptedTerms;
 
   async function onSubmit(e: React.FormEvent) {
@@ -95,7 +97,7 @@ export function CartPanel({
     });
     if (res.ok) {
       clear();
-      router.push(`/portal/requests/${res.id}?sent=1`);
+      router.push(res.ids.length === 1 ? `/portal/requests/${res.ids[0]}?sent=1` : `/portal/requests?sent=${res.ids.length}`);
     } else {
       setError(res.error);
       setBusy(false);
@@ -135,7 +137,10 @@ export function CartPanel({
             const bad = qty < i.moq || tooMuch(i);
             return (
               <tr key={i.offer_id}>
-                <td className="py-1.5">{i.trade_name} <span className="text-xs text-slate-500">{i.strength} {i.pack_size}</span></td>
+                <td className="py-1.5">
+                  {i.trade_name} <span className="text-xs text-slate-500">{i.strength} {i.pack_size}</span>
+                  <div className="text-xs text-slate-600">Seller: {SELLER_LABEL[i.seller] ?? i.seller}</div>
+                </td>
                 <td className="py-1.5 text-xs" data-label="Batch / expiry">
                   <div>
                     <span className="font-mono">{i.batch || "–"}</span>
@@ -178,6 +183,13 @@ export function CartPanel({
           </tr>
         </tfoot>
       </table>
+      {sellers.length > 1 && (
+        <div className="notice-info">
+          Your order contains products from {sellers.length} sellers ({sellers.map((x) => SELLER_LABEL[x] ?? x).join(", ")}).
+          It will be sent as {sellers.length} separate order requests, one per seller. Each seller confirms its part with
+          its own proforma invoice.
+        </div>
+      )}
       <div className="grid gap-3 md:grid-cols-3">
         <div>
           <label className="label" htmlFor="country">Delivery country *</label>

@@ -3,6 +3,7 @@ import { getSession } from "@/lib/session";
 import { displayDate, eur, monthsUntil, sellPrice } from "@/lib/format";
 import { offerAction } from "./actions";
 import { ConfirmButton, SelectAll } from "./bulk-controls";
+import { SELLER_LABEL } from "@/lib/status";
 
 type Row = {
   id: string;
@@ -24,6 +25,7 @@ type Row = {
     pzn: string | null;
     is_cold_chain: boolean;
     is_narcotic: boolean;
+    seller: string;
     manufacturers: { name: string } | null;
   };
 };
@@ -38,7 +40,7 @@ export default async function AdminCatalogPage({
   const [{ data: offers }, { data: groups }, { data: manufacturers }] = await Promise.all([
     supabase
       .from("offers")
-      .select("*, products(trade_name, strength, pack_size, pzn, is_cold_chain, is_narcotic, manufacturers(name))")
+      .select("*, products(trade_name, strength, pack_size, pzn, is_cold_chain, is_narcotic, seller, manufacturers(name))")
       .order("expiry_date", { nullsFirst: false })
       .returns<Row[]>(),
     supabase.from("customer_groups").select("id, name, default_markup_pct").order("name"),
@@ -144,6 +146,7 @@ export default async function AdminCatalogPage({
                       {o.products.is_cold_chain && " · cold chain"}
                       {o.products.is_narcotic && " · BtM"}
                     </div>
+                    <div className="text-xs text-slate-600">Seller: {SELLER_LABEL[o.products.seller] ?? o.products.seller}</div>
                     {o.internal_note && <div className="text-xs italic text-slate-600">Internal: {o.internal_note}</div>}
                     <button name="op" value={`toggle:${o.id}:${o.is_active ? "false" : "true"}`}
                       className="text-xs text-slate-600 underline hover:text-brand-600">

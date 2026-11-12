@@ -192,8 +192,12 @@ select pg_temp.expect((select count(*) from storage.objects where name like 'com
 reset role;
 
 -- On-request rows can be requested: no stock limit, MOQ still applies, price stays open
+-- The on-request product is sold by Bionostix Germany, Testamol by Sanicura (default): one order is split per seller
 set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000a');
+update public.products set seller = 'bionostix_germany' where trade_name = 'Upon Request Product';
 select pg_temp.as_user('00000000-0000-0000-0000-00000000000d');
+select pg_temp.expect((select seller from public.get_catalog() where batch = 'B001') = 'sanicura', 'catalog shows seller, default Sanicura');
 select pg_temp.expect_error(
   $$select public.submit_request(jsonb_build_array(jsonb_build_object('offer_id', (select offer_id from public.get_catalog() where trade_name = 'Upon Request Product'), 'qty', 50)), null, 'Iraq', current_date + 30)$$,
   'on-request row below MOQ');
@@ -202,11 +206,17 @@ select pg_temp.expect_error(
     'offer_id', (select offer_id from public.get_catalog() where trade_name = 'Upon Request Product'), 'qty', 5000,
     'min_expiry', current_date::text)), null, 'Iraq', current_date + 30)$$,
   'minimum expiry in the past');
-select public.submit_request(jsonb_build_array(jsonb_build_object(
-  'offer_id', (select offer_id from public.get_catalog() where trade_name = 'Upon Request Product'), 'qty', 5000,
-  'min_expiry', (current_date + 365)::text)), null, 'Iraq', current_date + 30);
-select pg_temp.expect((select min_expiry_date from public.get_my_request_items()) = current_date + 365, 'min expiry stored for line without expiry date');
-select pg_temp.expect((select unit_price_snapshot is null from public.get_my_request_items()), 'on-request price stays open');
+select pg_temp.expect(array_length(public.submit_request(jsonb_build_array(
+  jsonb_build_object('offer_id', (select offer_id from public.get_catalog() where trade_name = 'Upon Request Product'), 'qty', 5000,
+    'min_expiry', (current_date + 365)::text),
+  jsonb_build_object('offer_id', (select offer_id from public.get_catalog() where batch = 'B001'), 'qty', 20)),
+  null, 'Iraq', current_date + 30), 1) = 2, 'mixed sellers: two request ids returned');
+select pg_temp.expect((select count(*) from public.get_my_requests()) = 2, 'one request per seller');
+select pg_temp.expect((select array_agg(seller::text order by seller::text) from public.get_my_requests())
+  = array['bionostix_germany', 'sanicura'], 'each request carries its seller');
+select pg_temp.expect((select count(*) from public.get_my_request_items()) = 2, 'every line in exactly one request');
+select pg_temp.expect((select min_expiry_date from public.get_my_request_items() where trade_name = 'Upon Request Product') = current_date + 365, 'min expiry stored for line without expiry date');
+select pg_temp.expect((select unit_price_snapshot is null from public.get_my_request_items() where trade_name = 'Upon Request Product'), 'on-request price stays open');
 reset role;
 
 -- Usage tracking

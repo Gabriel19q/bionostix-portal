@@ -1,3 +1,4 @@
+import { SELLER_LABEL } from "@/lib/status";
 import type { CatalogItem } from "./catalog-table";
 
 // Builds an Excel file of catalog rows in the browser and downloads it.
@@ -9,7 +10,7 @@ export async function downloadCatalogExcel(items: CatalogItem[], opts: { include
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
   const header = [
-    "Product", "Active ingredient", "Strength", "Dosage form", "Pack size", "PZN", "Manufacturer",
+    "Product", "Active ingredient", "Strength", "Dosage form", "Pack size", "PZN", "Manufacturer", "Seller",
     "Batch", "Expiry date", "Available (packs)", "MOQ (packs)",
     ...(opts.includePrices ? ["Price per pack (EUR)"] : []),
     "Incoterm", "COA", "Rx", "Cold chain", "Narcotic", "Stock as of",
@@ -20,7 +21,7 @@ export async function downloadCatalogExcel(items: CatalogItem[], opts: { include
 
   const rows = items.map((i) => [
     i.trade_name, i.active_ingredient ?? "", i.strength ?? "", i.dosage_form ?? "", i.pack_size ?? "", i.pzn ?? "",
-    i.manufacturer, i.batch || "", toDate(i.expiry_date),
+    i.manufacturer, SELLER_LABEL[i.seller] ?? i.seller, i.batch || "", toDate(i.expiry_date),
     i.available_qty ?? "on request", i.moq,
     ...(opts.includePrices ? [i.unit_price === null ? "on request" : Number(i.unit_price)] : []),
     i.incoterm, yesNo(i.coa_available, "on request"), yesNo(i.is_rx), yesNo(i.is_cold_chain), yesNo(i.is_narcotic),

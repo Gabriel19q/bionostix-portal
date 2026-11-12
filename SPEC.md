@@ -35,7 +35,7 @@ UI-Sprache: **Englisch**. Währung: **EUR**.
 
 ## Datenmodell (Kurzform)
 companies, profiles, customer_groups, manufacturers, products, offers (= Angebotsposition: Charge, Verfall, Menge, EK, Aufschlag-Override, Incoterm, Stand), requests, request_items, request_item_costs (EK-Snapshot, nur Admin), request_status_history, documents.
-Feld `requests.seller`: bionostix_germany | sanicura | manufacturer (Rechtsmodell offen).
+Verkäufer (Vertragspartner) je Produkt: `products.seller` = bionostix_germany | sanicura | manufacturer, vorerst überall Sanicura (bis zur eigenen Großhandelserlaubnis). Kunde sieht ihn im Katalog. Eine Bestellung mit Produkten verschiedener Verkäufer wird beim Absenden automatisch in eine Anfrage je Verkäufer aufgeteilt (`requests.seller`), jede mit eigener PI.
 
 ## Preislogik
 Verkaufspreis = round(EK × (1 + Aufschlag/100), 2). Aufschlag = Override der Angebotsposition, sonst Standardaufschlag der Kundengruppe. Preis wird beim Absenden der Anfrage gespeichert (Snapshot); endgültiger Preis wird im Angebot bestätigt.

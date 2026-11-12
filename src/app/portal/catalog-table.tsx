@@ -1,5 +1,6 @@
 "use client";
 
+import { SELLER_LABEL } from "@/lib/status";
 import { useMemo, useState } from "react";
 import { displayDate, eur, monthsUntil } from "@/lib/format";
 import { CartPanel, useCart } from "./cart";
@@ -7,6 +8,7 @@ import { downloadCatalogExcel } from "./export";
 import { logExportAction } from "../activity-actions";
 
 export type CatalogItem = {
+  seller: string;
   offer_id: string;
   product_id: string;
   trade_name: string;
@@ -153,6 +155,7 @@ export function CatalogTable({ items, canRequest, defaultCountry }: {
               </th>
               <th className="px-2.5 py-2">Product</th>
               <th className="px-2.5 py-2">Manufacturer</th>
+              <th className="px-2.5 py-2">Seller</th>
               <th className="px-2.5 py-2">Batch</th>
               <th className="px-2.5 py-2">Expiry</th>
               <th className="px-2.5 py-2 text-right">Available</th>
@@ -193,6 +196,7 @@ export function CatalogTable({ items, canRequest, defaultCountry }: {
                     </div>
                   </td>
                   <td className="px-2.5 py-2" data-label="Manufacturer">{i.manufacturer}</td>
+                  <td className="px-2.5 py-2" data-label="Seller">{SELLER_LABEL[i.seller] ?? i.seller}</td>
                   <td className="px-2.5 py-2 font-mono text-xs" data-label="Batch">{i.batch || "–"}</td>
                   <td className="px-2.5 py-2" data-label="Expiry">
                     {months === null ? onRequest : (

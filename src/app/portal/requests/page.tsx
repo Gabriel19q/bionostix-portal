@@ -8,7 +8,8 @@ import { StatusBadge, type RequestStatus } from "@/lib/status";
 type Req = { id: string; number: string; status: RequestStatus; created_at: string; updated_at: string };
 type Item = { request_id: string; requested_qty: number; unit_price_snapshot: number | null; confirmed_qty: number | null; confirmed_unit_price: number | null };
 
-export default async function MyRequestsPage() {
+export default async function MyRequestsPage({ searchParams }: { searchParams: Promise<{ sent?: string }> }) {
+  const { sent } = await searchParams;
   const { supabase, company } = await getSession();
   if (!company) redirect("/portal");
 
@@ -23,6 +24,12 @@ export default async function MyRequestsPage() {
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">My requests</h1>
+      {Number(sent) > 1 && (
+        <div className="notice-success">
+          Thank you, your order was sent as {Number(sent)} separate order requests, one per seller. Each seller confirms
+          its part with its own proforma invoice.
+        </div>
+      )}
       {reqs.length === 0 ? (
         <div className="card text-sm text-slate-600">
           No requests yet. <Link href="/portal" className="text-brand-600 underline">Browse the catalog</Link> to send one.

@@ -94,6 +94,9 @@ export default async function AdminRequestPage({
           <p className="text-sm text-slate-600">
             Received {displayDateTime(req.created_at)}{req.delivery_country && ` · delivery to ${req.delivery_country}`}
           </p>
+          <p className="mt-1 text-sm">
+            <span className="font-bold">Seller:</span> {req.seller ? SELLER_LABEL[req.seller] ?? req.seller : "not set (older request)"}
+          </p>
           {req.delivery_deadline && (
             <p className="mt-1 text-sm"><span className="font-bold">Delivery deadline:</span> {displayDate(req.delivery_deadline)}</p>
           )}
@@ -274,13 +277,6 @@ export default async function AdminRequestPage({
           <form action={saveMeta} className="card space-y-3">
             <input type="hidden" name="request_id" value={req.id} />
             <h2 className="font-bold">Internal</h2>
-            <div>
-              <label className="label">Seller on the invoice</label>
-              <select name="seller" className="input" defaultValue={req.seller ?? ""}>
-                <option value="">Not decided</option>
-                {Object.entries(SELLER_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-              </select>
-            </div>
             <div>
               <label className="label">Internal note (only admins)</label>
               <textarea name="internal_note" rows={2} className="input" defaultValue={req.internal_note ?? ""} />
