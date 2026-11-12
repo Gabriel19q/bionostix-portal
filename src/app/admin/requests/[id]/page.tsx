@@ -5,7 +5,7 @@ import { displayDate, displayDateTime, eur, today } from "@/lib/format";
 import {
   DOC_TYPE_LABEL, SELLER_LABEL, STATUS_FLOW, STATUS_LABEL, StatusBadge, type RequestStatus,
 } from "@/lib/status";
-import { changeStatus, saveItems, saveMeta } from "../actions";
+import { changeStatus, saveItems, saveMeta, sendCounterOffer } from "../actions";
 import { RequestDocumentUpload } from "./request-document-upload";
 
 type Item = {
@@ -123,6 +123,9 @@ export default async function AdminRequestPage({
           Nothing differs from the order request. Upload the proforma and set “Proforma sent” instead.
         </div>
       )}
+      {pageError === "counterstatus" && (
+        <div className="notice-error">A counter-offer is only possible before the proforma is sent.</div>
+      )}
       {pageError === "due" && (
         <div className="notice-error">
           Enter the date until which the manufacturer reserves the goods. It is the payment deadline on the proforma.
@@ -208,6 +211,21 @@ export default async function AdminRequestPage({
           <button className="btn-secondary">Save quantities and prices</button>
           <p className="text-xs text-slate-500">Empty fields mean “as requested”. The customer sees confirmed values.</p>
         </div>
+        {["new", "in_review", "changes_proposed"].includes(req.status) && (
+          <div className="card space-y-3">
+            <h2 className="font-bold">Counter-offer</h2>
+            <p className="text-sm text-slate-600">
+              Change confirmed packs or prices above if stock or price differ from the request, then send them to the
+              customer. They accept or cancel in the portal; after acceptance you send the proforma.
+            </p>
+            <div>
+              <label className="label" htmlFor="counter_message">Message to the customer (optional)</label>
+              <textarea id="counter_message" name="counter_message" rows={2} className="input"
+                placeholder="e.g. Only 80 pens available now, the rest in 3 weeks." />
+            </div>
+            <button formAction={sendCounterOffer} className="btn-primary">Send counter-offer</button>
+          </div>
+        )}
       </form>
 
       <div className="grid gap-6 md:grid-cols-2">

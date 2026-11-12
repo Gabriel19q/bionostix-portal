@@ -6,7 +6,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSession } from "@/lib/session";
 import { emails, sendEmail } from "@/lib/email";
 import { parseNumber, parseText } from "@/lib/parse";
-import { displayDate, today } from "@/lib/format";
+import { displayDate, eur, today } from "@/lib/format";
 import { DOC_TYPE_LABEL, STATUS_HINT, STATUS_LABEL, type RequestStatus } from "@/lib/status";
 
 async function requireAdmin() {
@@ -44,6 +44,54 @@ export async function saveItems(formData: FormData) {
     if (error) throw new Error(error.message);
   }
   refresh(requestId);
+}
+
+// "Send counter-offer": save the confirmed values, set "Changes to accept" and email the customer the
+// changed lines. The customer accepts (-> changes_accepted) or cancels; then the proforma follows.
+export async function sendCounterOffer(formData: FormData) {
+  await saveItems(formData);
+  const supabase = await requireAdmin();
+  const id = String(formData.get("request_id"));
+  const message = parseText(formData.get("counter_message"));
+
+  const { data: current } = await supabase.from("requests").select("status").eq("id", id).single();
+  if (!["new", "in_review", "changes_proposed"].includes(current?.status ?? "")) {
+    redirect(`/admin/requests/${id}?error=counterstatus`);
+  }
+  const { data: items } = await supabase
+    .from("request_items")
+    .select("id, requested_qty, unit_price_snapshot, confirmed_qty, confirmed_unit_price, offers(products(trade_name, strength, pack_size))")
+    .eq("request_id", id)
+    .returns<{
+      id: string; requested_qty: number; unit_price_snapshot: number | null; confirmed_qty: number | null;
+      confirmed_unit_price: number | null; offers: { products: { trade_name: string; strength: string | null; pack_size: string | null } };
+    }[]>();
+  const lines = (items ?? []).map((i) => ({
+    ...i,
+    qty: i.confirmed_qty ?? i.requested_qty,
+    price: i.confirmed_unit_price ?? i.unit_price_snapshot,
+  }));
+  if (lines.some((l) => l.price === null)) redirect(`/admin/requests/${id}?error=prices`);
+  const changed = lines.filter((l) => l.qty !== l.requested_qty || Number(l.price) !== Number(l.unit_price_snapshot));
+  if (changed.length === 0) redirect(`/admin/requests/${id}?error=nochanges`);
+
+  for (const l of lines) {
+    await supabase.from("request_items").update({ confirmed_qty: l.qty, confirmed_unit_price: l.price }).eq("id", l.id);
+  }
+  const { error } = await supabase.rpc("admin_set_request_status", {
+    p_request_id: id, p_status: "changes_proposed", p_note: message,
+  });
+  if (error) throw new Error(error.message);
+
+  const summary = changed.map((l) => {
+    const p = l.offers.products;
+    const name = [p.trade_name, p.strength, p.pack_size].filter(Boolean).join(" ");
+    const was = `${l.requested_qty} packs at ${l.unit_price_snapshot === null ? "price on request" : eur(l.unit_price_snapshot)}`;
+    return `- ${name}: ${was} -> now ${l.qty} packs at ${eur(l.price)}`;
+  }).join("\n");
+  const { number, to } = await customerEmailsFor(supabase, id);
+  await sendEmail({ to, ...emails.counterOffer(number, summary, message, id) });
+  refresh(id);
 }
 
 export async function saveMeta(formData: FormData) {

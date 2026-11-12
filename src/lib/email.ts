@@ -49,6 +49,10 @@ export const emails = {
     subject: `Request ${number}: ${statusLabel}`,
     text: `Your request ${number} is now: ${statusLabel}.\n${hint}${message ? `\n\nMessage from Bionostix Germany:\n${message}` : ""}\n\nView your request: ${SITE}/portal/requests/${id}${footer}`,
   }),
+  counterOffer: (number: string, changes: string, message: string | null, id: string) => ({
+    subject: `Request ${number}: please accept the changes`,
+    text: `We can supply your order request ${number} with the following changes:\n\n${changes}\n\nAll other lines are confirmed as requested.${message ? `\n\nMessage from Bionostix Germany:\n${message}` : ""}\n\nPlease accept the changes or cancel the request in the portal. After your acceptance we send the proforma invoice, which confirms your order.\n\nOpen your request: ${SITE}/portal/requests/${id}${footer}`,
+  }),
   documentAdded: (number: string, docLabel: string, id: string) => ({
     subject: `Request ${number}: new document`,
     text: `A new document (${docLabel}) is available for your request ${number}.\n\nView it: ${SITE}/portal/requests/${id}${footer}`,
