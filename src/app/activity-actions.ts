@@ -8,7 +8,7 @@ export async function logLoginAction() {
 }
 
 export async function logExportAction(rows: number, mode: string, withPrices: boolean) {
-  await logActivity(await createClient(), "export", "/portal", {
+  await logActivity(await createClient(), "export", "/portal/catalog", {
     rows: Math.max(0, Math.min(100000, Math.round(rows))),
     mode: ["all", "view", "selected"].includes(mode) ? mode : "other",
     prices: !!withPrices,

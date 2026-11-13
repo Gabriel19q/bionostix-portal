@@ -23,7 +23,7 @@ export default async function MyRequestsPage({ searchParams }: { searchParams: P
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">My requests</h1>
+      <h1 className="text-2xl font-bold">My orders</h1>
       {Number(sent) > 1 && (
         <div className="notice-success">
           Thank you, your order was sent as {Number(sent)} separate order requests, one per seller. Each seller confirms
@@ -32,7 +32,7 @@ export default async function MyRequestsPage({ searchParams }: { searchParams: P
       )}
       {reqs.length === 0 ? (
         <div className="card text-sm text-slate-600">
-          No requests yet. <Link href="/portal" className="text-brand-600 underline">Browse the catalog</Link> to send one.
+          No orders yet. <Link href="/portal/catalog" className="text-brand-600 underline">Browse the catalog</Link> to send an order request.
         </div>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">

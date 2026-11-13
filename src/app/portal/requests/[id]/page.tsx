@@ -56,7 +56,7 @@ export default async function RequestDetailPage({
       )}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <Link href="/portal/requests" className="text-sm text-slate-500 hover:underline">← My requests</Link>
+          <Link href="/portal/requests" className="text-sm text-slate-500 hover:underline">← My orders</Link>
           <h1 className="text-2xl font-bold">Order request {r.number}</h1>
           <p className="text-sm text-slate-600">
             Sent {displayDateTime(r.created_at)}

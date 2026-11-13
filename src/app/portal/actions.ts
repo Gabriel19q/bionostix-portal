@@ -38,7 +38,7 @@ export async function submitRequestAction(input: {
   for (const r of (reqs ?? []) as { id: string; number: string }[]) {
     const { count } = await supabase.rpc("get_my_request_items", {}, { count: "exact", head: true }).eq("request_id", r.id);
     await sendEmail({ to: adminEmails(), ...emails.newRequest(r.number, company.name, count ?? 0, r.id) });
-    await logActivity(supabase, "submit_request", "/portal", { number: r.number, lines: count ?? undefined });
+    await logActivity(supabase, "submit_request", "/portal/catalog", { number: r.number, lines: count ?? undefined });
   }
 
   revalidatePath("/portal/requests");

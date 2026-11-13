@@ -45,8 +45,9 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
                     <NavLink href="/admin/requests" match="/admin">Admin</NavLink>
                   ) : (
                     <>
-                      <NavLink href="/portal" exact>Catalog</NavLink>
-                      <NavLink href="/portal/requests">My requests</NavLink>
+                      <NavLink href="/portal" exact>Overview</NavLink>
+                      <NavLink href="/portal/catalog">Catalog</NavLink>
+                      <NavLink href="/portal/requests">My orders</NavLink>
                     </>
                   )}
                   <form action="/auth/signout" method="post">
