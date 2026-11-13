@@ -162,7 +162,7 @@ export default async function AdminRequestPage({
               <tr>
                 <th className="px-3 py-2">Product</th><th className="px-3 py-2">Batch</th>
                 <th className="px-3 py-2 text-right">Requested</th><th className="px-3 py-2 text-right">Stock now</th>
-                <th className="px-3 py-2 text-right">Purchase now</th>
+                <th className="px-3 py-2 text-right">Updated purchase price</th>
                 <th className="px-3 py-2 text-right">Confirmed packs</th><th className="px-3 py-2 text-right">Requested at</th>
                 <th className="px-3 py-2 text-right">Confirmed price</th><th className="px-3 py-2 text-right">Line margin</th>
               </tr>
@@ -199,7 +199,7 @@ export default async function AdminRequestPage({
                         defaultValue={l.offers.available_qty ?? ""} placeholder="on request" />
                     </td>
                     <td className="px-3 py-2 text-right">
-                      <input name={`purchase_${l.id}`} aria-label={`Purchase price now for ${p.trade_name}`}
+                      <input name={`purchase_${l.id}`} aria-label={`Updated purchase price for ${p.trade_name}`}
                         className="input w-24 py-1 text-right" defaultValue={l.offers.purchase_price ?? ""} placeholder="open" />
                       {purchase !== null && l.offers.purchase_price !== null && Number(purchase) !== Number(l.offers.purchase_price) && (
                         <div className="text-xs text-slate-500">at request {eur(purchase)}</div>
@@ -234,7 +234,7 @@ export default async function AdminRequestPage({
         <div className="flex flex-wrap items-center gap-3">
           <SubmitButton className="btn-secondary" pendingText="Updating…">Update catalog</SubmitButton>
           <p className="max-w-2xl text-xs text-slate-500">
-            Enter what the manufacturer reports in “Stock now” and “Purchase now”, then update the catalog: the batch
+            Enter what the manufacturer reports in “Stock now” and “Updated purchase price”, then update the catalog: the batch
             changes for all customers. For this order the confirmed price is set to the new sell price and the packs to
             the new stock; you can still overwrite both. Nothing is sent to the customer until you send a counter-offer
             or the proforma.
