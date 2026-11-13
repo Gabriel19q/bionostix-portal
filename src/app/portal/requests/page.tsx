@@ -47,8 +47,10 @@ export default async function MyRequestsPage({ searchParams }: { searchParams: P
             <tbody className="divide-y divide-slate-100">
               {reqs.map((r) => {
                 const lines = allItems.filter((i) => i.request_id === r.id);
+                const draft = ["new", "in_review"].includes(r.status); // confirmed values not sent yet
                 const value = lines.reduce(
-                  (s, i) => s + (i.confirmed_qty ?? i.requested_qty) * Number(i.confirmed_unit_price ?? i.unit_price_snapshot ?? 0), 0);
+                  (s, i) => s + (draft ? i.requested_qty : i.confirmed_qty ?? i.requested_qty)
+                    * Number((draft ? null : i.confirmed_unit_price) ?? i.unit_price_snapshot ?? 0), 0);
                 return (
                   <tr key={r.id}>
                     <td className="px-3 py-2" data-label="Request">

@@ -5,7 +5,7 @@ import { displayDate, displayDateTime, eur, today } from "@/lib/format";
 import {
   DOC_TYPE_LABEL, SELLER_LABEL, STATUS_FLOW, STATUS_LABEL, StatusBadge, type RequestStatus,
 } from "@/lib/status";
-import { changeStatus, saveItems, saveMeta, sendCounterOffer } from "../actions";
+import { changeStatus, saveMeta, sendCounterOffer, updateCatalogFromRequest } from "../actions";
 import { RequestDocumentUpload } from "./request-document-upload";
 import { SubmitButton } from "@/components/submit-button";
 
@@ -13,12 +13,13 @@ type Item = {
   id: string;
   requested_qty: number;
   min_expiry_date: string | null;
-  coa_requested: boolean;
   unit_price_snapshot: number | null;
   confirmed_qty: number | null;
   confirmed_unit_price: number | null;
   request_item_costs: { purchase_price_snapshot: number | null } | null;
   offers: {
+    id: string;
+    purchase_price: number | null;
     batch: string;
     expiry_date: string | null;
     available_qty: number | null;
@@ -44,17 +45,17 @@ export default async function AdminRequestPage({
   params, searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string; updated?: string }>;
+  searchParams: Promise<{ error?: string; updated?: string; saved?: string }>;
 }) {
   const { id } = await params;
-  const { error: pageError, updated } = await searchParams;
+  const { error: pageError, updated, saved } = await searchParams;
   const { supabase } = await getSession();
   const [{ data: req }, { data: items }, { data: history }, { data: docs }] = await Promise.all([
     supabase.from("requests")
       .select("id, number, status, seller, customer_comment, delivery_country, delivery_deadline, payment_due_date, internal_note, created_at, companies(id, name, country, contact_name, contact_email, contact_phone)")
       .eq("id", id).maybeSingle<Req>(),
     supabase.from("request_items")
-      .select("id, requested_qty, min_expiry_date, coa_requested, unit_price_snapshot, confirmed_qty, confirmed_unit_price, request_item_costs(purchase_price_snapshot), offers(batch, expiry_date, available_qty, coa_available, products(trade_name, strength, pack_size, is_narcotic, manufacturers(name)))")
+      .select("id, requested_qty, min_expiry_date, unit_price_snapshot, confirmed_qty, confirmed_unit_price, request_item_costs(purchase_price_snapshot), offers(id, batch, expiry_date, available_qty, purchase_price, coa_available, products(trade_name, strength, pack_size, is_narcotic, manufacturers(name)))")
       .eq("request_id", id).returns<Item[]>(),
     supabase.from("request_status_history").select("id, new_status, note, created_at, changed_by").eq("request_id", id).order("created_at").order("id"),
     supabase.from("documents").select("id, storage_path, file_name, doc_type, created_at").eq("request_id", id).order("created_at"),
@@ -117,6 +118,11 @@ export default async function AdminRequestPage({
           Status changed to <strong>{STATUS_LABEL[updated as RequestStatus]}</strong>.
         </div>
       )}
+      {saved === "catalog" && (
+        <div className="notice-success" role="status">
+          Catalog updated. Check the confirmed packs and prices below, then send the counter-offer.
+        </div>
+      )}
       {pageError === "prices" && (
         <div className="notice-error">
           Some lines have no price yet (“on request”). Enter a confirmed price for every line and save first.
@@ -148,16 +154,16 @@ export default async function AdminRequestPage({
         <div className="card text-sm"><span className="font-medium">Customer comment:</span> {req.customer_comment}</div>
       )}
 
-      <form action={saveItems} className="space-y-3">
+      <form action={updateCatalogFromRequest} className="space-y-3">
         <input type="hidden" name="request_id" value={req.id} />
         <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
           <table className="min-w-full text-sm">
             <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
               <tr>
                 <th className="px-3 py-2">Product</th><th className="px-3 py-2">Batch</th>
-                <th className="px-3 py-2 text-right">Requested</th><th className="px-3 py-2 text-right">In stock now</th>
-                <th className="px-3 py-2 text-right">Confirmed packs</th>
-                <th className="px-3 py-2 text-right">Purchase</th><th className="px-3 py-2 text-right">Requested at</th>
+                <th className="px-3 py-2 text-right">Requested</th><th className="px-3 py-2 text-right">Stock now</th>
+                <th className="px-3 py-2 text-right">Purchase now</th>
+                <th className="px-3 py-2 text-right">Confirmed packs</th><th className="px-3 py-2 text-right">Requested at</th>
                 <th className="px-3 py-2 text-right">Confirmed price</th><th className="px-3 py-2 text-right">Line margin</th>
               </tr>
             </thead>
@@ -176,7 +182,6 @@ export default async function AdminRequestPage({
                         {[p.strength, p.pack_size, p.manufacturers?.name].filter(Boolean).join(" · ")}
                         {p.is_narcotic && <span className="ml-1 font-bold text-slate-900">· BtM: check permits</span>}
                       </div>
-                      {l.coa_requested && <div className="mt-0.5 text-xs"><span className="mark-attention font-bold">COA requested</span></div>}
                     </td>
                     <td className="px-3 py-2 font-mono text-xs">
                       {l.offers.batch || "–"}<div className="font-sans text-slate-500">exp. {displayDate(l.offers.expiry_date)}</div>
@@ -188,14 +193,22 @@ export default async function AdminRequestPage({
                       </div>
                     </td>
                     <td className="px-3 py-2 text-right">{l.requested_qty}</td>
-                    <td className={`px-3 py-2 text-right ${l.offers.available_qty !== null && l.offers.available_qty < l.requested_qty ? "font-bold text-danger" : "text-slate-500"}`}>
-                      {l.offers.available_qty ?? "on request"}
+                    <td className="px-3 py-2 text-right">
+                      <input name={`stock_${l.id}`} aria-label={`Stock now for ${p.trade_name}`}
+                        className={`input w-24 py-1 text-right ${l.offers.available_qty !== null && l.offers.available_qty < l.requested_qty ? "input-error" : ""}`}
+                        defaultValue={l.offers.available_qty ?? ""} placeholder="on request" />
+                    </td>
+                    <td className="px-3 py-2 text-right">
+                      <input name={`purchase_${l.id}`} aria-label={`Purchase price now for ${p.trade_name}`}
+                        className="input w-24 py-1 text-right" defaultValue={l.offers.purchase_price ?? ""} placeholder="open" />
+                      {purchase !== null && l.offers.purchase_price !== null && Number(purchase) !== Number(l.offers.purchase_price) && (
+                        <div className="text-xs text-slate-500">at request {eur(purchase)}</div>
+                      )}
                     </td>
                     <td className="px-3 py-2 text-right">
                       <input name={`qty_${l.id}`} className="input w-24 py-1 text-right" defaultValue={l.confirmed_qty ?? ""}
-                        placeholder={String(l.requested_qty)} />
+                        placeholder={String(l.requested_qty)} aria-label={`Confirmed packs for ${p.trade_name}`} />
                     </td>
-                    <td className="px-3 py-2 text-right text-slate-500">{purchase === null ? "open" : eur(purchase)}</td>
                     <td className="px-3 py-2 text-right">{l.unit_price_snapshot === null ? "on request" : eur(l.unit_price_snapshot)}</td>
                     <td className="px-3 py-2 text-right">
                       <input name={`price_${l.id}`} className="input w-28 py-1 text-right" defaultValue={l.confirmed_unit_price ?? ""}
@@ -218,9 +231,14 @@ export default async function AdminRequestPage({
             </tfoot>
           </table>
         </div>
-        <div className="flex items-center gap-3">
-          <button className="btn-secondary">Save quantities and prices</button>
-          <p className="text-xs text-slate-500">Empty fields mean “as requested”. The customer sees confirmed values.</p>
+        <div className="flex flex-wrap items-center gap-3">
+          <SubmitButton className="btn-secondary" pendingText="Updating…">Update catalog</SubmitButton>
+          <p className="max-w-2xl text-xs text-slate-500">
+            Enter what the manufacturer reports in “Stock now” and “Purchase now”, then update the catalog: the batch
+            changes for all customers. For this order the confirmed price is set to the new sell price and the packs to
+            the new stock; you can still overwrite both. Nothing is sent to the customer until you send a counter-offer
+            or the proforma.
+          </p>
         </div>
         {["new", "in_review", "changes_proposed"].includes(req.status) && (
           <div className="card space-y-3">

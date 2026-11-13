@@ -6,7 +6,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSession } from "@/lib/session";
 import { emails, sendEmail } from "@/lib/email";
 import { parseNumber, parseText } from "@/lib/parse";
-import { displayDate, eur, today } from "@/lib/format";
+import { displayDate, eur, sellPrice, today } from "@/lib/format";
 import { DOC_TYPE_LABEL, STATUS_HINT, STATUS_LABEL, type RequestStatus } from "@/lib/status";
 
 async function requireAdmin() {
@@ -44,6 +44,54 @@ export async function saveItems(formData: FormData) {
     if (error) throw new Error(error.message);
   }
   refresh(requestId);
+}
+
+// "Update catalog": the manufacturer reports new stock and/or purchase price for a batch in this request.
+// The batch in the catalog is updated for all customers (stock checked today). For this order the confirmed
+// price is set to the new sell price of the customer's group and the quantity is capped at the new stock;
+// both can still be overwritten by hand before sending the counter-offer.
+export async function updateCatalogFromRequest(formData: FormData) {
+  const supabase = await requireAdmin();
+  const requestId = String(formData.get("request_id"));
+  const { data: req } = await supabase
+    .from("requests").select("companies(customer_groups(default_markup_pct))").eq("id", requestId)
+    .single<{ companies: { customer_groups: { default_markup_pct: number } | null } }>();
+  const groupPct = Number(req?.companies?.customer_groups?.default_markup_pct ?? 0);
+  const { data: items } = await supabase
+    .from("request_items")
+    .select("id, requested_qty, confirmed_qty, offers(id, available_qty, purchase_price, markup_override_pct)")
+    .eq("request_id", requestId)
+    .returns<{
+      id: string; requested_qty: number; confirmed_qty: number | null;
+      offers: { id: string; available_qty: number | null; purchase_price: number | null; markup_override_pct: number | null };
+    }[]>();
+
+  for (const i of items ?? []) {
+    const o = i.offers;
+    const stockRaw = parseNumber(formData.get(`stock_${i.id}`));
+    const purchaseRaw = parseNumber(formData.get(`purchase_${i.id}`));
+    const stock = stockRaw === null ? null : Math.max(0, Math.round(stockRaw));
+    const purchase = purchaseRaw === null ? null : Math.round(purchaseRaw * 100) / 100;
+    const stockChanged = stock !== o.available_qty;
+    const purchaseChanged = purchase !== (o.purchase_price === null ? null : Number(o.purchase_price));
+    if (!stockChanged && !purchaseChanged) continue;
+
+    const { error } = await supabase
+      .from("offers").update({ available_qty: stock, purchase_price: purchase, stock_as_of: today() }).eq("id", o.id);
+    if (error) throw new Error(error.message);
+
+    const itemUpdate: { confirmed_unit_price?: number | null; confirmed_qty?: number } = {};
+    if (purchaseChanged) {
+      itemUpdate.confirmed_unit_price = purchase === null ? null
+        : sellPrice(purchase, o.markup_override_pct === null ? null : Number(o.markup_override_pct), groupPct);
+      await supabase.from("request_item_costs").update({ purchase_price_snapshot: purchase }).eq("request_item_id", i.id);
+    }
+    if (stock !== null && stock < (i.confirmed_qty ?? i.requested_qty)) itemUpdate.confirmed_qty = stock;
+    if (Object.keys(itemUpdate).length) await supabase.from("request_items").update(itemUpdate).eq("id", i.id);
+  }
+  revalidatePath("/admin/catalog");
+  refresh(requestId);
+  redirect(`/admin/requests/${requestId}?saved=catalog`);
 }
 
 // "Send counter-offer": save the confirmed values, set "Changes to accept" and email the customer the

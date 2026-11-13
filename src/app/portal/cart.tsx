@@ -67,7 +67,6 @@ export function CartPanel({
   const [country, setCountry] = useState(matchCountry(defaultCountry));
   const [deadline, setDeadline] = useState("");
   const [minExpiry, setMinExpiry] = useState<Record<string, string>>({});
-  const [coa, setCoa] = useState<Record<string, boolean>>({});
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -90,9 +89,7 @@ export function CartPanel({
     setBusy(true);
     setError(null);
     const res = await submitRequestAction({
-      items: lines.map((i) => ({
-        offer_id: i.offer_id, qty: cart[i.offer_id], min_expiry: minExpiry[i.offer_id] || undefined, coa: !!coa[i.offer_id],
-      })),
+      items: lines.map((i) => ({ offer_id: i.offer_id, qty: cart[i.offer_id], min_expiry: minExpiry[i.offer_id] || undefined })),
       comment,
       deliveryCountry: country,
       deliveryDeadline: deadline,
@@ -143,11 +140,6 @@ export function CartPanel({
                 <td className="py-1.5">
                   {i.trade_name} <span className="text-xs text-slate-500">{i.strength} {i.pack_size}</span>
                   <div className="text-xs text-slate-600">Seller: {SELLER_LABEL[i.seller] ?? i.seller}</div>
-                  <label className="mt-1 flex items-center gap-2 text-xs">
-                    <input type="checkbox" checked={!!coa[i.offer_id]}
-                      onChange={(e) => setCoa({ ...coa, [i.offer_id]: e.target.checked })} />
-                    COA required (certificate of analysis)
-                  </label>
                 </td>
                 <td className="py-1.5 text-xs" data-label="Batch / expiry">
                   <div>
@@ -210,12 +202,12 @@ export function CartPanel({
           <label className="label" htmlFor="deadline">Delivery deadline *</label>
           <input id="deadline" type="date" className="input" required min={tomorrow} value={deadline}
             onChange={(e) => setDeadline(e.target.value)} />
-          <p className="mt-1 text-xs text-slate-600">Latest date the goods must arrive.</p>
+          <p className="mt-1 text-xs text-slate-600">Latest date the goods are delivered.</p>
         </div>
         <div>
           <label className="label" htmlFor="comment">Comment (optional)</label>
           <input id="comment" className="input" value={comment} onChange={(e) => setComment(e.target.value)}
-            placeholder="e.g. partial delivery OK" />
+            placeholder="e.g. COA required, partial delivery OK" />
         </div>
       </div>
       <p className="text-xs text-slate-600">* Required field</p>

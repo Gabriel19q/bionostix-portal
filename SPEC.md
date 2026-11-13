@@ -10,7 +10,7 @@ Erfolg: ≥ 3 Anfragen von Sanicura über das Portal, Anfrage → Proforma < 1 A
 ## Umfang MVP
 - Zugang beantragen (Konto + Firmendaten + Upload Großhandelserlaubnis/Importlizenz), Freigabe durch Admin
 - Login nur für freigegebene Kunden; nicht freigegebene sehen „pending approval“
-- Katalog (Spalten): Produkt (Stärke, Form, PZN), Wirkstoff, Packungsgröße, Hersteller, Verkäufer, Verfall, Preis/Packung, Verfügbar, MOQ, Incoterm (mit Stand der Bestandsabfrage). Charge nicht im Katalog, nur in Bestellung/Anfrage. COA-Wunsch per Häkchen je Zeile in der Bestellanfrage.
+- Katalog (Spalten): Produkt (Stärke, Form, PZN), Wirkstoff, Packungsgröße, Hersteller, Verkäufer, Verfall, Preis/Packung, Verfügbar, MOQ, Incoterm (mit Stand der Bestandsabfrage). Charge nicht im Katalog, nur in Bestellung/Anfrage. COA-Wunsch schreibt der Kunde in den Kommentar der Bestellanfrage.
 - Bestandspflege per Excel/CSV-Import mit Spaltenzuordnung und Vorschau
 - Einkaufspreis + Aufschlag → Verkaufspreis automatisch (nur Admin sieht EK und Marge)
 - Kundengruppen mit eigenem Standardaufschlag (z.B. EU Wholesale, Export MENA)
