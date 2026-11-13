@@ -63,6 +63,14 @@ AGB-Seite /terms ist ein Platzhalter, bis der Anwalt die AGB liefert.
 - Daten in der EU (Supabase Frankfurt, Vercel fra1). Keine Patientendaten.
 - Rechtstexte (Impressum, Datenschutz, B2B-Nutzungsbedingungen) liefert der Anwalt.
 
+## Offene Punkte (Stand 13.11.2026)
+- **Bestätigter Preis vs. Katalogpreis (mit Gabriel klären):** „Update catalog“ setzt den neuen Einkaufspreis im Katalog; der Katalogpreis je Kundengruppe ergibt sich daraus mit Aufschlag. Wird in einer Bestellung ein anderer „Confirmed price“ von Hand eingetragen (z. B. 14 € statt 12,10 €), gilt er nur für diese Bestellung – der Kunde sieht im Katalog evtl. einen anderen (niedrigeren) Preis. Optionen: A) Warnung bei Abweichung vom Katalogpreis, B) Häkchen „Also use this price in the catalog“ (Aufschlag der Charge anpassen, gilt für alle Gruppen), C) beides. Hinweis: „Update catalog“ überschreibt von Hand eingetragene Preise dieser Bestellung.
+- **Bestand bei Bestellung:** wird vorerst nicht automatisch reduziert (Entscheidung 13.11.2026); Pflege über „Update catalog“ oder Excel-Import.
+- **Gesuche** (Produkte, die nicht im Katalog stehen): nächster Ausbauschritt.
+- **Sicherheits- und Compliance-Prüfung** des Tech-Stacks (Supabase, Vercel, Claude): Gabriel.
+- **AGB:** /terms ist Platzhalter, Anwalt liefert AGB und prüft den Text zur verbindlichen Bestellung.
+- **Hosting:** Vercel Hobby ist nicht für kommerzielle Nutzung; günstigere Alternative (z. B. eigener Server in Deutschland) wird gesucht.
+
 ## Technik
 Next.js (App Router, TypeScript, Tailwind) · Supabase (Postgres, Auth, Storage; Frankfurt) · Vercel (fra1) · Resend (E-Mail) · Domain portal.bionostix-germany.de (DNS bei IONOS, CNAME portal → Vercel).
 
