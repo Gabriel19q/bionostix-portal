@@ -5,6 +5,7 @@ import Link from "next/link";
 import "./globals.css";
 import { getSession } from "@/lib/session";
 import { NavLink } from "@/components/nav-link";
+import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
   title: "Bionostix Germany · Partner Portal",
@@ -78,6 +79,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             </span>
           </div>
         </footer>
+        <Toaster />
       </body>
     </html>
   );
