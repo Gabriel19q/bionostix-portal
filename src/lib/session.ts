@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 
 export type Profile = {
@@ -23,20 +24,22 @@ export type MyCompany = {
 };
 
 // Who is signed in, their profile and (for customers) their company.
-export async function getSession() {
+// - cache(): layout, admin layout and page share ONE lookup per request instead of three.
+// - getClaims(): checks the signed login token locally (Supabase's recommended way) instead of
+//   asking the auth server on every page; it refreshes the session when needed. Database access
+//   is still protected by row level security on every query.
+// - profile and company are fetched at the same time.
+export const getSession = cache(async () => {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { supabase, user: null, profile: null, company: null };
+  const { data } = await supabase.auth.getClaims();
+  const claims = data?.claims;
+  if (!claims?.sub) return { supabase, user: null, profile: null, company: null };
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id, email, full_name, role, company_id")
-    .eq("id", user.id)
-    .single<Profile>();
-
-  const { data: company } = await supabase.rpc("get_my_company").maybeSingle<MyCompany>();
+  const user = { id: claims.sub, email: (claims.email as string | undefined) ?? null };
+  const [{ data: profile }, { data: company }] = await Promise.all([
+    supabase.from("profiles").select("id, email, full_name, role, company_id").eq("id", user.id).single<Profile>(),
+    supabase.rpc("get_my_company").maybeSingle<MyCompany>(),
+  ]);
 
   return { supabase, user, profile, company };
-}
+});

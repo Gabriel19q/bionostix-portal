@@ -223,13 +223,13 @@ export async function registerRequestDocument(input: {
   const supabase = await requireAdmin();
   if (!input.path.startsWith(`request/${input.requestId}/`)) throw new Error("Invalid path");
   if (!(input.docType in DOC_TYPE_LABEL)) throw new Error("Unknown document type");
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: claimsData } = await supabase.auth.getClaims();
   const { error } = await supabase.from("documents").insert({
     storage_path: input.path,
     file_name: input.fileName.slice(0, 200),
     doc_type: input.docType,
     request_id: input.requestId,
-    uploaded_by: user?.id,
+    uploaded_by: claimsData?.claims?.sub,
   });
   if (error) throw new Error(error.message);
 
