@@ -1,4 +1,5 @@
 import "server-only";
+import { COMPANY } from "@/content/company";
 
 // Sends plain-text emails through Resend (https://resend.com).
 // Without RESEND_API_KEY nothing is sent and the portal keeps working.
@@ -32,7 +33,7 @@ export async function sendEmail({ to, subject, text }: { to: string[]; subject: 
   }
 }
 
-const footer = `\n\nBionostix Germany · The European trading arm of the Bionostix Group\n${SITE}`;
+const footer = `\n\nBionostix Germany · The European trading arm of the Bionostix Group\n${COMPANY.owner}, trading as ${COMPANY.name} · ${COMPANY.street}, ${COMPANY.city}, ${COMPANY.country}\n${SITE}`;
 
 export const emails = {
   newRequest: (number: string, company: string, lines: number, id: string) => ({

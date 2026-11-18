@@ -11,11 +11,11 @@ export default function LegalNoticePage() {
       <section>
         <h2 className="mb-1 font-bold">Information according to § 5 DDG</h2>
         <p>
-          {c.name}
+          {c.owner}
+          <br />
+          trading as „{c.name}“
           <br />
           {c.legalForm}
-          <br />
-          Owner: {c.owner}
           <br />
           {c.street}
           <br />
