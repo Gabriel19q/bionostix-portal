@@ -3,8 +3,13 @@ import { NextResponse, type NextRequest } from "next/server";
 
 // Refreshes the login session on every request and keeps signed-out
 // visitors away from the portal and admin areas.
-// Old production addresses forward to the portal's own domain (preview deployments stay reachable)
-const OLD_HOSTS = ["bionostix-portal.vercel.app", "bionostix-portal-bionostix-germany.vercel.app"];
+// Old and technical production addresses forward to the portal's own domain
+// (Netlify deploy previews like deploy-preview-1--bionostix-portal.netlify.app stay reachable)
+const OLD_HOSTS = [
+  "bionostix-portal.netlify.app",
+  "bionostix-portal.vercel.app",
+  "bionostix-portal-bionostix-germany.vercel.app",
+];
 const MAIN_HOST = "portal.bionostix-germany.de";
 
 export async function middleware(request: NextRequest) {
