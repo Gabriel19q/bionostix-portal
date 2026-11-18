@@ -18,6 +18,9 @@ type Row = {
   incoterm: string;
   stock_as_of: string;
   is_active: boolean;
+  valid_until: string | null;
+  market_mode: "all" | "only" | "except";
+  market_countries: string[];
   products: {
     trade_name: string;
     strength: string | null;
@@ -147,6 +150,16 @@ export default async function AdminCatalogPage({
                       {o.products.is_narcotic && " · BtM"}
                     </div>
                     <div className="text-xs text-slate-600">Seller: {SELLER_LABEL[o.products.seller] ?? o.products.seller}</div>
+                    {o.market_mode !== "all" && (
+                      <div className="text-xs font-bold text-slate-700">
+                        {o.market_mode === "only" ? "Only: " : "Not for: "}{o.market_countries.join(", ")}
+                      </div>
+                    )}
+                    {o.valid_until && (
+                      <div className={`text-xs ${o.valid_until < new Date().toISOString().slice(0, 10) ? "font-bold text-danger" : "text-slate-600"}`}>
+                        Offer valid until {displayDate(o.valid_until)}
+                      </div>
+                    )}
                     {o.internal_note && <div className="text-xs italic text-slate-600">Internal: {o.internal_note}</div>}
                     <button name="op" value={`toggle:${o.id}:${o.is_active ? "false" : "true"}`}
                       className="text-xs text-slate-600 underline hover:text-brand-600">

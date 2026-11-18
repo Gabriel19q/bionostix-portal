@@ -18,7 +18,14 @@ Erfolg: ≥ 3 Anfragen von Sanicura über das Portal, Anfrage → Proforma < 1 A
 - Bestellanfrage über Warenkorb (verbindlich, siehe Bestellablauf), mit Lieferland (Auswahlliste), Lieferdeadline (Pflicht) und optionalem Mindest-MHD je Zeile ohne angegebenes MHD; Statusverlauf mit Datum und Uhrzeit, Dokumente (Proforma etc.) pro Anfrage
 - E-Mails: neue Anfrage → Admins; Statusänderung → Kunde
 
-Nicht im MVP: Proforma-PDF-Erzeugung, Sourcing-Anfragen („Gesuche“, geplant als nächster Schritt), kundenindividuelle Preise/Sichtbarkeit, Zahlungen/Rechnungen, Herstellerzugang, weitere Sprachen, Tender.
+## Ausrichtung (18.11.2026)
+Bisherige Deals scheiterten an Preis, fehlender Bereitschaft der Hersteller und bestehenden Distributionsverträgen in den Zielmärkten. Schwerpunkt deshalb: EU-Überbestände und Kurzläufer, Ware für Märkte ohne Distributor, Beschaffung auf Anfrage. Dafür:
+- **Märkte je Angebot** (`offers.market_mode` = all | only | except, `offers.market_countries`): Käufer aus ausgeschlossenen Ländern (Firmenland) sehen das Angebot nicht; Bestellungen mit ausgeschlossenem Lieferland lehnt die Datenbank ab. Schützt die Distributoren der Hersteller. Die Länderliste bleibt intern.
+- **Angebot gültig bis** (`offers.valid_until`): danach unsichtbar und nicht bestellbar. Kunde sieht „Offer until …“, auch im Excel-Export.
+- Katalogfilter „Short-dated only“ (Verfall < 12 Monate).
+- **Sourcing-Anfragen („Gesuche“)** unter /portal/sourcing: Produkt, Details oder ganze Liste/Ausschreibung, Menge, Zielpreis, Termin, Lieferland. Status: Received → Searching → Offer available → Closed. Admin (/admin/sourcing) antwortet mit Nachricht an den Kunden, interne Notiz nur für Admins, E-Mail an den Kunden optional. Nicht verbindlich. Link aus dem Katalog („Can't find a product?“).
+
+Nicht im MVP: Proforma-PDF-Erzeugung, kundenindividuelle Preise/Sichtbarkeit, Zahlungen/Rechnungen, Herstellerzugang, weitere Sprachen, Tender.
 
 UI-Sprache: **Englisch**. Währung: **EUR**.
 
@@ -60,19 +67,20 @@ AGB-Seite /terms ist ein Platzhalter, bis der Anwalt die AGB liefert.
 - Produkte/Preise nur nach Login (Fachkreise, HWG). Öffentliche Seite: wer wir sind + „Request access“.
 - Vertrag entsteht erst mit unserer Proforma (Bestellbestätigung), siehe Bestellablauf.
 - BtM-Produkte: nur nach Einzelprüfung lieferbar (Hinweis unter dem Katalog; Admin sieht „BtM: check permits“). Entscheidung 12.11.2026: Kennzeichnungen Rx, Kühlware und BtM werden im Kundenkatalog nicht angezeigt; die Angaben bleiben intern am Produkt gespeichert.
-- Daten in der EU (Supabase Frankfurt, Vercel fra1). Keine Patientendaten.
+- Daten in der EU (Supabase Frankfurt). Hosting Pilot: Netlify (Seiten werden in den USA berechnet, gespeichert wird nichts dort). Keine Patientendaten.
 - Rechtstexte (Impressum, Datenschutz, B2B-Nutzungsbedingungen) liefert der Anwalt.
 
 ## Offene Punkte (Stand 13.11.2026)
 - **Bestätigter Preis vs. Katalogpreis (mit Gabriel klären):** „Update catalog“ setzt den neuen Einkaufspreis im Katalog; der Katalogpreis je Kundengruppe ergibt sich daraus mit Aufschlag. Wird in einer Bestellung ein anderer „Confirmed price“ von Hand eingetragen (z. B. 14 € statt 12,10 €), gilt er nur für diese Bestellung – der Kunde sieht im Katalog evtl. einen anderen (niedrigeren) Preis. Optionen: A) Warnung bei Abweichung vom Katalogpreis, B) Häkchen „Also use this price in the catalog“ (Aufschlag der Charge anpassen, gilt für alle Gruppen), C) beides. Hinweis: „Update catalog“ überschreibt von Hand eingetragene Preise dieser Bestellung.
 - **Bestand bei Bestellung:** wird vorerst nicht automatisch reduziert (Entscheidung 13.11.2026); Pflege über „Update catalog“ oder Excel-Import.
-- **Gesuche** (Produkte, die nicht im Katalog stehen): nächster Ausbauschritt.
+- **Gesuche:** umgesetzt am 18.11.2026 (siehe Ausrichtung). Später evtl. Datei-Upload für Ausschreibungslisten.
+- **Märkte je Angebot beim Excel-Import:** importierte Angebote gelten vorerst für alle Länder; Einschränkung im Angebot einzeln setzen.
 - **Sicherheits- und Compliance-Prüfung** des Tech-Stacks (Supabase, Vercel, Claude): Gabriel.
 - **AGB:** /terms ist Platzhalter, Anwalt liefert AGB und prüft den Text zur verbindlichen Bestellung.
-- **Hosting:** Vercel Hobby ist nicht für kommerzielle Nutzung; günstigere Alternative (z. B. eigener Server in Deutschland) wird gesucht.
+- **Hosting:** Pilot läuft auf Netlify (kostenlos, Funktionen in US East, deshalb etwas langsamer). Bei Ausbau: Vercel Pro (fra1) oder Netlify Pro (Frankfurt).
 
 ## Technik
-Next.js (App Router, TypeScript, Tailwind) · Supabase (Postgres, Auth, Storage; Frankfurt) · Vercel (fra1) · Resend (E-Mail) · Domain portal.bionostix-germany.de (DNS bei IONOS, CNAME portal → Vercel).
+Next.js (App Router, TypeScript, Tailwind) · Supabase (Postgres, Auth, Storage; Frankfurt) · Netlify (Pilot; vorher Vercel fra1) · Resend (E-Mail) · Domain portal.bionostix-germany.de (DNS bei IONOS, CNAME portal → bionostix-portal.netlify.app).
 
 ## Etappen
 1. Konten (GitHub, Supabase, Vercel, Resend)

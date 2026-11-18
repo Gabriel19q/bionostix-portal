@@ -2,7 +2,8 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type ActivityEvent =
-  | "login" | "view_catalog" | "view_requests" | "view_request" | "export" | "submit_request" | "respond";
+  | "login" | "view_catalog" | "view_requests" | "view_request" | "export" | "submit_request" | "respond"
+  | "view_sourcing" | "submit_sourcing";
 
 // Records customer activity for the admin "Activity" page. Never blocks or breaks the page.
 export async function logActivity(

@@ -61,6 +61,14 @@ export const emails = {
     subject: "Your access to the Bionostix Germany partner portal is active",
     text: `Your access for ${company} has been approved. You can now sign in and see current availability and prices.\n\nSign in: ${SITE}/login${footer}`,
   }),
+  newSourcing: (number: string, company: string, product: string) => ({
+    subject: `New sourcing request ${number} from ${company}`,
+    text: `${company} is looking for: ${product}\n\nOpen it: ${SITE}/admin/sourcing${footer}`,
+  }),
+  sourcingUpdate: (number: string, product: string, statusLabel: string, reply: string | null) => ({
+    subject: `Sourcing request ${number}: ${statusLabel}`,
+    text: `Your sourcing request ${number} (${product}) is now: ${statusLabel}.${reply ? `\n\nMessage from Bionostix Germany:\n${reply}` : ""}\n\nView it: ${SITE}/portal/sourcing${footer}`,
+  }),
   newApplication: (company: string, country: string) => ({
     subject: `New access request: ${company}`,
     text: `${company} (${country}) requested access and uploaded its licence.\n\nReview it: ${SITE}/admin${footer}`,

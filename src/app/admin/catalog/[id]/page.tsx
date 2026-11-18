@@ -48,6 +48,9 @@ export default async function EditOfferPage({ params }: { params: Promise<{ id: 
           is_active: offer.is_active,
           internal_note: offer.internal_note,
           coa_available: offer.coa_available,
+          valid_until: offer.valid_until,
+          market_mode: offer.market_mode,
+          market_countries: offer.market_countries,
         }}
       />
       <form action={offerAction} className="card flex flex-wrap items-center justify-between gap-3">

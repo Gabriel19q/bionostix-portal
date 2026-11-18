@@ -252,6 +252,85 @@ select pg_temp.expect((select name from public.get_my_company()) = 'Sanicura', '
 select pg_temp.expect((select count(*) from public.get_my_requests()) = 1, 'and sees Sanicura requests');
 reset role;
 
+-- Markets per offer and offer validity (18 Nov 2026) ------------------------------------------
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000a');
+insert into public.products (trade_name, manufacturer_id, seller)
+  select 'Market Product', id, 'bionostix_germany' from public.manufacturers where name = 'Test Pharma';
+insert into public.offers (product_id, batch, expiry_date, available_qty, moq, purchase_price, market_mode, market_countries, valid_until)
+  select p.id, v.batch, current_date + 200, 100, 1, 5.00, v.mode, v.countries, v.valid
+  from public.products p,
+       (values ('M-ONLY-IRAQ', 'only', array['Iraq'], null::date),
+               ('M-EXCEPT-DE', 'except', array['Germany'], null::date),
+               ('M-OFFER-EXPIRED', 'all', '{}'::text[], current_date - 1),
+               ('M-VALID', 'all', '{}'::text[], current_date + 10)) as v(batch, mode, countries, valid)
+  where p.trade_name = 'Market Product';
+reset role;
+create temp table market_ids as select batch, id from public.offers where batch like 'M-%';
+grant select on market_ids to authenticated;
+
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000c'); -- Sanicura, Germany
+select pg_temp.expect((select array_agg(batch order by batch) from public.get_catalog() where trade_name = 'Market Product')
+  = array['M-VALID'], 'German buyer: only-Iraq, except-Germany and expired offers are hidden');
+select pg_temp.expect((select valid_until from public.get_catalog() where batch = 'M-VALID') = current_date + 10, 'catalog shows valid until');
+select pg_temp.expect_error($$select market_countries from public.get_catalog()$$, 'market list stays internal');
+select pg_temp.expect_error($$select public.submit_request(jsonb_build_array(jsonb_build_object(
+  'offer_id', (select id from market_ids where batch = 'M-EXCEPT-DE'), 'qty', 5)), null, 'Iraq', current_date + 30)$$,
+  'German buyer cannot order an offer excluded for Germany (even with another delivery country)');
+select pg_temp.expect_error($$select public.submit_request(jsonb_build_array(jsonb_build_object(
+  'offer_id', (select id from market_ids where batch = 'M-OFFER-EXPIRED'), 'qty', 5)), null, 'Germany', current_date + 30)$$,
+  'offer past its validity cannot be ordered');
+
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000d'); -- Iraq Importer
+select pg_temp.expect((select array_agg(batch order by batch) from public.get_catalog() where trade_name = 'Market Product')
+  = array['M-EXCEPT-DE', 'M-ONLY-IRAQ', 'M-VALID'], 'Iraqi buyer sees offers allowed for Iraq');
+select pg_temp.expect_error($$select public.submit_request(jsonb_build_array(jsonb_build_object(
+  'offer_id', (select id from market_ids where batch = 'M-EXCEPT-DE'), 'qty', 5)), null, 'Germany', current_date + 30)$$,
+  'delivery into an excluded country is refused');
+select pg_temp.expect_error($$select public.submit_request(jsonb_build_array(jsonb_build_object(
+  'offer_id', (select id from market_ids where batch = 'M-ONLY-IRAQ'), 'qty', 5)), null, 'Lebanon', current_date + 30)$$,
+  'delivery outside the allowed countries is refused');
+select pg_temp.expect(array_length(public.submit_request(jsonb_build_array(jsonb_build_object(
+  'offer_id', (select id from market_ids where batch = 'M-ONLY-IRAQ'), 'qty', 5)), null, 'Iraq', current_date + 30), 1) = 1,
+  'delivery into an allowed country works');
+reset role;
+
+-- Sourcing requests (18 Nov 2026) -------------------------------------------------------------------
+insert into auth.users (id, email) values ('00000000-0000-0000-0000-00000000000f', 'pending2@applicant.example');
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000f');
+select public.apply_for_access('Pending Two', 'Jordan', null, 'importer', 'Buyer F', '+962 6 1234567');
+select pg_temp.expect_error($$select public.submit_sourcing_request('Product X', null, null, null, null, 'Jordan')$$,
+  'unapproved company cannot send sourcing requests');
+
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000c');
+select pg_temp.expect(public.submit_sourcing_request('Metformin 1000 mg', E'Tender list:\n1. Metformin 1000 mg x 180', '5,000 packs', 'max. EUR 4', current_date + 60, 'Germany') is not null,
+  'approved customer sends a sourcing request');
+select public.log_activity('submit_sourcing', '/portal/sourcing');
+select pg_temp.expect((select count(*) from public.get_my_sourcing_requests()) = 1, 'customer sees own sourcing request');
+select pg_temp.expect((select number like 'SRC-%' and status = 'open' from public.get_my_sourcing_requests()), 'numbered and open');
+select pg_temp.expect((select count(*) from public.sourcing_requests) = 0, 'customer cannot read the sourcing table');
+select pg_temp.expect_error($$select internal_note from public.get_my_sourcing_requests()$$, 'internal note not exposed');
+select pg_temp.expect_error($$insert into public.sourcing_requests (company_id, product, delivery_country) values ((select id from public.get_my_company()), 'x', 'Germany')$$,
+  'customer cannot insert directly');
+select pg_temp.expect_error($$select public.submit_sourcing_request('  ', null, null, null, null, 'Germany')$$, 'product required');
+select pg_temp.expect_error($$select public.submit_sourcing_request('X', null, null, null, current_date, 'Germany')$$, 'needed-by date in the past');
+
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000d');
+select pg_temp.expect((select count(*) from public.get_my_sourcing_requests()) = 0, 'other company does not see it');
+
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000a');
+update public.sourcing_requests set status = 'offered', reply = 'We can offer 5,000 packs.', internal_note = 'cost EUR 2.10';
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000c');
+select pg_temp.expect((select status = 'offered' and reply = 'We can offer 5,000 packs.' from public.get_my_sourcing_requests()),
+  'customer sees status and reply');
+reset role;
+set role anon;
+select pg_temp.expect_error($$select public.submit_sourcing_request('X', null, null, null, null, 'Germany')$$, 'anon sends sourcing request');
+select pg_temp.expect_error($$select * from public.get_my_sourcing_requests()$$, 'anon reads sourcing requests');
+reset role;
+
 -- Anonymous visitors ------------------------------------------------------------
 set role anon;
 select pg_temp.expect_error($$select * from public.get_catalog()$$, 'anon reads catalog');

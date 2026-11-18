@@ -4,6 +4,7 @@ import { NavLink } from "@/components/nav-link";
 
 const tabs = [
   { href: "/admin/requests", label: "Requests" },
+  { href: "/admin/sourcing", label: "Sourcing" },
   { href: "/admin", label: "Customers" },
   { href: "/admin/catalog", label: "Catalog" },
   { href: "/admin/import", label: "Import stock list" },

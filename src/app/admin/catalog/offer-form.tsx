@@ -2,6 +2,7 @@ import { SELLER_LABEL } from "@/lib/status";
 import Link from "next/link";
 import { today } from "@/lib/format";
 import { saveOffer } from "./actions";
+import { COUNTRIES } from "@/lib/countries";
 
 export type OfferFormValues = {
   offer_id?: string;
@@ -28,6 +29,9 @@ export type OfferFormValues = {
   incoterm?: string;
   stock_as_of?: string;
   is_active?: boolean;
+  valid_until?: string | null;
+  market_mode?: string;
+  market_countries?: string[];
 };
 
 function Field({ label, name, defaultValue, required, type = "text", hint, list }: {
@@ -126,6 +130,37 @@ export function OfferForm({ values, manufacturers }: { values: OfferFormValues; 
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" name="is_active" defaultChecked={v.is_active ?? true} /> Visible to customers
         </label>
+      </div>
+
+      <div className="card space-y-4">
+        <div>
+          <h2 className="font-bold">Offer validity and markets</h2>
+          <p className="text-xs text-slate-600">
+            Protects the manufacturer&apos;s distributors: buyers in excluded countries do not see this offer, and orders
+            for delivery into an excluded country are refused.
+          </p>
+        </div>
+        <div className="grid gap-4 md:grid-cols-3">
+          <Field label="Offer valid until" name="valid_until" type="date" defaultValue={v.valid_until}
+            hint="Empty = no end date. After this date the offer disappears for customers." />
+          <div>
+            <label className="label" htmlFor="market_mode">Markets</label>
+            <select id="market_mode" name="market_mode" className="input" defaultValue={v.market_mode ?? "all"}>
+              <option value="all">All countries</option>
+              <option value="only">Only these countries</option>
+              <option value="except">All countries except these</option>
+            </select>
+          </div>
+          <div>
+            <label className="label" htmlFor="market_countries">Countries</label>
+            <input id="market_countries" name="market_countries" className="input" list="countries"
+              defaultValue={(v.market_countries ?? []).join(", ")} placeholder="e.g. Iraq, Lebanon" />
+            <datalist id="countries">
+              {COUNTRIES.map((c) => <option key={c} value={c} />)}
+            </datalist>
+            <p className="mt-1 text-xs text-slate-500">Separate with commas. English country names.</p>
+          </div>
+        </div>
       </div>
 
       <div className="flex gap-3">

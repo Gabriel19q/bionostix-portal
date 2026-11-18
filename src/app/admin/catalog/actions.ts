@@ -6,6 +6,15 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { parseDate, parseNumber, parsePzn, parseText, parseYesNo } from "@/lib/parse";
 import { deleteOffers, findOrCreateManufacturer, findProduct, type ProductFields } from "@/lib/catalog";
+import { matchCountry } from "@/lib/countries";
+
+// "Iraq, libanon" -> ["Iraq", "Lebanon"]; unknown names are an error so a typo cannot open a market by accident.
+function parseCountries(value: FormDataEntryValue | null): string[] {
+  const names = String(value ?? "").split(/[,;\n]/).map((s) => s.trim()).filter(Boolean);
+  const unknown = names.filter((n) => !matchCountry(n));
+  if (unknown.length) throw new Error(`Unknown country: ${unknown.join(", ")}. Use the English name, e.g. Lebanon.`);
+  return [...new Set(names.map(matchCountry))];
+}
 
 async function requireAdmin() {
   const session = await getSession();
@@ -54,6 +63,12 @@ export async function saveOffer(formData: FormData) {
   }
 
   const markup = parseNumber(get("markup_override_pct"));
+  const modeInput = String(get("market_mode") ?? "all");
+  const market_mode = ["all", "only", "except"].includes(modeInput) ? modeInput : "all";
+  const market_countries = market_mode === "all" ? [] : parseCountries(get("market_countries"));
+  if (market_mode !== "all" && market_countries.length === 0) {
+    throw new Error("Please list at least one country, or choose \"All countries\".");
+  }
   const offer = {
     product_id: pid,
     batch,
@@ -67,6 +82,9 @@ export async function saveOffer(formData: FormData) {
     incoterm: parseText(get("incoterm")) ?? "EXW",
     stock_as_of: parseDate(get("stock_as_of")) ?? new Date().toISOString().slice(0, 10),
     is_active: get("is_active") === "on",
+    valid_until: parseDate(get("valid_until")),
+    market_mode,
+    market_countries,
   };
 
   const { error } = offerId

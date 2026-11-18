@@ -9,6 +9,7 @@ import { logExportAction } from "../activity-actions";
 import { toast } from "sonner";
 import { ArrowDown, ArrowUp, ArrowUpDown, ChevronDown, Download, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
@@ -37,6 +38,7 @@ export type CatalogItem = {
   stock_as_of: string;
   unit_price: number | null;
   coa_available: boolean | null;
+  valid_until: string | null;
 };
 
 const onRequest = <span className="text-slate-500">On request</span>;
@@ -76,6 +78,7 @@ export function CatalogTable({ items, canRequest, defaultCountry }: {
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [q, setQ] = useState("");
   const [manufacturer, setManufacturer] = useState("");
+  const [shortOnly, setShortOnly] = useState(false);
   const [sort, setSort] = useState<SortKey>("name");
   const [dir, setDir] = useState<SortDir>("asc");
 
@@ -121,6 +124,7 @@ export function CatalogTable({ items, canRequest, defaultCountry }: {
     const needle = q.trim().toLowerCase();
     const filtered = items.filter((i) => {
       if (manufacturer && i.manufacturer !== manufacturer) return false;
+      if (shortOnly && (!i.expiry_date || monthsUntil(i.expiry_date) >= 12)) return false;
       if (!needle) return true;
       return [i.trade_name, i.active_ingredient, i.strength, i.pzn, i.manufacturer]
         .some((v) => v?.toLowerCase().includes(needle));
@@ -139,10 +143,17 @@ export function CatalogTable({ items, canRequest, defaultCountry }: {
       }
       return sign * a.trade_name.localeCompare(b.trade_name) || exp(a).localeCompare(exp(b));
     });
-  }, [items, q, manufacturer, sort, dir]);
+  }, [items, q, manufacturer, shortOnly, sort, dir]);
 
   if (items.length === 0) {
-    return <div className="card text-sm text-slate-600">No products are available at the moment. Please check back soon.</div>;
+    return (
+      <div className="card space-y-2 text-sm text-slate-600">
+        <p>No products are available at the moment. Please check back soon.</p>
+        <p>
+          Looking for something specific? <Link href="/portal/sourcing" className="font-bold text-brand-600 underline">Send us a sourcing request</Link>.
+        </p>
+      </div>
+    );
   }
 
   return (
@@ -172,6 +183,10 @@ export function CatalogTable({ items, canRequest, defaultCountry }: {
             </SelectContent>
           </Select>
         </div>
+        <label className="flex items-center gap-2 pb-3 text-sm">
+          <input type="checkbox" checked={shortOnly} onChange={(e) => setShortOnly(e.target.checked)} />
+          Short-dated only (under 12 months)
+        </label>
         <div className="w-full sm:w-56 md:hidden">
           <label className="label" id="s-label">Sort by</label>
           <Select value={`${sort}:${dir}`} onValueChange={(v) => {
@@ -287,6 +302,7 @@ export function CatalogTable({ items, canRequest, defaultCountry }: {
                           {displayDate(i.expiry_date)}
                         </div>
                         <div className="text-xs text-slate-500">{months} months left</div>
+                        {i.valid_until && <div className="text-xs font-bold text-slate-700">Offer until {displayDate(i.valid_until)}</div>}
                       </div>
                     )}
                   </td>
@@ -332,9 +348,24 @@ export function CatalogTable({ items, canRequest, defaultCountry }: {
                 </tr>
               );
             })}
+            {rows.length === 0 && (
+              <tr>
+                <td colSpan={12} className="px-3 py-6 text-center text-sm text-slate-600">
+                  No offers match your filters.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
+      <p className="text-sm text-slate-600">
+        Can&apos;t find a product?{" "}
+        <Link href={`/portal/sourcing${q.trim() ? `?product=${encodeURIComponent(q.trim())}` : ""}`}
+          className="font-bold text-brand-600 underline">
+          Send us a sourcing request
+        </Link>{" "}
+        and we look for it with our manufacturers.
+      </p>
       <CartPanel items={items} cart={cart} setQty={set} clear={clear} canRequest={canRequest}
         defaultCountry={defaultCountry} />
       <p className="text-xs text-slate-500">

@@ -13,7 +13,7 @@ export async function downloadCatalogExcel(items: CatalogItem[], opts: { include
     "Product", "Active ingredient", "Strength", "Dosage form", "Pack size", "PZN", "Manufacturer", "Seller",
     "Batch", "Expiry date", "Available (packs)", "MOQ (packs)",
     ...(opts.includePrices ? ["Price per pack (EUR)"] : []),
-    "Incoterm", "Stock as of",
+    "Incoterm", "Stock as of", "Offer valid until",
   ];
 
   const toDate = (iso: string | null) => (iso ? new Date(`${iso}T00:00:00Z`) : "");
@@ -25,13 +25,14 @@ export async function downloadCatalogExcel(items: CatalogItem[], opts: { include
     ...(opts.includePrices ? [i.unit_price === null ? "on request" : Number(i.unit_price)] : []),
     i.incoterm,
     toDate(i.stock_as_of),
+    toDate(i.valid_until),
   ]);
 
   const ws = XLSX.utils.aoa_to_sheet([header, ...rows], { cellDates: true });
 
   // Formats: dates as dates, prices with two decimals
   const range = XLSX.utils.decode_range(ws["!ref"] ?? "A1");
-  const dateCols = [header.indexOf("Expiry date"), header.indexOf("Stock as of")];
+  const dateCols = [header.indexOf("Expiry date"), header.indexOf("Stock as of"), header.indexOf("Offer valid until")];
   const priceCol = header.indexOf("Price per pack (EUR)");
   for (let r = 1; r <= range.e.r; r++) {
     for (const c of dateCols) {
