@@ -1,0 +1,8 @@
+# Netlify hosting (pilot). Netlify detects Next.js and installs its runtime automatically.
+# Environment variables are set in the Netlify UI (Project configuration → Environment variables), never here.
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "22"
