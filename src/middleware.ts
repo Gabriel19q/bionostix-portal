@@ -38,9 +38,9 @@ export async function middleware(request: NextRequest) {
     },
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Verifies the login token (and refreshes it when it has expired) without an extra auth-server call.
+  const { data } = await supabase.auth.getClaims();
+  const user = data?.claims?.sub ?? null;
 
   const path = request.nextUrl.pathname;
   const isProtected = path.startsWith("/portal") || path.startsWith("/admin");
