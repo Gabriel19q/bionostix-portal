@@ -18,9 +18,17 @@ Next.js 15 (App Router, `src/`), TypeScript, Tailwind v4, Supabase (`@supabase/s
 - Der Service-Role-Key wird nur serverseitig benutzt (`src/lib/supabase/admin.ts`), nie im Browser.
 - Vor jedem Commit: `npm run build` und `npm run lint` müssen grün sein.
 - Kleine, nachvollziehbare Commits mit deutscher oder englischer Beschreibung.
-- Commit-Autor vorerst `Gabriel19q <353532907+Gabriel19q@users.noreply.github.com>` (Vercel-Hobby-Regel aus der Anfangszeit; prüfen, ob Netlify sie braucht, wenn Jan mitarbeitet).
+- Commit-Autor ist immer die Person, für die Claude gerade arbeitet (Gabriel: `Gabriel19q <353532907+Gabriel19q@users.noreply.github.com>`, Jan: sein eigenes GitHub-Konto). Nie unter dem Namen des anderen committen. Das Repository ist öffentlich, Netlify baut deshalb Änderungen von beiden automatisch.
+- Das Repository ist öffentlich: keine Geheimnisse, keine echten Kundendaten, Preislisten oder Verträge ins Repository legen.
 - Hosting (seit 18.11.2026): **Netlify**, Projekt `bionostix-portal`, baut automatisch bei jedem Push auf `main`; Pull Requests bekommen eine Vorschau (`deploy-preview-<nr>--bionostix-portal.netlify.app`). Vercel läuft vorübergehend als Reserve mit. Funktionen laufen in US East (kostenloser Tarif), deshalb pro Seite möglichst wenige Datenbankabfragen nacheinander (`getSession` ist pro Anfrage gecacht).
 - Datenbankänderungen, die Funktionen ersetzen (`drop function`), fragt der Supabase-Connector beim Inhaber ab: vorher ankündigen, dass er bestätigen muss. Erst die Migration einspielen, dann den Code pushen.
+
+## Zu zweit arbeiten (Gabriel und Jan, seit 19.11.2026)
+- Vor dem Start immer `git pull`, damit die Änderungen des anderen da sind.
+- Kurz absprechen, wer woran arbeitet; nicht beide gleichzeitig an derselben Seite.
+- Datenbankänderungen (neue Migration) nur nacheinander: vor dem Einspielen prüfen, ob die letzte Migration in `supabase/migrations/` auch live ist (Supabase-Connector `list_migrations`). Neue Migrationsdateien mit Datum und fortlaufender Nummer benennen.
+- Nach jedem Push: Inhaber bitten, in Netlify unter „Versions“ zu prüfen, dass die neue Version „Live“ ist.
+- Größere oder riskante Änderungen (Login, Preise, Sicherheitsfunktionen) als Pull Request anlegen; der andere Inhaber schaut die Vorschau an, dann übernehmen.
 
 ## Wichtige Befehle
 - `npm run dev` – lokal starten
