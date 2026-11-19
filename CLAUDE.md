@@ -27,7 +27,8 @@ Next.js 15 (App Router, `src/`), TypeScript, Tailwind v4, Supabase (`@supabase/s
 - Vor dem Start immer `git pull`, damit die Änderungen des anderen da sind.
 - Kurz absprechen, wer woran arbeitet; nicht beide gleichzeitig an derselben Seite.
 - Datenbankänderungen (neue Migration) nur nacheinander: vor dem Einspielen prüfen, ob die letzte Migration in `supabase/migrations/` auch live ist (Supabase-Connector `list_migrations`). Neue Migrationsdateien mit Datum und fortlaufender Nummer benennen.
-- Nach jedem Push: Inhaber bitten, in Netlify unter „Versions“ zu prüfen, dass die neue Version „Live“ ist.
+- **Netlify-Credits sparen:** Der kostenlose Tarif hat 300 Credits pro Monat, jede erfolgreiche Live-Veröffentlichung (Push auf `main`) kostet 15. Sind sie aufgebraucht, ist das Portal bis Monatsende offline. Deshalb Änderungen auf einem Branch sammeln und als Pull Request mit Vorschau bauen; erst gebündelt auf `main` übernehmen, wenn der Inhaber es freigibt. Kleine Korrekturen nicht einzeln pushen. Bei Zweifel den Inhaber bitten, unter Netlify „Usage & billing“ den Stand zu prüfen.
+- Nach jedem Push auf `main`: Inhaber bitten, in Netlify unter „Versions“ zu prüfen, dass die neue Version „Live“ ist.
 - Größere oder riskante Änderungen (Login, Preise, Sicherheitsfunktionen) als Pull Request anlegen; der andere Inhaber schaut die Vorschau an, dann übernehmen.
 
 ## Wichtige Befehle
