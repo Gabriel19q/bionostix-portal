@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import Image from "next/image";
 import Link from "next/link";
-import { IMPRINT_URL } from "@/content/company";
+import { IMPRINT_URL, WEBSITE_URL } from "@/content/company";
 import "./globals.css";
 import { getSession } from "@/lib/session";
 import { NavLink } from "@/components/nav-link";
@@ -32,14 +32,15 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       <body className="flex min-h-screen flex-col">
         <header className="border-b border-slate-200 bg-white">
           <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-3 px-6 py-3">
-            {/* Wordmark: min. 120 px wide, clear space of 1/4 of its height on every side (CI v1.5). */}
-            <Link href="/" className="flex items-center gap-4 p-[11px]" aria-label="Bionostix Germany Partner Portal, home">
-              <Image src="/brand/Bionostix-Colour.svg" alt="" width={152} height={45} priority className="h-auto w-[152px]" />
-              <span className="hidden border-l border-slate-200 pl-4 text-sm leading-tight text-slate-600 sm:block">
-                <span className="block font-bold text-slate-900">Bionostix Germany</span>
+            {/* Bionostix Germany wordmark (CI): leads to the company website; "Partner Portal" leads to the portal home */}
+            <div className="flex items-center gap-4">
+              <a href={WEBSITE_URL} className="p-[11px]" aria-label="Bionostix Germany website">
+                <Image src="/brand/Bionostix-Germany-Colour.svg" alt="" width={176} height={60} priority className="h-auto w-[140px] sm:w-[176px]" />
+              </a>
+              <Link href="/" className="hidden border-l border-slate-200 py-2 pl-4 text-sm font-bold text-slate-900 hover:text-brand-600 sm:block">
                 Partner Portal
-              </span>
-            </Link>
+              </Link>
+            </div>
             <nav className="flex flex-wrap items-center gap-3 text-sm">
               {user ? (
                 <>
