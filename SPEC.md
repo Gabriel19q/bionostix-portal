@@ -23,7 +23,7 @@ Pharmaceuticals, IVD, Food supplements, Health products.
   - Nahrungsergänzung: Registrierung als Lebensmittelunternehmen (freiwillig).
   - Gesundheitsprodukte: keine zusätzlichen Nachweise.
   - (Vom Anwalt bzw. der Behörde zu bestätigen.)
-- Verkäufer schreiben eine kurze anonyme Firmenbeschreibung (ohne Namen, Admin prüft).
+- Registrierung auf **einer Seite** (Feedback 23.11.2026): E-Mail, Passwort, Firma, Ansprechpartner, Rollen, Bereiche, Standorte, Nachweise, Zustimmungen; danach nur noch E-Mail bestätigen, dann ist der Antrag eingereicht (auch bei Bestätigung auf einem anderen Gerät). Keine anonyme Firmenbeschreibung für Verkäufer.
 - Zustimmung per Häkchen: Nutzungsbedingungen, Vertraulichkeit/Nichtumgehung (beide Rollen), Provisionsvereinbarung (nur Verkäufer). Gespeichert wird, wer wann welche Fassung angenommen hat; automatische E-Mail mit den vereinbarten Bedingungen als PDF. Neue Fassung → erneute Zustimmung beim nächsten Login.
 - Newsletter: eigenes, freiwilliges, nicht vorausgewähltes Häkchen, Double-Opt-in (eigene Bestätigungs-E-Mail), Nachweis mit Zeitpunkt und Text, Abmeldung im Konto; Admin-Export der bestätigten Empfänger. Absatz in der Datenschutzerklärung.
 - Vor der Freigabe nur „Pending approval“. Banner nach der Freigabe nur bei: Lizenz läuft ab/abgelaufen, fehlender Nachweis für einen Bereich. Kein Hinweis zum Ende des kostenlosen Zeitraums (Käufer hat mit Kreditkarte zugestimmt).
@@ -44,7 +44,7 @@ Pharmaceuticals, IVD, Food supplements, Health products.
 Je Angebot (Standard je Verkäufer): „Buyers based in“ (Sitz/Standort des Käufers) und „Ship to“ (Liefer- und Endmarkt), jeweils alle / nur / alle außer. Die Datenbank prüft beides; in der Anfrage gibt der Käufer verbindlich das Endbestimmungsland an (vorausgefüllt mit dem Lieferland). Länderlisten bleiben für Käufer unsichtbar; Käufer sehen nur Angebote, die sie kaufen dürfen. Firmen mit mehreren Standorten wählen im Katalog „Prices for: …“ aus ihren geprüften Standorten.
 
 ### Katalog
-- Karten nach Vorbild Pipelinepharma: Überschrift Wirkstoffe, darunter Form, Stärke, Packungsgröße; Angaben zu Brand, Sprache, Haltbarkeit, Menge, MOQ, Preis für meinen Markt, Lieferbedingung, gültig bis, verfügbare Dokumente, Registered in; anonymer Verkäufer („Seller #123 · Verified by Bionostix“, Land und Firmenart, Kurzbeschreibung, typische Antwortzeit ab 3 Anfragen); Knopf „Send request“.
+- Karten nach Vorbild Pipelinepharma: Überschrift Wirkstoffe, darunter Form, Stärke, Packungsgröße; Angaben zu Brand, Sprache, Haltbarkeit, Menge, MOQ, Preis für meinen Markt, Lieferbedingung, gültig bis, verfügbare Dokumente, Registered in; anonymer Verkäufer („Seller S-12345 · Verified by Bionostix“, Land und Firmenart, typische Antwortzeit ab 3 Anfragen); Knopf „Send request“.
 - Filter links (lange Listen mit Suchfeld): Bereich, Suche Produkt/Wirkstoff, Darreichungsform, Sprache der Packung, Restlaufzeit mindestens X Monate, Menge mindestens, Lieferbedingung. Nur Angebote, die in mein Land dürfen.
 - Leere Suche: Suchtipps und Knopf zum Gesuch.
 

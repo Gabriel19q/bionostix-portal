@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { getSession } from "@/lib/session";
 
 const steps = [
   {
@@ -15,7 +17,11 @@ const steps = [
   },
 ];
 
-export default function Home() {
+export default async function Home() {
+  // Signed-in users (e.g. right after confirming their email) go straight to the portal
+  const { user } = await getSession();
+  if (user) redirect("/portal");
+
   return (
     <div className="space-y-14">
       <section className="bg-sand px-6 py-12 md:px-14 md:py-16">

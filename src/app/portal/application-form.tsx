@@ -8,7 +8,7 @@ import { CATEGORIES, docSlots, type Category } from "@/lib/categories";
 import { COUNTRIES } from "@/lib/countries";
 import { LEGAL_VERSION } from "@/lib/legal";
 import { createClient } from "@/lib/supabase/client";
-import { uploadCompanyDocumentV2 } from "@/lib/upload";
+import { uploadCompanyDocumentV2, uploadPendingDocument } from "@/lib/upload";
 import { afterApplication } from "./actions";
 
 type Site = { country: string; address: string };
@@ -18,7 +18,6 @@ const FRIENDLY: Record<string, string> = {
   "choose buy and/or sell": "Please choose whether you want to buy, sell or both.",
   "buyers must choose": "Please choose at least one category you want to buy.",
   "sellers must choose": "Please choose at least one category you want to sell.",
-  "seller description": "Please describe your company in 20 to 1000 characters.",
   "IVDR": "Please confirm the distributor obligations under the IVDR.",
   "every site needs a country": "Please choose a country for every site.",
 };
@@ -31,10 +30,13 @@ function toggle<T>(list: T[], value: T) {
   return list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
 }
 
-export function ApplicationForm({ defaultName }: { defaultName: string }) {
+export function ApplicationForm({ defaultName = "", withAccount = false }: { defaultName?: string; withAccount?: boolean }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [sent, setSent] = useState(false);
 
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
@@ -46,7 +48,6 @@ export function ApplicationForm({ defaultName }: { defaultName: string }) {
   const [buyCats, setBuyCats] = useState<Category[]>([]);
   const [sellCats, setSellCats] = useState<Category[]>([]);
   const [sites, setSites] = useState<Site[]>([{ country: "", address: "" }]);
-  const [description, setDescription] = useState("");
   const [srn, setSrn] = useState("");
   const [ivdr, setIvdr] = useState(false);
   const [files, setFiles] = useState<Record<string, File | null>>({});
@@ -76,21 +77,44 @@ export function ApplicationForm({ defaultName }: { defaultName: string }) {
     setBusy(true);
     setError(null);
     const supabase = createClient();
+    const application = {
+      name, address, vat_id: vatId, contact_name: contact, phone,
+      wants_buy: wantsBuy, wants_sell: wantsSell,
+      buy_categories: wantsBuy ? buyCats : [],
+      sell_categories: wantsSell ? sellCats : [],
+      sites,
+      eudamed_srn: sellsIvd ? srn : null,
+      ivdr_confirmed: sellsIvd ? ivdr : false,
+      version: LEGAL_VERSION,
+      consents: { terms, confidentiality, commission: wantsSell && commission, newsletter },
+    };
     try {
-      const { data, error: applyError } = await supabase.rpc("apply_for_access_v2", {
-        p: {
-          name, address, vat_id: vatId, contact_name: contact, phone,
-          wants_buy: wantsBuy, wants_sell: wantsSell,
-          buy_categories: wantsBuy ? buyCats : [],
-          sell_categories: wantsSell ? sellCats : [],
-          sites,
-          seller_description: wantsSell ? description : null,
-          eudamed_srn: sellsIvd ? srn : null,
-          ivdr_confirmed: sellsIvd ? ivdr : false,
-          version: LEGAL_VERSION,
-          consents: { terms, confidentiality, commission: wantsSell && commission, newsletter },
-        },
-      });
+      if (withAccount) {
+        const { data: su, error: signUpError } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { full_name: contact, application },
+            emailRedirectTo: `${window.location.origin}/auth/callback?next=/portal`,
+          },
+        });
+        if (signUpError) throw new Error(signUpError.message);
+        if (su.user && su.user.identities?.length === 0) {
+          throw new Error("An account with this email already exists. Please sign in instead.");
+        }
+        if (!su.session) {
+          // Email confirmation pending: files wait in the new account's pending folder
+          for (const slot of slots) {
+            const file = files[slot.key];
+            if (file) await uploadPendingDocument(supabase, su.user!.id, file, slot.kind, slot.siteIndex ?? null, slot.category ?? null);
+          }
+          setSent(true);
+          setBusy(false);
+          return;
+        }
+      }
+
+      const { data, error: applyError } = await supabase.rpc("apply_for_access_v2", { p: application });
       if (applyError) throw new Error(friendly(applyError.message));
       const { company_id: companyId, site_ids: siteIds } = data as { company_id: string; site_ids: string[] };
 
@@ -101,19 +125,32 @@ export function ApplicationForm({ defaultName }: { defaultName: string }) {
         await uploadCompanyDocumentV2(supabase, companyId, file, slot.kind, siteId, slot.category);
       }
       await afterApplication();
+      if (withAccount) router.push("/portal");
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+      setError(err instanceof Error ? friendly(err.message) : "Something went wrong.");
       setBusy(false);
       router.refresh();
     }
   }
 
+  if (sent) {
+    return (
+      <div className="card mx-auto max-w-xl space-y-3">
+        <h1 className="text-xl font-bold">Please confirm your email</h1>
+        <p className="text-sm text-slate-600">
+          Thank you, your application is complete. We sent a confirmation link to <strong>{email}</strong>. As soon as
+          you open it, your application is submitted and we start verifying your company.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="card mx-auto max-w-3xl">
-      <h1 className="mb-1 text-xl font-bold">Company details</h1>
+      <h1 className="mb-1 text-xl font-bold">{withAccount ? "Request access" : "Company details"}</h1>
       <p className="mb-6 text-sm text-slate-600">
-        Step 2 of 2. We verify every company before it can buy or sell on the platform.
+        We verify every company before it can buy or sell on the platform. You confirm your email at the end.
       </p>
       <p className="notice-info mb-6">
         Does your company already have access? Then do not fill in this form. Send us a short email to{" "}
@@ -121,6 +158,22 @@ export function ApplicationForm({ defaultName }: { defaultName: string }) {
       </p>
 
       <form onSubmit={onSubmit} className="space-y-8">
+        {withAccount && (
+          <section className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="label" htmlFor="email">Business email</label>
+              <input id="email" type="email" className="input" required autoComplete="email" value={email}
+                onChange={(e) => setEmail(e.target.value)} />
+            </div>
+            <div>
+              <label className="label" htmlFor="password">Password</label>
+              <input id="password" type="password" className="input" required minLength={10} autoComplete="new-password"
+                value={password} onChange={(e) => setPassword(e.target.value)} />
+              <p className="mt-1 text-xs text-slate-500">At least 10 characters.</p>
+            </div>
+          </section>
+        )}
+
         {/* Company */}
         <section className="grid gap-4 md:grid-cols-2">
           <div className="md:col-span-2">
@@ -231,18 +284,9 @@ export function ApplicationForm({ defaultName }: { defaultName: string }) {
         </section>
 
         {/* Seller profile */}
-        {wantsSell && (
+        {sellsIvd && (
           <section className="space-y-4">
-            <h2 className="font-bold">Seller profile</h2>
-            <div>
-              <label className="label" htmlFor="desc">Short description of your company</label>
-              <textarea id="desc" className="input min-h-24" required minLength={20} maxLength={1000}
-                value={description} onChange={(e) => setDescription(e.target.value)}
-                placeholder="e.g. EU wholesaler based in Germany with a focus on oncology and hospital products, supplying 30+ countries." />
-              <p className="mt-1 text-xs text-slate-500">
-                Buyers see this text before a deal is agreed. Do not mention your company name, brand names or contact details.
-              </p>
-            </div>
+            <h2 className="font-bold">IVD</h2>
             {sellsIvd && (
               <>
                 <div>
@@ -310,7 +354,7 @@ export function ApplicationForm({ defaultName }: { defaultName: string }) {
 
         {error && <p className="text-sm text-danger">{error}</p>}
         <button className="btn-primary" disabled={busy}>
-          {busy ? "Submitting…" : "Submit for verification"}
+          {busy ? "Submitting…" : withAccount ? "Submit application" : "Submit for verification"}
         </button>
       </form>
     </div>

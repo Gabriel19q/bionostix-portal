@@ -462,3 +462,26 @@ select pg_temp.as_user('00000000-0000-0000-0000-0000000000f1');
 select pg_temp.expect(public.end_listings(array[(select id from seller_offer)]) = 1, 'seller ends own offer');
 reset role;
 select pg_temp.expect((select status from public.listings limit 1) = 'ended', 'offer marked ended');
+
+-- Registration on one page: application in metadata, files in pending/<user>/ --------
+insert into auth.users (id, email, raw_user_meta_data) values ('00000000-0000-0000-0000-0000000000f4', 'onepage@example.test',
+  '{"full_name":"One Page","application":{"name":"One Page Co","contact_name":"O","phone":"+49 711 777777","wants_buy":true,"wants_sell":true,"version":"t1","sites":[{"country":"Germany"},{"country":"Iraq"}],"buy_categories":["pharma"],"sell_categories":["supplements"],"consents":{"terms":true,"confidentiality":true,"commission":true}}}');
+insert into auth.users (id, email, email_confirmed_at) values ('00000000-0000-0000-0000-0000000000f5', 'old@example.test', now());
+set role anon;
+insert into storage.objects (bucket_id, name) values ('documents', 'pending/00000000-0000-0000-0000-0000000000f4/wholesale_licence__1__pharma__1700000000-licence.pdf');
+insert into storage.objects (bucket_id, name) values ('documents', 'pending/00000000-0000-0000-0000-0000000000f4/registry_extract__x__x__1700000001-register.pdf');
+select pg_temp.expect_error($$insert into storage.objects (bucket_id, name) values ('documents', 'pending/00000000-0000-0000-0000-0000000000f5/x__x__x__1-a.pdf')$$, 'no pending upload for confirmed accounts');
+select pg_temp.expect_error($$insert into storage.objects (bucket_id, name) values ('documents', 'company/00000000-0000-0000-0000-0000000000f4/a.pdf')$$, 'anon cannot upload into company folders');
+select pg_temp.expect_error($$select public.claim_pending_application()$$, 'anon cannot claim');
+reset role;
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f5');
+select pg_temp.expect(public.claim_pending_application() is null, 'nothing to claim without application');
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f4');
+select pg_temp.expect(public.claim_pending_application() is not null, 'application claimed after sign-in');
+select pg_temp.expect(jsonb_array_length(public.get_my_account() -> 'documents') = 2, 'pending files registered');
+select pg_temp.expect((select count(*) from jsonb_array_elements(public.get_my_account() -> 'documents') d
+  where d ->> 'kind' = 'wholesale_licence' and d ->> 'site_id' = public.get_my_account() -> 'sites' -> 1 ->> 'id') = 1, 'licence linked to second site');
+select pg_temp.expect(public.claim_pending_application() is null, 'claim only once');
+reset role;
+select pg_temp.expect((select raw_user_meta_data ? 'application' from auth.users where id = '00000000-0000-0000-0000-0000000000f4') = false, 'application removed from metadata');

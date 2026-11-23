@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
+import { sendApplicationEmails } from "@/lib/application-emails";
 import { CATEGORY_LABEL, DOC_KIND_LABEL, type Category, type DocKind } from "@/lib/categories";
 import { ApplicationForm } from "./application-form";
 import { DocumentUpload } from "./document-upload";
@@ -18,6 +19,12 @@ export default async function PortalPage() {
   if (profile?.role === "admin") redirect("/admin/requests");
 
   if (!company) {
+    // Confirmed on another device: the application from the registration page is still waiting
+    const { data: claimed } = await supabase.rpc("claim_pending_application");
+    if (claimed) {
+      if (user.email) await sendApplicationEmails(supabase, user.email);
+      redirect("/portal");
+    }
     return <ApplicationForm defaultName={profile?.full_name ?? ""} />;
   }
 

@@ -61,10 +61,6 @@ export async function saveCompanyReview(formData: FormData) {
     // Earliest approved licence date: the old checks (my_company_active) use it
     license_expires_on: validDates.sort()[0] ?? null,
   };
-  if (before.wants_sell) {
-    const desc = String(formData.get("seller_description") ?? "").trim();
-    if (desc) update.seller_description = desc;
-  }
   if (before.status !== "suspended") {
     update.status = active ? "approved" : rejected ? "rejected" : "applied";
     if (active && before.status !== "approved") {
@@ -110,7 +106,7 @@ export async function createCompanyAccount(formData: FormData) {
   const { data: company, error } = await supabase.from("companies").insert({
     name, country, wants_buy: wantsBuy, wants_sell: wantsSell,
     buy_status: wantsBuy ? "approved" : null, sell_status: wantsSell ? "approved" : null,
-    seller_code: code, seller_description: wantsSell ? String(formData.get("seller_description") ?? "").trim() || null : null,
+    seller_code: code,
     status: "approved", verified_on: new Date().toISOString().slice(0, 10), verified_by: user!.id,
   }).select("id").single();
   if (error) throw new Error(error.message);

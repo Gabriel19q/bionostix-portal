@@ -142,10 +142,6 @@ export default async function AdminPage() {
               </label>
             ))}
           </div>
-          <div className="md:col-span-2">
-            <label className="label" htmlFor="new-desc">Anonymous seller description</label>
-            <textarea id="new-desc" name="seller_description" className="input" />
-          </div>
           <p className="text-xs text-slate-500 md:col-span-2">
             The account is created as approved. Users register themselves and are then added with “Move”.
           </p>
@@ -271,17 +267,10 @@ export default async function AdminPage() {
 
               {c.wants_sell && (
                 <div className="grid gap-4 md:grid-cols-[1fr_12rem]">
-                  <div>
-                    <label className="label" htmlFor={`desc-${c.id}`}>Anonymous description (buyers see it)</label>
-                    <textarea id={`desc-${c.id}`} name="seller_description" className="input min-h-20"
-                      defaultValue={c.seller_description ?? ""} />
-                    {(c.eudamed_srn || c.ivdr_duties_confirmed_at) && (
-                      <p className="mt-1 text-xs text-slate-500">
-                        {c.eudamed_srn ? `EUDAMED SRN ${c.eudamed_srn}. ` : ""}
-                        {c.ivdr_duties_confirmed_at ? `IVDR distributor obligations confirmed on ${fmt(c.ivdr_duties_confirmed_at)}.` : ""}
-                      </p>
-                    )}
-                  </div>
+                  <p className="self-end text-xs text-slate-500">
+                    {c.eudamed_srn ? `EUDAMED SRN ${c.eudamed_srn}. ` : ""}
+                    {c.ivdr_duties_confirmed_at ? `IVDR distributor obligations confirmed on ${fmt(c.ivdr_duties_confirmed_at)}.` : ""}
+                  </p>
                   <div>
                     <label className="label" htmlFor={`pct-${c.id}`}>Commission (%)</label>
                     <input id={`pct-${c.id}`} name="commission_pct" className="input" inputMode="decimal"

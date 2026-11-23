@@ -60,3 +60,21 @@ export async function uploadCompanyDocumentV2(
   });
   if (rpcError) throw new Error(rpcError.message);
 }
+
+// Registration on one page: before the email is confirmed there is no session yet. Files go to
+// pending/<new user id>/ and are registered by claim_pending_application() after the first sign-in.
+export async function uploadPendingDocument(
+  supabase: SupabaseClient,
+  userId: string,
+  file: File,
+  kind: string,
+  siteIndex?: number | null,
+  category?: string | null,
+) {
+  if (file.size > MAX_UPLOAD_BYTES) throw new Error("File is larger than 10 MB.");
+  if (!ACCEPTED_TYPES.split(",").includes(file.type)) throw new Error("Please upload a PDF, PNG or JPG file.");
+  const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_").replace(/_+/g, "_").slice(-80);
+  const path = `pending/${userId}/${kind}__${siteIndex ?? "x"}__${category ?? "x"}__${Date.now()}-${safeName}`;
+  const { error } = await supabase.storage.from("documents").upload(path, file, { contentType: file.type, upsert: false });
+  if (error) throw new Error(error.message);
+}
