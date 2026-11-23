@@ -397,3 +397,19 @@ select pg_temp.as_user('00000000-0000-0000-0000-0000000000f2');
 select pg_temp.expect(not public.confirm_newsletter((select confirm_token from seller_token)), 'cannot confirm another user''s newsletter');
 reset role;
 select pg_temp.expect((select confirmed_at from public.consents where kind = 'newsletter') is null, 'foreign token left unconfirmed');
+
+-- Marketplace settings (stage 1b) ------------------------------------------------
+insert into public.app_settings (key, value) values ('standard_commission_pct', '3');
+update public.companies set sell_status = 'approved' where name = 'Seller Co';
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f1');
+select pg_temp.expect((public.get_my_account() -> 'company' ->> 'commission_pct')::numeric = 3, 'approved seller sees standard commission');
+select pg_temp.expect((select count(*) from public.app_settings) = 0, 'settings invisible to sellers');
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f2');
+select pg_temp.expect((public.get_my_account() -> 'company' ->> 'commission_pct') is null, 'buyer never sees a commission');
+reset role;
+update public.companies set commission_pct = 2.5 where name = 'Seller Co';
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f1');
+select pg_temp.expect((public.get_my_account() -> 'company' ->> 'commission_pct')::numeric = 2.5, 'own commission rate overrides standard');
+reset role;
