@@ -2,6 +2,9 @@
 // Fields left null are not shown.
 // Gabriel Barakat is a sole proprietor, not in the commercial register: he is the legal entity,
 // "Bionostix Germany" is only his trading name and must not be presented as a company of its own.
+// The legal notice lives on the website (one place to maintain); the portal links there.
+export const IMPRINT_URL = "https://www.bionostix-germany.de/impressum";
+
 export const COMPANY = {
   name: "Bionostix Germany", // trading name (Geschäftsbezeichnung)
   owner: "Gabriel Barakat", // legal entity

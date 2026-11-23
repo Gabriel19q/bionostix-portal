@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import Image from "next/image";
 import Link from "next/link";
+import { IMPRINT_URL } from "@/content/company";
 import "./globals.css";
 import { getSession } from "@/lib/session";
 import { NavLink } from "@/components/nav-link";
@@ -76,7 +77,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             <span className="flex gap-4">
               <span>For licensed pharmaceutical wholesalers and importers only.</span>
               <Link href="/terms" className="underline hover:text-brand-600">Terms &amp; conditions</Link>
-              <Link href="/legal-notice" className="underline hover:text-brand-600">Legal notice</Link>
+              <a href={IMPRINT_URL} className="underline hover:text-brand-600">Legal notice</a>
             </span>
           </div>
         </footer>

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { COMPANY } from "@/content/company";
+import { COMPANY, IMPRINT_URL } from "@/content/company";
 
 export const metadata: Metadata = { title: "Terms & conditions · Bionostix Germany" };
 
@@ -44,7 +43,7 @@ export default function TermsPage() {
       </section>
 
       <p className="text-sm">
-        <Link href="/legal-notice" className="text-brand-600 underline">Legal notice</Link>
+        <a href={IMPRINT_URL} className="text-brand-600 underline">Legal notice</a>
       </p>
     </div>
   );
