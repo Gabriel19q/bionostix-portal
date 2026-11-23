@@ -70,8 +70,26 @@ export const emails = {
     subject: `Sourcing request ${number}: ${statusLabel}`,
     text: `Your sourcing request ${number} (${product}) is now: ${statusLabel}.${reply ? `\n\nMessage from Bionostix Germany:\n${reply}` : ""}\n\nView it: ${SITE}/portal/sourcing${footer}`,
   }),
-  newApplication: (company: string, country: string) => ({
+  newApplication: (company: string, country: string, roles = "buyer") => ({
     subject: `New access request: ${company}`,
-    text: `${company} (${country}) requested access and uploaded its licence.\n\nReview it: ${SITE}/admin${footer}`,
+    text: `${company} (${country}) requested access as ${roles} and uploaded its documents.\n\nReview it: ${SITE}/admin${footer}`,
+  }),
+  // Copy of what the applicant accepted (proof of consent, SPEC.md Registrierung)
+  agreementsAccepted: (name: string, version: string, acceptedAt: string, seller: boolean) => ({
+    subject: "Your application and accepted agreements – Bionostix Germany partner portal",
+    text:
+      `Dear ${name},\n\nthank you for your application. We are now verifying your company and will inform you by email.\n\n` +
+      `On ${acceptedAt} you accepted the following agreements (version ${version}):\n` +
+      `- Terms of use: ${SITE}/terms\n` +
+      `- Confidentiality and non-circumvention agreement: ${SITE}/confidentiality\n` +
+      (seller ? `- Commission agreement for sellers: ${SITE}/commission-agreement\n` : "") +
+      `\nPlease keep this email for your records.${footer}`,
+  }),
+  newsletterConfirm: (name: string, token: string) => ({
+    subject: "Please confirm your newsletter subscription – Bionostix Germany",
+    text:
+      `Dear ${name},\n\nyou asked to receive news and offers from Bionostix Germany by email. ` +
+      `Please confirm with this link (you may be asked to sign in):\n\n${SITE}/newsletter/confirm?token=${token}\n\n` +
+      `If you did not ask for this, simply ignore this email: you will not receive any newsletter.${footer}`,
   }),
 };

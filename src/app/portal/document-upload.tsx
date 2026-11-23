@@ -2,14 +2,17 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { FileDrop } from "@/components/file-drop";
+import { DOC_KIND_LABEL, type DocKind } from "@/lib/categories";
 import { createClient } from "@/lib/supabase/client";
-import { ACCEPTED_TYPES, uploadCompanyDocument } from "@/lib/upload";
+import { uploadCompanyDocumentV2 } from "@/lib/upload";
 
-// Lets an applicant add or replace licence documents while waiting for approval.
-export function DocumentUpload({ companyId }: { companyId: string }) {
+// Lets an applicant add documents while waiting for approval.
+export function DocumentUpload({ companyId, sites }: { companyId: string; sites: { id: string; country: string }[] }) {
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
-  const [docType, setDocType] = useState<"license" | "gdp_certificate" | "other">("license");
+  const [kind, setKind] = useState<DocKind>("wholesale_licence");
+  const [siteId, setSiteId] = useState(sites[0]?.id ?? "");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -18,7 +21,7 @@ export function DocumentUpload({ companyId }: { companyId: string }) {
     setBusy(true);
     setError(null);
     try {
-      await uploadCompanyDocument(createClient(), companyId, file, docType);
+      await uploadCompanyDocumentV2(createClient(), companyId, file, kind, siteId || null);
       setFile(null);
       router.refresh();
     } catch (err) {
@@ -28,34 +31,30 @@ export function DocumentUpload({ companyId }: { companyId: string }) {
   }
 
   return (
-    <div className="flex flex-wrap items-end gap-3">
-      <div>
-        <label className="label" htmlFor="doctype">Document type</label>
-        <select
-          id="doctype"
-          className="input"
-          value={docType}
-          onChange={(e) => setDocType(e.target.value as typeof docType)}
-        >
-          <option value="license">Licence</option>
-          <option value="gdp_certificate">GDP certificate</option>
-          <option value="other">Other</option>
-        </select>
+    <div className="space-y-3">
+      <div className="grid gap-3 md:grid-cols-2">
+        <div>
+          <label className="label" htmlFor="dockind">Document type</label>
+          <select id="dockind" className="input" value={kind} onChange={(e) => setKind(e.target.value as DocKind)}>
+            {(Object.keys(DOC_KIND_LABEL) as DocKind[]).map((k) => (
+              <option key={k} value={k}>{DOC_KIND_LABEL[k]}</option>
+            ))}
+          </select>
+        </div>
+        {sites.length > 1 && (
+          <div>
+            <label className="label" htmlFor="docsite">For site</label>
+            <select id="docsite" className="input" value={siteId} onChange={(e) => setSiteId(e.target.value)}>
+              {sites.map((s) => <option key={s.id} value={s.id}>{s.country}</option>)}
+            </select>
+          </div>
+        )}
       </div>
-      <div className="flex-1">
-        <label className="label" htmlFor="file">File</label>
-        <input
-          id="file"
-          type="file"
-          accept={ACCEPTED_TYPES}
-          className="input"
-          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-        />
-      </div>
+      <FileDrop label="File" required file={file} onChange={setFile} />
       <button className="btn-secondary" disabled={!file || busy} onClick={onUpload}>
         {busy ? "Uploading…" : "Upload"}
       </button>
-      {error && <p className="w-full text-sm text-danger">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
     </div>
   );
 }

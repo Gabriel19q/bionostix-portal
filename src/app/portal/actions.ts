@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/session";
 import { adminEmails, emails, sendEmail } from "@/lib/email";
 import { logActivity } from "@/lib/activity";
+import { LEGAL_VERSION } from "@/lib/legal";
 
 type CartLine = { offer_id: string; qty: number; min_expiry?: string };
 
@@ -62,10 +63,23 @@ export async function respondAction(formData: FormData) {
   revalidatePath("/portal/requests");
 }
 
-export async function notifyNewApplication() {
-  const { company } = await getSession();
-  if (!company || company.status !== "applied") return;
-  await sendEmail({ to: adminEmails(), ...emails.newApplication(company.name, company.country) });
+// After the marketplace application: notify admins, send the applicant a copy of the accepted
+// agreements and, if ticked, the newsletter confirmation link (double opt-in).
+export async function afterApplication() {
+  const { supabase, user, company } = await getSession();
+  if (!user?.email || !company || company.status !== "applied") return;
+  const { data: account } = await supabase.rpc("get_my_account");
+  const c = (account as { company?: { wants_buy: boolean; wants_sell: boolean; contact_name: string | null } } | null)?.company;
+  const roles = [c?.wants_buy && "buyer", c?.wants_sell && "seller"].filter(Boolean).join(" and ") || "buyer";
+  const name = c?.contact_name ?? company.contact_name ?? "Sir or Madam";
+  const acceptedAt = new Date().toLocaleString("en-GB", { timeZone: "Europe/Berlin", dateStyle: "long", timeStyle: "short" });
+
+  await sendEmail({ to: adminEmails(), ...emails.newApplication(company.name, company.country, roles) });
+  await sendEmail({ to: [user.email], ...emails.agreementsAccepted(name, LEGAL_VERSION, `${acceptedAt} (Berlin time)`, !!c?.wants_sell) });
+  const { data: token } = await supabase.rpc("get_newsletter_token");
+  if (typeof token === "string" && token) {
+    await sendEmail({ to: [user.email], ...emails.newsletterConfirm(name, token) });
+  }
 }
 
 function friendly(message: string) {

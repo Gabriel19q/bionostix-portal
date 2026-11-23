@@ -1,23 +1,75 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { FileDrop } from "@/components/file-drop";
+import { CATEGORIES, docSlots, type Category } from "@/lib/categories";
+import { COUNTRIES } from "@/lib/countries";
+import { LEGAL_VERSION } from "@/lib/legal";
 import { createClient } from "@/lib/supabase/client";
-import { ACCEPTED_TYPES, uploadCompanyDocument } from "@/lib/upload";
-import { notifyNewApplication } from "./actions";
+import { uploadCompanyDocumentV2 } from "@/lib/upload";
+import { afterApplication } from "./actions";
+
+type Site = { country: string; address: string };
+
+const FRIENDLY: Record<string, string> = {
+  "international format": "Please enter the phone number in international format, starting with + and the country code (e.g. +49 711 1234567).",
+  "choose buy and/or sell": "Please choose whether you want to buy, sell or both.",
+  "buyers must choose": "Please choose at least one category you want to buy.",
+  "sellers must choose": "Please choose at least one category you want to sell.",
+  "seller description": "Please describe your company in 20 to 1000 characters.",
+  "IVDR": "Please confirm the distributor obligations under the IVDR.",
+  "every site needs a country": "Please choose a country for every site.",
+};
+
+function friendly(message: string) {
+  return Object.entries(FRIENDLY).find(([k]) => message.includes(k))?.[1] ?? message;
+}
+
+function toggle<T>(list: T[], value: T) {
+  return list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
+}
 
 export function ApplicationForm({ defaultName }: { defaultName: string }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+  const [name, setName] = useState("");
+  const [address, setAddress] = useState("");
+  const [vatId, setVatId] = useState("");
+  const [contact, setContact] = useState(defaultName);
+  const [phone, setPhone] = useState("");
+  const [wantsBuy, setWantsBuy] = useState(true);
+  const [wantsSell, setWantsSell] = useState(false);
+  const [buyCats, setBuyCats] = useState<Category[]>([]);
+  const [sellCats, setSellCats] = useState<Category[]>([]);
+  const [sites, setSites] = useState<Site[]>([{ country: "", address: "" }]);
+  const [description, setDescription] = useState("");
+  const [srn, setSrn] = useState("");
+  const [ivdr, setIvdr] = useState(false);
+  const [files, setFiles] = useState<Record<string, File | null>>({});
+  const [terms, setTerms] = useState(false);
+  const [confidentiality, setConfidentiality] = useState(false);
+  const [commission, setCommission] = useState(false);
+  const [newsletter, setNewsletter] = useState(false);
+
+  const slots = useMemo(
+    () => docSlots({ wantsBuy, wantsSell, buyCats, sellCats, sites }),
+    [wantsBuy, wantsSell, buyCats, sellCats, sites],
+  );
+  const sellsIvd = wantsSell && sellCats.includes("ivd");
+
+  function setSite(i: number, patch: Partial<Site>) {
+    setSites((s) => s.map((site, j) => (j === i ? { ...site, ...patch } : site)));
+  }
+
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const form = new FormData(e.currentTarget);
-    const licence = form.get("licence") as File | null;
-    const gdp = form.get("gdp") as File | null;
-    if (!licence || licence.size === 0) {
-      setError("Please attach your licence.");
+    const missing = slots.filter((s) => s.required && !files[s.key]);
+    if (missing.length > 0) {
+      setError(`Please add: ${missing.map((m) => m.label).join(", ")}.`);
       return;
     }
 
@@ -25,23 +77,30 @@ export function ApplicationForm({ defaultName }: { defaultName: string }) {
     setError(null);
     const supabase = createClient();
     try {
-      const { data: companyId, error: applyError } = await supabase.rpc("apply_for_access", {
-        p_name: String(form.get("company")),
-        p_country: String(form.get("country")),
-        p_address: String(form.get("address") || ""),
-        p_customer_type: String(form.get("type")),
-        p_contact_name: String(form.get("contact")),
-        p_contact_phone: String(form.get("phone") || ""),
+      const { data, error: applyError } = await supabase.rpc("apply_for_access_v2", {
+        p: {
+          name, address, vat_id: vatId, contact_name: contact, phone,
+          wants_buy: wantsBuy, wants_sell: wantsSell,
+          buy_categories: wantsBuy ? buyCats : [],
+          sell_categories: wantsSell ? sellCats : [],
+          sites,
+          seller_description: wantsSell ? description : null,
+          eudamed_srn: sellsIvd ? srn : null,
+          ivdr_confirmed: sellsIvd ? ivdr : false,
+          version: LEGAL_VERSION,
+          consents: { terms, confidentiality, commission: wantsSell && commission, newsletter },
+        },
       });
-      if (applyError) {
-        throw new Error(applyError.message.includes("international format")
-          ? "Please enter the phone number in international format, starting with + and the country code (e.g. +49 711 1234567)."
-          : applyError.message);
-      }
+      if (applyError) throw new Error(friendly(applyError.message));
+      const { company_id: companyId, site_ids: siteIds } = data as { company_id: string; site_ids: string[] };
 
-      await uploadCompanyDocument(supabase, companyId as string, licence, "license");
-      if (gdp && gdp.size > 0) await uploadCompanyDocument(supabase, companyId as string, gdp, "gdp_certificate");
-      await notifyNewApplication();
+      for (const slot of slots) {
+        const file = files[slot.key];
+        if (!file) continue;
+        const siteId = slot.siteIndex !== undefined ? siteIds[slot.siteIndex] : null;
+        await uploadCompanyDocumentV2(supabase, companyId, file, slot.kind, siteId, slot.category);
+      }
+      await afterApplication();
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
@@ -51,67 +110,208 @@ export function ApplicationForm({ defaultName }: { defaultName: string }) {
   }
 
   return (
-    <div className="card mx-auto max-w-2xl">
+    <div className="card mx-auto max-w-3xl">
       <h1 className="mb-1 text-xl font-bold">Company details</h1>
       <p className="mb-6 text-sm text-slate-600">
-        Step 2 of 2. We use this information to verify that your company is licensed to trade pharmaceuticals.
+        Step 2 of 2. We verify every company before it can buy or sell on the platform.
       </p>
       <p className="notice-info mb-6">
         Does your company already have access? Then do not fill in this form. Send us a short email to{" "}
         {process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? "info@bionostix-germany.de"} and we add you to your company&apos;s account.
       </p>
-      <form onSubmit={onSubmit} className="grid gap-4 md:grid-cols-2">
-        <div className="md:col-span-2">
-          <label className="label" htmlFor="company">Company name</label>
-          <input id="company" name="company" className="input" required />
-        </div>
-        <div>
-          <label className="label" htmlFor="country">Country</label>
-          <input id="country" name="country" className="input" required />
-        </div>
-        <div>
-          <label className="label" htmlFor="type">Company type</label>
-          <select id="type" name="type" className="input" required defaultValue="">
-            <option value="" disabled>
-              Select…
-            </option>
-            <option value="eu_wholesaler">Licensed wholesaler in the EU</option>
-            <option value="importer">Licensed importer outside the EU</option>
-          </select>
-        </div>
-        <div className="md:col-span-2">
-          <label className="label" htmlFor="address">Address</label>
-          <input id="address" name="address" className="input" />
-        </div>
-        <div>
-          <label className="label" htmlFor="contact">Contact person</label>
-          <input id="contact" name="contact" className="input" required defaultValue={defaultName} />
-        </div>
-        <div>
-          <label className="label" htmlFor="phone">Phone (international format)</label>
-          <input id="phone" name="phone" type="tel" className="input" required autoComplete="tel"
-            placeholder="+49 711 1234567" pattern="\+[1-9][0-9 \(\)\.\/\-]{6,24}"
-            title="Start with + and the country code, e.g. +49 711 1234567"
-            aria-describedby="phone-hint" />
-          <p id="phone-hint" className="mt-1 text-xs text-slate-600">Start with + and the country code, e.g. +49 or +964.</p>
-        </div>
-        <div className="md:col-span-2">
-          <label className="label" htmlFor="licence">
-            Wholesale distribution authorisation or import licence
-          </label>
-          <input id="licence" name="licence" type="file" accept={ACCEPTED_TYPES} className="input" required />
-          <p className="mt-1 text-xs text-slate-500">PDF, PNG or JPG, up to 10 MB.</p>
-        </div>
-        <div className="md:col-span-2">
-          <label className="label" htmlFor="gdp">GDP certificate (optional)</label>
-          <input id="gdp" name="gdp" type="file" accept={ACCEPTED_TYPES} className="input" />
-        </div>
-        {error && <p className="text-sm text-danger md:col-span-2">{error}</p>}
-        <div className="md:col-span-2">
-          <button className="btn-primary" disabled={busy}>
-            {busy ? "Submitting…" : "Submit for verification"}
+
+      <form onSubmit={onSubmit} className="space-y-8">
+        {/* Company */}
+        <section className="grid gap-4 md:grid-cols-2">
+          <div className="md:col-span-2">
+            <label className="label" htmlFor="company">Company name</label>
+            <input id="company" className="input" required value={name} onChange={(e) => setName(e.target.value)} />
+          </div>
+          <div className="md:col-span-2">
+            <label className="label" htmlFor="address">Registered address</label>
+            <input id="address" className="input" required value={address} onChange={(e) => setAddress(e.target.value)} />
+          </div>
+          <div>
+            <label className="label" htmlFor="vat">VAT ID</label>
+            <input id="vat" className="input" placeholder="e.g. DE123456789" value={vatId} onChange={(e) => setVatId(e.target.value)} />
+            <p className="mt-1 text-xs text-slate-500">If your company has one.</p>
+          </div>
+          <div />
+          <div>
+            <label className="label" htmlFor="contact">Contact person</label>
+            <input id="contact" className="input" required value={contact} onChange={(e) => setContact(e.target.value)} />
+          </div>
+          <div>
+            <label className="label" htmlFor="phone">Phone (international format)</label>
+            <input id="phone" type="tel" className="input" required autoComplete="tel" placeholder="+49 711 1234567"
+              pattern="\+[1-9][0-9 \(\)\.\/\-]{6,24}" title="Start with + and the country code, e.g. +49 711 1234567"
+              value={phone} onChange={(e) => setPhone(e.target.value)} />
+            <p className="mt-1 text-xs text-slate-600">Start with + and the country code, e.g. +49 or +964.</p>
+          </div>
+        </section>
+
+        {/* Roles and categories */}
+        <section className="space-y-4">
+          <h2 className="font-bold">What do you want to do on the platform?</h2>
+          <div className="grid gap-4 md:grid-cols-2">
+            <fieldset className="rounded-md border border-slate-200 p-4">
+              <label className="flex items-center gap-2 font-bold">
+                <input type="checkbox" checked={wantsBuy} onChange={(e) => setWantsBuy(e.target.checked)} />
+                I want to buy
+              </label>
+              {wantsBuy && (
+                <div className="mt-3 space-y-2 text-sm">
+                  <p className="text-slate-600">Categories you want to buy:</p>
+                  {CATEGORIES.map((c) => (
+                    <label key={c.value} className="flex items-center gap-2">
+                      <input type="checkbox" checked={buyCats.includes(c.value)} onChange={() => setBuyCats((l) => toggle(l, c.value))} />
+                      {c.label}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </fieldset>
+            <fieldset className="rounded-md border border-slate-200 p-4">
+              <label className="flex items-center gap-2 font-bold">
+                <input type="checkbox" checked={wantsSell} onChange={(e) => setWantsSell(e.target.checked)} />
+                I want to sell
+              </label>
+              {wantsSell && (
+                <div className="mt-3 space-y-2 text-sm">
+                  <p className="text-slate-600">Categories you want to sell:</p>
+                  {CATEGORIES.map((c) => (
+                    <label key={c.value} className="flex items-center gap-2">
+                      <input type="checkbox" checked={sellCats.includes(c.value)} onChange={() => setSellCats((l) => toggle(l, c.value))} />
+                      {c.label}
+                    </label>
+                  ))}
+                  <p className="text-xs text-slate-500">We approve each category separately.</p>
+                </div>
+              )}
+            </fieldset>
+          </div>
+        </section>
+
+        {/* Sites */}
+        <section className="space-y-3">
+          <div>
+            <h2 className="font-bold">Sites</h2>
+            <p className="text-sm text-slate-600">
+              Every country in which your company has a licensed site. Offers and prices are shown for these countries.
+            </p>
+          </div>
+          {sites.map((site, i) => (
+            <div key={i} className="grid gap-3 md:grid-cols-[1fr_2fr_auto]">
+              <div>
+                <label className="label" htmlFor={`country-${i}`}>Country</label>
+                <select id={`country-${i}`} className="input" required value={site.country}
+                  onChange={(e) => setSite(i, { country: e.target.value })}>
+                  <option value="" disabled>Select…</option>
+                  {COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="label" htmlFor={`site-address-${i}`}>Address of the site</label>
+                <input id={`site-address-${i}`} className="input" value={site.address}
+                  onChange={(e) => setSite(i, { address: e.target.value })} />
+              </div>
+              <div className="flex items-end">
+                {sites.length > 1 && (
+                  <button type="button" className="text-sm text-slate-500 underline"
+                    onClick={() => setSites((s) => s.filter((_, j) => j !== i))}>
+                    Remove
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+          <button type="button" className="btn-secondary" onClick={() => setSites((s) => [...s, { country: "", address: "" }])}>
+            + Add another site
           </button>
-        </div>
+        </section>
+
+        {/* Seller profile */}
+        {wantsSell && (
+          <section className="space-y-4">
+            <h2 className="font-bold">Seller profile</h2>
+            <div>
+              <label className="label" htmlFor="desc">Short description of your company</label>
+              <textarea id="desc" className="input min-h-24" required minLength={20} maxLength={1000}
+                value={description} onChange={(e) => setDescription(e.target.value)}
+                placeholder="e.g. EU wholesaler based in Germany with a focus on oncology and hospital products, supplying 30+ countries." />
+              <p className="mt-1 text-xs text-slate-500">
+                Buyers see this text before a deal is agreed. Do not mention your company name, brand names or contact details.
+              </p>
+            </div>
+            {sellsIvd && (
+              <>
+                <div>
+                  <label className="label" htmlFor="srn">EUDAMED registration number (SRN)</label>
+                  <input id="srn" className="input" value={srn} onChange={(e) => setSrn(e.target.value)} placeholder="e.g. DE-MF-000012345" />
+                  <p className="mt-1 text-xs text-slate-500">Only if you are a manufacturer or importer of IVDs.</p>
+                </div>
+                <label className="flex items-start gap-2 text-sm">
+                  <input type="checkbox" className="mt-1" checked={ivdr} onChange={(e) => setIvdr(e.target.checked)} required />
+                  <span>
+                    We confirm that we fulfil the obligations of distributors under Article 14 of the IVDR
+                    (Regulation (EU) 2017/746), e.g. checking CE marking, declaration of conformity and labelling, and
+                    keeping storage and transport conditions. <span className="text-danger">*</span>
+                  </span>
+                </label>
+              </>
+            )}
+          </section>
+        )}
+
+        {/* Documents */}
+        <section className="space-y-4">
+          <div>
+            <h2 className="font-bold">Documents</h2>
+            <p className="text-sm text-slate-600">We use these documents to verify your company. You can add more later.</p>
+          </div>
+          {slots.map((slot) => (
+            <FileDrop key={slot.key} label={slot.label} hint={slot.hint} required={slot.required}
+              file={files[slot.key] ?? null} onChange={(f) => setFiles((m) => ({ ...m, [slot.key]: f }))} />
+          ))}
+        </section>
+
+        {/* Consents */}
+        <section className="space-y-3 text-sm">
+          <h2 className="font-bold">Agreements</h2>
+          <label className="flex items-start gap-2">
+            <input type="checkbox" className="mt-1" required checked={terms} onChange={(e) => setTerms(e.target.checked)} />
+            <span>I accept the <Link href="/terms" target="_blank" className="text-brand-600 underline">terms of use</Link>. <span className="text-danger">*</span></span>
+          </label>
+          <label className="flex items-start gap-2">
+            <input type="checkbox" className="mt-1" required checked={confidentiality} onChange={(e) => setConfidentiality(e.target.checked)} />
+            <span>
+              I accept the <Link href="/confidentiality" target="_blank" className="text-brand-600 underline">confidentiality and
+              non-circumvention agreement</Link>. <span className="text-danger">*</span>
+            </span>
+          </label>
+          {wantsSell && (
+            <label className="flex items-start gap-2">
+              <input type="checkbox" className="mt-1" required checked={commission} onChange={(e) => setCommission(e.target.checked)} />
+              <span>
+                I accept the <Link href="/commission-agreement" target="_blank" className="text-brand-600 underline">commission
+                agreement for sellers</Link>. <span className="text-danger">*</span>
+              </span>
+            </label>
+          )}
+          <label className="flex items-start gap-2">
+            <input type="checkbox" className="mt-1" checked={newsletter} onChange={(e) => setNewsletter(e.target.checked)} />
+            <span>
+              Yes, I would like to receive news and offers from Bionostix Germany by email. I can unsubscribe at any time.
+              See our <a href="https://www.bionostix-germany.de/en/privacy" target="_blank" rel="noreferrer" className="text-brand-600 underline">privacy policy</a>. (optional)
+            </span>
+          </label>
+          <p className="text-xs text-slate-500">You receive a copy of the accepted agreements by email.</p>
+        </section>
+
+        {error && <p className="text-sm text-danger">{error}</p>}
+        <button className="btn-primary" disabled={busy}>
+          {busy ? "Submitting…" : "Submit for verification"}
+        </button>
       </form>
     </div>
   );

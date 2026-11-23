@@ -344,3 +344,56 @@ set role anon;
 select pg_temp.expect_error($$select public.is_admin()$$, 'anon calls is_admin');
 select pg_temp.expect_error($$select public.get_my_company()$$, 'anon calls get_my_company');
 reset role;
+
+-- Marketplace registration (stage 1a) -----------------------------------------
+insert into auth.users (id, email) values
+  ('00000000-0000-0000-0000-0000000000f1', 'seller@example.test'),
+  ('00000000-0000-0000-0000-0000000000f2', 'buyer2@example.test');
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f1');
+select pg_temp.expect_error($$select public.apply_for_access_v2('{"name":"Seller Co","contact_name":"S","phone":"+49 711 123456","wants_sell":true,"version":"t1","sites":[{"country":"Germany"}],"sell_categories":["pharma"],"seller_description":"EU wholesaler with broad portfolio","consents":{"terms":true,"confidentiality":true}}'::jsonb)$$, 'seller without commission consent');
+select pg_temp.expect_error($$select public.apply_for_access_v2('{"name":"Seller Co","contact_name":"S","phone":"+49 711 123456","wants_sell":true,"version":"t1","sites":[{"country":"Germany"}],"sell_categories":["ivd"],"seller_description":"EU wholesaler with broad portfolio","consents":{"terms":true,"confidentiality":true,"commission":true}}'::jsonb)$$, 'IVD seller without IVDR confirmation');
+select pg_temp.expect_error($$select public.apply_for_access_v2('{"name":"Seller Co","contact_name":"S","phone":"+49 711 123456","wants_sell":true,"version":"t1","sites":[],"sell_categories":["pharma"],"seller_description":"EU wholesaler with broad portfolio","consents":{"terms":true,"confidentiality":true,"commission":true}}'::jsonb)$$, 'no site');
+select pg_temp.expect_error($$select public.apply_for_access_v2('{"name":"Seller Co","contact_name":"S","phone":"+49 711 123456","wants_sell":true,"version":"t1","sites":[{"country":"Germany"}],"sell_categories":["weapons"],"seller_description":"EU wholesaler with broad portfolio","consents":{"terms":true,"confidentiality":true,"commission":true}}'::jsonb)$$, 'unknown category');
+select public.apply_for_access_v2('{"name":"Seller Co","contact_name":"S","phone":"+49 711 123456","wants_buy":true,"wants_sell":true,"version":"t1","sites":[{"country":"Germany","address":"A 1"},{"country":"Austria"}],"buy_categories":["pharma"],"sell_categories":["pharma","ivd","supplements"],"ivdr_confirmed":true,"seller_description":"EU wholesaler with broad portfolio","consents":{"terms":true,"confidentiality":true,"commission":true,"newsletter":true}}'::jsonb);
+select pg_temp.expect((public.get_my_account() -> 'company' ->> 'seller_code') like 'S-%', 'seller gets anonymous code');
+select pg_temp.expect(jsonb_array_length(public.get_my_account() -> 'sites') = 2, 'two sites stored');
+select pg_temp.expect(jsonb_array_length(public.get_my_account() -> 'categories') = 4, 'four categories stored (1 buy, 3 sell)');
+select pg_temp.expect(public.get_my_account() ->> 'newsletter' = 'pending', 'newsletter waits for double opt-in');
+select pg_temp.expect(not public.confirm_newsletter('00000000-0000-0000-0000-000000000000'), 'wrong newsletter token does nothing');
+select pg_temp.expect(public.confirm_newsletter(public.get_newsletter_token()), 'newsletter confirmed with token');
+select pg_temp.expect(public.get_my_account() ->> 'newsletter' = 'confirmed', 'newsletter shows confirmed');
+select pg_temp.expect((public.get_my_account() -> 'company' ->> 'commission_pct') is null, 'commission hidden until approved');
+select pg_temp.expect((select count(*) from public.consents) = 0, 'consents table invisible to applicant');
+select pg_temp.expect((select count(*) from public.company_sites) = 0, 'sites table invisible to applicant');
+select pg_temp.expect_error($$select public.add_company_document_v2('company/00000000-0000-0000-0000-000000000000/x.pdf','x.pdf','wholesale_licence')$$, 'document in foreign folder');
+select pg_temp.expect_error($$select public.add_company_document_v2('company/' || public.my_company_id() || '/x.pdf','x.pdf','passport')$$, 'unknown document kind');
+select public.add_company_document_v2('company/' || public.my_company_id() || '/x.pdf', 'x.pdf', 'wholesale_licence',
+  ((public.get_my_account() -> 'sites' -> 0 ->> 'id'))::uuid, 'pharma');
+select pg_temp.expect(jsonb_array_length(public.get_my_account() -> 'documents') = 1, 'document registered');
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f2');
+select public.apply_for_access_v2('{"name":"Buyer Two","contact_name":"B","phone":"+964 770 1234567","wants_buy":true,"version":"t1","sites":[{"country":"Iraq"}],"buy_categories":["pharma","supplements"],"consents":{"terms":true,"confidentiality":true}}'::jsonb);
+select pg_temp.expect((public.get_my_account() -> 'company' ->> 'seller_code') is null, 'buyer has no seller code');
+select pg_temp.expect(public.get_my_account() ->> 'newsletter' is null, 'no newsletter consent without tick');
+select pg_temp.expect_error($$select public.apply_for_access_v2('{"name":"X","contact_name":"B","phone":"+964 770 1234567","wants_buy":true,"version":"t1","sites":[{"country":"Iraq"}],"consents":{"terms":true,"confidentiality":true}}'::jsonb)$$, 'second application of buyer');
+reset role;
+create temp table other_site as select s.id from public.company_sites s join public.companies c on c.id = s.company_id where c.name = 'Seller Co' limit 1;
+grant select on other_site to authenticated;
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f2');
+select pg_temp.expect_error($$select public.add_company_document_v2('company/' || public.my_company_id() || '/y.pdf','y.pdf','import_licence',(select id from other_site))$$, 'site of another company');
+reset role;
+select pg_temp.expect((select count(*) from public.consents where kind = 'commission') = 1, 'commission consent only for seller');
+select pg_temp.expect((select count(*) from public.consents where kind = 'newsletter' and confirmed_at is not null) = 1, 'newsletter consent confirmed once');
+set role anon;
+select pg_temp.expect_error($$select public.get_my_account()$$, 'anon cannot call get_my_account');
+select pg_temp.expect_error($$select public.apply_for_access_v2('{}'::jsonb)$$, 'anon cannot apply');
+reset role;
+update public.consents set confirmed_at = null where kind = 'newsletter';
+create temp table seller_token as select confirm_token from public.consents where kind = 'newsletter';
+grant select on seller_token to authenticated;
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f2');
+select pg_temp.expect(not public.confirm_newsletter((select confirm_token from seller_token)), 'cannot confirm another user''s newsletter');
+reset role;
+select pg_temp.expect((select confirmed_at from public.consents where kind = 'newsletter') is null, 'foreign token left unconfirmed');
