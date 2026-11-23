@@ -60,7 +60,7 @@ Niemand kann eigene Angebote anfragen. Kommunikation über das Portal.
 Standardsatz in der Provisionsvereinbarung; abweichender Satz je Verkäufer (eigener Vertrag), optional je Bereich; der gültige Satz wird bei Annahme in der Bestellung gespeichert. Fällig **bei Annahme** (Zahlungsmoral des Käufers ist nicht Sache von Bionostix). Verkäufer sieht seinen Satz; Admin-Übersicht fälliger Provisionen je Verkäufer und Monat. Käufer sehen nirgends eine Provision.
 
 ### Abo für Käufer
-9,99 € oder 19,99 € netto pro Monat (Preis vor dem Start festlegen), die ersten 3 Monate kostenlos, Kreditkarte bei der Anmeldung, automatische Verlängerung, monatlich kündbar zum Monatsende (auch im kostenlosen Zeitraum); nach dem kostenlosen Zeitraum wird ohne Kündigung automatisch abgebucht, ohne gesonderten Hinweis. Abwicklung über Stripe (Rechnungen, Reverse Charge für EU-Firmen mit USt-IdNr.). Verkäufer zahlen kein Abo; Firmen, die auch kaufen, brauchen es. Offen: Zahlung per Überweisung für Käufer ohne nutzbare Kreditkarte.
+9,99 € netto pro Monat (Entscheidung 23.11.2026; Preis bei Stripe änderbar), die ersten 3 Monate kostenlos, Kreditkarte bei der Anmeldung, automatische Verlängerung, monatlich kündbar zum Monatsende (auch im kostenlosen Zeitraum); nach dem kostenlosen Zeitraum wird ohne Kündigung automatisch abgebucht, ohne gesonderten Hinweis. Abwicklung über Stripe (Rechnungen, Reverse Charge für EU-Firmen mit USt-IdNr.). Verkäufer zahlen kein Abo; Firmen, die auch kaufen, brauchen es. Offen: Zahlung per Überweisung für Käufer ohne nutzbare Kreditkarte.
 
 ### Menü
 „For buyers“: Catalog, My requests (Suche, Statusfilter, Archived), Sourcing requests. „For sellers“: My offers (+ Add offers), Incoming requests, Commissions. Wer nur kauft, sieht nur „For buyers“.
