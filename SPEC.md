@@ -26,11 +26,11 @@ Pharmaceuticals, IVD, Food supplements, Health products.
 - Verkäufer schreiben eine kurze anonyme Firmenbeschreibung (ohne Namen, Admin prüft).
 - Zustimmung per Häkchen: Nutzungsbedingungen, Vertraulichkeit/Nichtumgehung (beide Rollen), Provisionsvereinbarung (nur Verkäufer). Gespeichert wird, wer wann welche Fassung angenommen hat; automatische E-Mail mit den vereinbarten Bedingungen als PDF. Neue Fassung → erneute Zustimmung beim nächsten Login.
 - Newsletter: eigenes, freiwilliges, nicht vorausgewähltes Häkchen, Double-Opt-in (eigene Bestätigungs-E-Mail), Nachweis mit Zeitpunkt und Text, Abmeldung im Konto; Admin-Export der bestätigten Empfänger. Absatz in der Datenschutzerklärung.
-- Vor der Freigabe nur „Pending approval“. Banner nach der Freigabe nur bei: Lizenz läuft ab/abgelaufen, Testzeitraum endet, fehlender Nachweis für einen Bereich.
+- Vor der Freigabe nur „Pending approval“. Banner nach der Freigabe nur bei: Lizenz läuft ab/abgelaufen, fehlender Nachweis für einen Bereich. Kein Hinweis zum Ende des kostenlosen Zeitraums (Käufer hat mit Kreditkarte zugestimmt).
 
-### Angebotsarten
-1. **Stock offer** (zuerst umsetzen): einmaliger Kauf eines verfügbaren Postens, verbindliche Anfrage.
-2. Später: **Distribution partnership** (Zulassung bleibt beim Verkäufer, Käufer wird dauerhafter Vertriebspartner) und **Own registration + supply** (Käufer lässt das Produkt mit den Unterlagen des Verkäufers auf eigenen Namen zu, Verkäufer liefert). Beides als unverbindliche Anfrage mit anonymem Austausch; Provision dafür separat im Provisionsvertrag.
+### Angebotsarten („Available for“, je Angebot eine oder beide)
+1. **Wholesale (buy & resell)** (zuerst umsetzen): Käufer kauft die Ware und verkauft sie weiter. Keine Aussage, ob das Produkt im Zielland registriert ist. Verbindliche Anfrage.
+2. Später: **Registration & supply**: Verkäufer stellt die Unterlagen bereit, damit der Käufer das Produkt in seinem Markt registrieren lassen kann, und beliefert ihn danach. Unverbindliche Anfrage mit anonymem Austausch; Provision dafür separat im Provisionsvertrag.
 
 ### Angebote hochladen (Verkäufer)
 - Eine Excel-Vorlage für alle Bereiche (Datei „Bionostix-Offer-Upload-Template.xlsx“, Stand 23.11.2026): Bereich in Spalte A, nicht benötigte Felder werden grau, fehlende Pflichtfelder gelb. Auswahllisten mit „Other“ plus Freifeld.
@@ -46,8 +46,8 @@ Je Angebot (Standard je Verkäufer): „Buyers based in“ (Sitz/Standort des K�
 - Filter links (lange Listen mit Suchfeld): Bereich, Suche Produkt/Wirkstoff, Darreichungsform, Sprache der Packung, Restlaufzeit mindestens X Monate, Menge mindestens, Lieferbedingung. Nur Angebote, die in mein Land dürfen.
 - Leere Suche: Suchtipps und Knopf zum Gesuch.
 
-### Anfrage und Vertrag (Stock offer)
-1. Käufer sendet eine **verbindliche** Anfrage (Menge, Lieferland, Endbestimmungsland, Lieferdeadline, Kommentar) und kreuzt nur die Dokumente an, die er wirklich braucht (Hinweis „Please select only documents you strictly need“); weitere Wünsche als Freitext. Bis zur Annahme kann er zurückziehen.
+### Anfrage und Vertrag (Wholesale)
+1. Käufer sendet zu einem Wholesale-Angebot eine **verbindliche** Anfrage (Menge, Lieferland, Endbestimmungsland, Lieferdeadline, Kommentar) und kreuzt nur die Dokumente an, die er wirklich braucht (Hinweis „Please select only documents you strictly need“); weitere Wünsche als Freitext. Bis zur Annahme kann er zurückziehen.
 2. Verkäufer sieht nur einen Steckbrief: „Licence verified by Bionostix, valid until …“, Land, Firmenart, Lieferland, abgeschlossene Geschäfte, sowie den Hinweis, welche Daten er nach der Annahme erhält (Firmenname, Adresse, Lizenzdokumente).
 3. Verkäufer: annehmen, ablehnen oder Gegenvorschlag (Menge/Preis; Käufer muss zustimmen). Bei Änderung von Menge oder Preis fragt ein Fenster, ob das Angebot im Katalog mit angepasst werden soll.
 4. **Annahme = Vertrag**; Provision wird fällig. Verkäufer erhält die Käuferdaten und -lizenzen mit der Bitte, die Rechnung bzw. Auftragsbestätigung auf diese Adresse auszustellen.
@@ -60,7 +60,7 @@ Niemand kann eigene Angebote anfragen. Kommunikation über das Portal.
 Standardsatz in der Provisionsvereinbarung; abweichender Satz je Verkäufer (eigener Vertrag), optional je Bereich; der gültige Satz wird bei Annahme in der Bestellung gespeichert. Fällig **bei Annahme** (Zahlungsmoral des Käufers ist nicht Sache von Bionostix). Verkäufer sieht seinen Satz; Admin-Übersicht fälliger Provisionen je Verkäufer und Monat. Käufer sehen nirgends eine Provision.
 
 ### Abo für Käufer
-9,99 € oder 19,99 € netto pro Monat (Preis vor dem Start festlegen), die ersten 3 Monate kostenlos, Kreditkarte bei der Anmeldung, automatische Verlängerung, kündbar zum Ende jedes 3-Monats-Zeitraums. Abwicklung über Stripe (Rechnungen, Reverse Charge für EU-Firmen mit USt-IdNr.). Verkäufer zahlen kein Abo; Firmen, die auch kaufen, brauchen es. Offen: Zahlung per Überweisung für Käufer ohne nutzbare Kreditkarte.
+9,99 € oder 19,99 € netto pro Monat (Preis vor dem Start festlegen), die ersten 3 Monate kostenlos, Kreditkarte bei der Anmeldung, automatische Verlängerung, monatlich kündbar zum Monatsende (auch im kostenlosen Zeitraum); nach dem kostenlosen Zeitraum wird ohne Kündigung automatisch abgebucht, ohne gesonderten Hinweis. Abwicklung über Stripe (Rechnungen, Reverse Charge für EU-Firmen mit USt-IdNr.). Verkäufer zahlen kein Abo; Firmen, die auch kaufen, brauchen es. Offen: Zahlung per Überweisung für Käufer ohne nutzbare Kreditkarte.
 
 ### Menü
 „For buyers“: Catalog, My requests (Suche, Statusfilter, Archived), Sourcing requests. „For sellers“: My offers (+ Add offers), Incoming requests, Commissions. Wer nur kauft, sieht nur „For buyers“.
