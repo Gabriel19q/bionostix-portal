@@ -7,6 +7,79 @@ Schlankes Kundenportal unter **Bionostix Germany**. Geprüfte Großhändler und 
 
 Erfolg: ≥ 3 Anfragen von Sanicura über das Portal, Anfrage → Proforma < 1 Arbeitstag, Sanicura will weiter nutzen.
 
+## Marktplatz-Modell (Entscheidungen 20.–23.11.2026, ersetzt das Händlermodell)
+Das Portal wird ein **Marktplatz**: Verkäufer stellen eigene Angebote ein, der Kaufvertrag entsteht direkt zwischen Käufer und Verkäufer. Bionostix ist nicht Vertragspartei, verdient über **Provision der Verkäufer** und **Abo der Käufer**. Keine Zahlungsabwicklung zwischen Käufer und Verkäufer über das Portal. Sanicura und Bionostix bekommen eigene Verkäufer-Konten. Aufschläge und Kundengruppen entfallen: Der Käufer sieht den Preis des Verkäufers. Oberfläche nur **Englisch**.
+
+### Bereiche
+Pharmaceuticals, IVD, Food supplements, Health products.
+
+### Registrierung und Freigabe
+- Rollen pro Firma: „I want to buy“ und/oder „I want to sell“; Admin schaltet beides getrennt frei. Verkäufer wählen ihre Bereiche, Admin schaltet je Bereich frei (Nahrungsergänzung und Gesundheitsprodukte ohne besonderen Nachweis).
+- Mehrere Standorte/Länder je Firma möglich, jeweils mit Nachweis; Admin prüft je Standort.
+- Nachweise (Upload, Drag & Drop oder Dateiauswahl):
+  - Alle: Handelsregisterauszug oder Gewerbeanmeldung, USt-IdNr.
+  - Pharma: Verkäufer Großhandels- oder Herstellungserlaubnis (Pflicht), GDP-Zertifikat (freiwillig); Käufer Großhandelserlaubnis bzw. Importlizenz (Pflicht).
+  - IVD: Verkäufer Häkchen „Händlerpflichten nach IVDR erfüllt“ (Pflicht), EUDAMED-SRN falls Hersteller/Importeur, ISO 13485 (freiwillig); Käufer außerhalb der EU Importlizenz für Medizinprodukte, falls vorhanden.
+  - Nahrungsergänzung: Registrierung als Lebensmittelunternehmen (freiwillig).
+  - Gesundheitsprodukte: keine zusätzlichen Nachweise.
+  - (Vom Anwalt bzw. der Behörde zu bestätigen.)
+- Verkäufer schreiben eine kurze anonyme Firmenbeschreibung (ohne Namen, Admin prüft).
+- Zustimmung per Häkchen: Nutzungsbedingungen, Vertraulichkeit/Nichtumgehung (beide Rollen), Provisionsvereinbarung (nur Verkäufer). Gespeichert wird, wer wann welche Fassung angenommen hat; automatische E-Mail mit den vereinbarten Bedingungen als PDF. Neue Fassung → erneute Zustimmung beim nächsten Login.
+- Newsletter: eigenes, freiwilliges, nicht vorausgewähltes Häkchen, Double-Opt-in (eigene Bestätigungs-E-Mail), Nachweis mit Zeitpunkt und Text, Abmeldung im Konto; Admin-Export der bestätigten Empfänger. Absatz in der Datenschutzerklärung.
+- Vor der Freigabe nur „Pending approval“. Banner nach der Freigabe nur bei: Lizenz läuft ab/abgelaufen, Testzeitraum endet, fehlender Nachweis für einen Bereich.
+
+### Angebotsarten
+1. **Stock offer** (zuerst umsetzen): einmaliger Kauf eines verfügbaren Postens, verbindliche Anfrage.
+2. Später: **Distribution partnership** (Zulassung bleibt beim Verkäufer, Käufer wird dauerhafter Vertriebspartner) und **Own registration + supply** (Käufer lässt das Produkt mit den Unterlagen des Verkäufers auf eigenen Namen zu, Verkäufer liefert). Beides als unverbindliche Anfrage mit anonymem Austausch; Provision dafür separat im Provisionsvertrag.
+
+### Angebote hochladen (Verkäufer)
+- Eine Excel-Vorlage für alle Bereiche (Datei „Bionostix-Offer-Upload-Template.xlsx“, Stand 23.11.2026): Bereich in Spalte A, nicht benötigte Felder werden grau, fehlende Pflichtfelder gelb. Auswahllisten mit „Other“ plus Freifeld.
+- Felder: Category, Your item no., Product name, Brand, Active ingredients with strength (mehrere mit „;“), Dosage form (Tablet, Effervescent tablet, Capsule, Powder, Effervescent powder, Solution for injection, Gummies, Lozenge, Drops, Spray, Cream, Other), IVD: Test/parameter, Method, CE marking, IVDR class, Sample type; Health products: Product type, Size/variant, Material; Units per pack + Unit; National code, MA holder, EAN; Packaging language; Quantity available; MOQ; Price per pack (EUR); Expiry (Datum, Monat/Jahr oder „min X months“); Incoterm + Ort; Lead time; Offer valid until; Buyers based in; Ship to (destination); neu: Registered in, Documents available on request (CoA, CPP, FSC, GMP certificate, Registration dossier, Stability data, Declaration of conformity/CE, ISO 13485, Certificate of origin, Other). Keine Charge, keine Kennzeichen Kühlware/Rx/BtM.
+- Länderpreise: Blatt „Country prices“ (Artikelnummer, Land, Preis); Käufer sieht nur den Preis für sein Land, sonst den Standardpreis.
+- Ablauf: Vorlage oder eigene Liste → automatische Spaltenzuordnung → Prüfansicht mit markierten Fehlern und Begründung → direkt korrigieren → bestätigen → im Katalog. Erste Uploads neuer Verkäufer prüft der Admin vor der Freischaltung.
+
+### Länder
+Je Angebot (Standard je Verkäufer): „Buyers based in“ (Sitz/Standort des Käufers) und „Ship to“ (Liefer- und Endmarkt), jeweils alle / nur / alle außer. Die Datenbank prüft beides; in der Anfrage gibt der Käufer verbindlich das Endbestimmungsland an (vorausgefüllt mit dem Lieferland). Länderlisten bleiben für Käufer unsichtbar; Käufer sehen nur Angebote, die sie kaufen dürfen. Firmen mit mehreren Standorten wählen im Katalog „Prices for: …“ aus ihren geprüften Standorten.
+
+### Katalog
+- Karten nach Vorbild Pipelinepharma: Überschrift Wirkstoffe, darunter Form, Stärke, Packungsgröße; Angaben zu Brand, Sprache, Haltbarkeit, Menge, MOQ, Preis für meinen Markt, Lieferbedingung, gültig bis, verfügbare Dokumente, Registered in; anonymer Verkäufer („Seller #123 · Verified by Bionostix“, Land und Firmenart, Kurzbeschreibung, typische Antwortzeit ab 3 Anfragen); Knopf „Send request“.
+- Filter links (lange Listen mit Suchfeld): Bereich, Suche Produkt/Wirkstoff, Darreichungsform, Sprache der Packung, Restlaufzeit mindestens X Monate, Menge mindestens, Lieferbedingung. Nur Angebote, die in mein Land dürfen.
+- Leere Suche: Suchtipps und Knopf zum Gesuch.
+
+### Anfrage und Vertrag (Stock offer)
+1. Käufer sendet eine **verbindliche** Anfrage (Menge, Lieferland, Endbestimmungsland, Lieferdeadline, Kommentar) und kreuzt nur die Dokumente an, die er wirklich braucht (Hinweis „Please select only documents you strictly need“); weitere Wünsche als Freitext. Bis zur Annahme kann er zurückziehen.
+2. Verkäufer sieht nur einen Steckbrief: „Licence verified by Bionostix, valid until …“, Land, Firmenart, Lieferland, abgeschlossene Geschäfte, sowie den Hinweis, welche Daten er nach der Annahme erhält (Firmenname, Adresse, Lizenzdokumente).
+3. Verkäufer: annehmen, ablehnen oder Gegenvorschlag (Menge/Preis; Käufer muss zustimmen). Bei Änderung von Menge oder Preis fragt ein Fenster, ob das Angebot im Katalog mit angepasst werden soll.
+4. **Annahme = Vertrag**; Provision wird fällig. Verkäufer erhält die Käuferdaten und -lizenzen mit der Bitte, die Rechnung bzw. Auftragsbestätigung auf diese Adresse auszustellen.
+5. Verkäufer lädt Rechnung/Auftragsbestätigung hoch → Käufer erhält sie über das Portal und erfährt damit den Verkäufer.
+6. Käufer zahlt direkt an den Verkäufer; Verkäufer meldet „Payment received“.
+7. Versand: Verkäufer lädt die angefragten Dokumente, Rechnung, Lieferschein, Sendungsnummer hoch → „Shipped“ → „Completed“.
+Niemand kann eigene Angebote anfragen. Kommunikation über das Portal.
+
+### Provision
+Standardsatz in der Provisionsvereinbarung; abweichender Satz je Verkäufer (eigener Vertrag), optional je Bereich; der gültige Satz wird bei Annahme in der Bestellung gespeichert. Fällig **bei Annahme** (Zahlungsmoral des Käufers ist nicht Sache von Bionostix). Verkäufer sieht seinen Satz; Admin-Übersicht fälliger Provisionen je Verkäufer und Monat. Käufer sehen nirgends eine Provision.
+
+### Abo für Käufer
+9,99 € oder 19,99 € netto pro Monat (Preis vor dem Start festlegen), die ersten 3 Monate kostenlos, Kreditkarte bei der Anmeldung, automatische Verlängerung, kündbar zum Ende jedes 3-Monats-Zeitraums. Abwicklung über Stripe (Rechnungen, Reverse Charge für EU-Firmen mit USt-IdNr.). Verkäufer zahlen kein Abo; Firmen, die auch kaufen, brauchen es. Offen: Zahlung per Überweisung für Käufer ohne nutzbare Kreditkarte.
+
+### Menü
+„For buyers“: Catalog, My requests (Suche, Statusfilter, Archived), Sourcing requests. „For sellers“: My offers (+ Add offers), Incoming requests, Commissions. Wer nur kauft, sieht nur „For buyers“.
+
+### Allgemein
+Alle Uploads per Drag & Drop oder Dateiauswahl.
+
+### Etappen Marktplatz
+1. Registrierung mit Rollen, Bereichen, Standorten und Nachweisen; Verkäufer-Freigabe; Upload mit Prüfansicht.
+2. Katalog neu, Anfrage → Annahme mit Anonymisierung, Offenlegung nach Annahme, Provisionsübersicht.
+3. Dokumente je Schritt, Zahlung/Versand melden, Erinnerungen; Abo (Stripe); Newsletter-Double-Opt-in.
+Jede Etappe zuerst als Vorschau (Pull Request), Freigabe durch die Inhaber.
+
+### Vom Anwalt zu klären
+Nutzungsbedingungen (Vertragsschluss, Bindung der Anfrage, Nichtumgehung mit angemessener Vertragsstrafe, Haftung für Endbestimmungsland, anwendbares Recht/Gerichtsstand), Provisionsvereinbarung (Vorlage folgt von Jan), Abo-Bedingungen, Datenschutz (Weitergabe der Käuferdaten nach Annahme, Newsletter), Nachweisliste je Bereich. § 52c-AMG-Registrierung ist beantragt.
+
+---
+**Bisheriges Händlermodell (gilt bis zur Umstellung, wird durch den Marktplatz abgelöst):**
+
 ## Umfang MVP
 - Zugang beantragen (Konto + Firmendaten + Upload Großhandelserlaubnis/Importlizenz), Freigabe durch Admin
 - Login nur für freigegebene Kunden; nicht freigegebene sehen „pending approval“
