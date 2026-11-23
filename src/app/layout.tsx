@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { IMPRINT_URL, WEBSITE_URL } from "@/content/company";
 import "./globals.css";
-import { getSession } from "@/lib/session";
+import { getSession, isApprovedSeller } from "@/lib/session";
 import { NavLink } from "@/components/nav-link";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -25,7 +25,8 @@ const montserrat = localFont({
 });
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const { user, profile } = await getSession();
+  const { user, profile, account } = await getSession();
+  const seller = isApprovedSeller(account);
 
   return (
     <html lang="en" className={montserrat.variable}>
@@ -52,6 +53,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
                       <NavLink href="/portal/catalog">Catalog</NavLink>
                       <NavLink href="/portal/requests">My orders</NavLink>
                       <NavLink href="/portal/sourcing">Sourcing</NavLink>
+                      {seller && <NavLink href="/portal/sell">My offers</NavLink>}
                     </>
                   )}
                   <form action="/auth/signout" method="post">

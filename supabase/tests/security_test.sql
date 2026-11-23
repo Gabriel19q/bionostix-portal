@@ -413,3 +413,52 @@ set role authenticated;
 select pg_temp.as_user('00000000-0000-0000-0000-0000000000f1');
 select pg_temp.expect((public.get_my_account() -> 'company' ->> 'commission_pct')::numeric = 2.5, 'own commission rate overrides standard');
 reset role;
+
+-- Marketplace listings (stage 1c) ------------------------------------------------
+update public.companies set status = 'approved' where name = 'Seller Co';
+update public.company_categories set status = 'approved'
+  where role = 'sell' and category in ('pharma', 'supplements') and company_id = (select id from public.companies where name = 'Seller Co');
+create temp table good_offer as select '{"category":"pharma","product_name":"Paracetamol 500 mg tablets","brand":"Examplamol",
+  "active_ingredients":"Paracetamol 500 mg","dosage_form":"Tablet","units_per_pack":20,"unit":"tablets",
+  "packaging_language":"German","quantity":1000,"price":1.2,"expiry_date":"2030-05-31","incoterm":"EXW",
+  "incoterm_place":"Hamburg","valid_until":"2030-01-01","ship_mode":"except","ship_countries":["Russia"],
+  "documents_available":["CoA","CPP"],"country_prices":[{"country":"Iraq","price":1.1}]}'::jsonb as o;
+grant select on good_offer to authenticated;
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f2');
+select pg_temp.expect_error($$select public.save_listings(jsonb_build_array((select o from good_offer)))$$, 'buyer cannot list offers');
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f1');
+select pg_temp.expect(public.save_listings(jsonb_build_array((select o from good_offer))) = 1, 'approved seller saves an offer');
+select pg_temp.expect(jsonb_array_length(public.get_my_listings()) = 1, 'seller sees own offer');
+select pg_temp.expect((public.get_my_listings() -> 0 -> 'country_prices' -> 0 ->> 'price')::numeric = 1.1, 'country price stored');
+select pg_temp.expect_error($$select public.save_listings(jsonb_build_array((select o from good_offer) || '{"category":"ivd"}'))$$, 'category not approved');
+select pg_temp.expect_error($$select public.save_listings(jsonb_build_array((select o from good_offer) - 'active_ingredients'))$$, 'pharma without ingredients');
+select pg_temp.expect_error($$select public.save_listings(jsonb_build_array((select o from good_offer) || '{"dosage_form":"Other"}'))$$, 'Other without description');
+select pg_temp.expect_error($$select public.save_listings(jsonb_build_array((select o from good_offer) || '{"min_shelf_life_months":24}'))$$, 'two expiry values');
+select pg_temp.expect_error($$select public.save_listings(jsonb_build_array((select o from good_offer) || '{"expiry_date":"2020-01-01"}'))$$, 'expired product');
+select pg_temp.expect_error($$select public.save_listings(jsonb_build_array((select o from good_offer) || '{"price":0}'))$$, 'zero price');
+select pg_temp.expect_error($$select public.save_listings(jsonb_build_array((select o from good_offer) || '{"documents_available":["Passport"]}'))$$, 'unknown document');
+select pg_temp.expect_error($$select public.save_listings(jsonb_build_array((select o from good_offer) || '{"buyers_mode":"only","buyers_countries":[]}'))$$, 'only-rule without countries');
+select pg_temp.expect(public.save_listings(jsonb_build_array((select o from good_offer) || jsonb_build_object('id', public.get_my_listings() -> 0 ->> 'id', 'quantity', 500))) = 1, 'seller updates own offer');
+select pg_temp.expect((public.get_my_listings() -> 0 ->> 'quantity')::int = 500 and jsonb_array_length(public.get_my_listings()) = 1, 'update did not duplicate');
+select pg_temp.expect((select count(*) from public.listings) = 0, 'listings table invisible to sellers');
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f2');
+select pg_temp.expect(jsonb_array_length(public.get_my_listings()) = 0, 'buyer sees no seller offers here');
+reset role;
+create temp table seller_offer as select id from public.listings limit 1;
+grant select on seller_offer to authenticated;
+insert into auth.users (id, email) values ('00000000-0000-0000-0000-0000000000f3', 'seller2@example.test');
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f3');
+select public.apply_for_access_v2('{"name":"Seller Two","contact_name":"S2","phone":"+49 711 654321","wants_sell":true,"version":"t1","sites":[{"country":"Germany"}],"sell_categories":["pharma"],"seller_description":"Another EU wholesaler for tests","consents":{"terms":true,"confidentiality":true,"commission":true}}'::jsonb);
+reset role;
+update public.companies set status = 'approved', sell_status = 'approved' where name = 'Seller Two';
+update public.company_categories set status = 'approved' where company_id = (select id from public.companies where name = 'Seller Two');
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f3');
+select pg_temp.expect_error($$select public.save_listings(jsonb_build_array((select o from good_offer) || jsonb_build_object('id', (select id from seller_offer))))$$, 'cannot overwrite another seller''s offer');
+select pg_temp.expect(public.end_listings(array[(select id from seller_offer)]) = 0, 'cannot end another seller''s offer');
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f1');
+select pg_temp.expect(public.end_listings(array[(select id from seller_offer)]) = 1, 'seller ends own offer');
+reset role;
+select pg_temp.expect((select status from public.listings limit 1) = 'ended', 'offer marked ended');
