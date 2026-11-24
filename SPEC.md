@@ -24,7 +24,7 @@ Pharmaceuticals, IVD, Food supplements, Health products.
   - Gesundheitsprodukte: keine zusätzlichen Nachweise.
   - (Vom Anwalt bzw. der Behörde zu bestätigen.)
 - Registrierung auf **einer Seite** (Feedback 23.11.2026): E-Mail, Passwort, Firma, Ansprechpartner, Rollen, Bereiche, Standorte, Nachweise, Zustimmungen; danach nur noch E-Mail bestätigen, dann ist der Antrag eingereicht (auch bei Bestätigung auf einem anderen Gerät). Keine anonyme Firmenbeschreibung für Verkäufer.
-- Zustimmung per Häkchen: Nutzungsbedingungen, Vertraulichkeit/Nichtumgehung (beide Rollen), Provisionsvereinbarung (nur Verkäufer). Gespeichert wird, wer wann welche Fassung angenommen hat; automatische E-Mail mit den vereinbarten Bedingungen als PDF. Neue Fassung → erneute Zustimmung beim nächsten Login.
+- Zustimmung per Häkchen (seit 24.11.2026 zwei statt drei): „Terms of use, including the confidentiality and non-circumvention agreement“ (beide Rollen; Vertraulichkeit/Nichtumgehung ist Teil der Nutzungsbedingungen, ein Klick speichert beide Zustimmungen) und „Seller terms, including the commission“ (nur Verkäufer). Gespeichert wird, wer wann welche Fassung angenommen hat; automatische E-Mail mit den vereinbarten Bedingungen als PDF. Neue Fassung → erneute Zustimmung beim nächsten Login.
 - Newsletter: eigenes, freiwilliges, nicht vorausgewähltes Häkchen, Double-Opt-in (eigene Bestätigungs-E-Mail), Nachweis mit Zeitpunkt und Text, Abmeldung im Konto; Admin-Export der bestätigten Empfänger. Absatz in der Datenschutzerklärung.
 - Vor der Freigabe nur „Pending approval“. Banner nach der Freigabe nur bei: Lizenz läuft ab/abgelaufen, fehlender Nachweis für einen Bereich. Kein Hinweis zum Ende des kostenlosen Zeitraums (Käufer hat mit Kreditkarte zugestimmt).
 
@@ -92,10 +92,11 @@ Jede Etappe zuerst als Vorschau (Pull Request), Freigabe durch die Inhaber.
 - **Registrierung: Nachweise und Anforderungen je Rolle und Bereich festlegen** (welche Dokumente Pflicht/freiwillig sind, Bezeichnungen). Die Liste der eingereichten Dokumente auf der Seite „Application is being reviewed“ bleibt; ein Nachreichen dort gibt es nicht mehr.
 - **Dokumente je Angebot** („Documents available on request“): Excel „Bionostix-Dokumente-je-Bereich.xlsx“ durchgehen (x je Bereich), danach zeigt das Portal je Bereich nur die passenden.
 - Screenshot-PDF Etappe 1 durchsehen und Änderungswünsche sammeln.
+- **IVD bei der Anmeldung prüfen:** Was soll das Häkchen „Händlerpflichten nach IVDR“ genau bestätigen, und welche Dokumente müssen IVD-Käufer und IVD-Verkäufer vorlegen (EUDAMED, ISO 13485 usw.)?
 - Portal-Reserveprojekt bei Vercel löschen; danach in Supabase (Authentication → URL Configuration) die Redirect URL `https://bionostix-portal.vercel.app/**` entfernen.
 
 ### Vom Anwalt zu klären
-Nutzungsbedingungen (Vertragsschluss, Bindung der Anfrage, Nichtumgehung mit angemessener Vertragsstrafe, Haftung für Endbestimmungsland, anwendbares Recht/Gerichtsstand), Provisionsvereinbarung (Vorlage folgt von Jan), Abo-Bedingungen, Datenschutz (Weitergabe der Käuferdaten nach Annahme, Newsletter), Nachweisliste je Bereich. § 52c-AMG-Registrierung ist beantragt.
+Nutzungsbedingungen inkl. Vertraulichkeit/Nichtumgehung als Teil davon (Vertragsschluss, Bindung der Anfrage, Nichtumgehung mit angemessener Vertragsstrafe, Haftung für Endbestimmungsland, anwendbares Recht/Gerichtsstand), Verkäuferbedingungen mit Provision, eigenes Häkchen (Vorlage folgt von Jan; prüfen, ob Nichtumgehung und Provision so in AGB wirksam sind), Abo-Bedingungen, Datenschutz (Weitergabe der Käuferdaten nach Annahme, Newsletter), Nachweisliste je Bereich. § 52c-AMG-Registrierung ist beantragt.
 
 ---
 **Bisheriges Händlermodell (gilt bis zur Umstellung, wird durch den Marktplatz abgelöst):**

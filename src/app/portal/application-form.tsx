@@ -324,22 +324,19 @@ export function ApplicationForm({ defaultName = "", withAccount = false }: { def
         <section className="space-y-3 text-sm">
           <h2 className="font-bold">Agreements</h2>
           <label className="flex items-start gap-2">
-            <input type="checkbox" className="mt-1" required checked={terms} onChange={(e) => setTerms(e.target.checked)} />
-            <span>I accept the <Link href="/terms" target="_blank" className="text-brand-600 underline">terms of use</Link>. <span className="text-danger">*</span></span>
-          </label>
-          <label className="flex items-start gap-2">
-            <input type="checkbox" className="mt-1" required checked={confidentiality} onChange={(e) => setConfidentiality(e.target.checked)} />
+            <input type="checkbox" className="mt-1" required checked={terms}
+              onChange={(e) => { setTerms(e.target.checked); setConfidentiality(e.target.checked); }} />
             <span>
-              I accept the <Link href="/confidentiality" target="_blank" className="text-brand-600 underline">confidentiality and
-              non-circumvention agreement</Link>. <span className="text-danger">*</span>
+              I accept the <Link href="/terms" target="_blank" className="text-brand-600 underline">terms of use</Link>, including
+              the confidentiality and non-circumvention agreement. <span className="text-danger">*</span>
             </span>
           </label>
           {wantsSell && (
             <label className="flex items-start gap-2">
               <input type="checkbox" className="mt-1" required checked={commission} onChange={(e) => setCommission(e.target.checked)} />
               <span>
-                I accept the <Link href="/commission-agreement" target="_blank" className="text-brand-600 underline">commission
-                agreement for sellers</Link>. <span className="text-danger">*</span>
+                I accept the <Link href="/commission-agreement" target="_blank" className="text-brand-600 underline">seller
+                terms</Link>, including the commission. <span className="text-danger">*</span>
               </span>
             </label>
           )}

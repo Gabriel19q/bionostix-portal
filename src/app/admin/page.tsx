@@ -45,8 +45,8 @@ const STATUS_STYLE: Record<Company["status"], string> = {
 };
 const CONSENT_LABEL: Record<string, string> = {
   terms: "Terms of use",
-  confidentiality: "Confidentiality / non-circumvention",
-  commission: "Commission agreement",
+  confidentiality: "Confidentiality / non-circumvention (part of terms of use)",
+  commission: "Seller terms incl. commission",
   newsletter: "Newsletter",
 };
 

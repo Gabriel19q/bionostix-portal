@@ -49,9 +49,6 @@ export function docSlots(opts: {
         key: `pharma-licence-${i}`,
         kind: "wholesale_licence",
         label: sites.length > 1 ? `Pharmaceutical wholesale licence for ${s.country || `site ${i + 1}`}` : "Pharmaceutical wholesale licence",
-        hint: wantsSell && sellCats.includes("pharma")
-          ? "Wholesale distribution authorisation or manufacturing authorisation; outside the EU your national import licence."
-          : "Wholesale distribution authorisation (EU) or your national import licence.",
         required: true,
         siteIndex: i,
         category: "pharma",

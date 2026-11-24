@@ -80,9 +80,8 @@ export const emails = {
     text:
       `Dear ${name},\n\nthank you for your application. We are now verifying your company and will inform you by email.\n\n` +
       `On ${acceptedAt} you accepted the following agreements (version ${version}):\n` +
-      `- Terms of use: ${SITE}/terms\n` +
-      `- Confidentiality and non-circumvention agreement: ${SITE}/confidentiality\n` +
-      (seller ? `- Commission agreement for sellers: ${SITE}/commission-agreement\n` : "") +
+      `- Terms of use, including the confidentiality and non-circumvention agreement: ${SITE}/terms\n` +
+      (seller ? `- Seller terms, including the commission: ${SITE}/commission-agreement\n` : "") +
       `\nPlease keep this email for your records.${footer}`,
   }),
   offersPrepared: (count: number) => ({
