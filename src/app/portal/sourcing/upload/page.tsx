@@ -38,7 +38,7 @@ export default async function UploadRequestsPage({ searchParams }: { searchParam
           {edit ? "Edit product request" : drafts ? "Product requests prepared by Bionostix" : manual ? "Add a product request" : "Upload your list of wanted products"}
         </h1>
       </div>
-      <UploadWizard mode="requests" approved={approved} initial={initial} />
+      <UploadWizard mode="requests" approved={approved} initial={initial} confirm={!!drafts} />
     </div>
   );
 }

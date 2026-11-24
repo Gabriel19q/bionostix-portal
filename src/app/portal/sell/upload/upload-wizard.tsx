@@ -21,7 +21,8 @@ const REQUEST_BULK_KEYS = ["category", "delivery_country", "needed_by", "unit", 
 const BULK_KEYS = ["category", "incoterm", "incoterm_place", "valid_until", "packaging_language", "expiry", "lead_time_days",
   "buyers", "ship", "documents_available", "unit", "brand"];
 
-export function UploadWizard({ approved, initial, sellerCompanyId, mode = "offers", buyerCompanyId }: {
+export function UploadWizard({ approved, initial, sellerCompanyId, mode = "offers", buyerCompanyId, confirm }: {
+  confirm?: boolean; // the buyer confirms product requests prepared by Bionostix
   approved: Category[]; initial: Draft[] | null;
   sellerCompanyId?: string; // set when an admin prepares offers for a seller
   mode?: "offers" | "requests"; // offers of a seller, or product requests (wanted list) of a buyer
@@ -223,7 +224,7 @@ export function UploadWizard({ approved, initial, sellerCompanyId, mode = "offer
           </div>
           <div className="flex flex-wrap items-end gap-2 border-t border-slate-100 pt-3 text-sm">
             <div>
-              <label className="label" htmlFor="bulk-key">Set for all offers</label>
+              <label className="label" htmlFor="bulk-key">Set for all {noun}s</label>
               <select id="bulk-key" className="input py-1" value={bulkKey} onChange={(e) => { setBulkKey(e.target.value); setBulkValue(""); }}>
                 {bulkKeys.map((k) => <option key={k} value={k}>{k === "category" ? "Category" : byKey[k].label}</option>)}
               </select>
@@ -259,6 +260,14 @@ export function UploadWizard({ approved, initial, sellerCompanyId, mode = "offer
                 <span className="text-sm text-slate-500">
                   {d.category ? ` · ${CATEGORY_LABEL[d.category]}` : ""}{d.values.price && Number(d.values.price) > 0 ? ` · ${eur(Number(d.values.price))}` : ""}{d.values.quantity && isRequests ? ` · ${d.values.quantity} packs` : ""}
                 </span>
+                {isRequests && (
+                  <span className="block text-sm text-slate-600">
+                    {[d.values.active_ingredients, d.values.dosage_form, d.values.test_parameter, d.values.product_type, d.values.size_variant,
+                      d.values.units_per_pack ? `${d.values.units_per_pack} ${d.values.unit ?? ""}`.trim() : "",
+                      d.values.target_price ? `target ${eur(Number(d.values.target_price))} / pack` : "",
+                      d.values.delivery_country ? `to ${d.values.delivery_country}` : ""].filter(Boolean).join(" · ")}
+                  </span>
+                )}
               </button>
               <div className="flex items-center gap-3">
                 <span className={n > 0 ? "tag-danger" : "tag-success"}>{n > 0 ? `${n} to fix` : "Complete"}</span>
@@ -343,6 +352,7 @@ export function UploadWizard({ approved, initial, sellerCompanyId, mode = "offer
         <button className="btn-primary" disabled={busy || problemCount > 0 || drafts.length === 0} onClick={onSave}>
           {busy ? "Saving…"
             : buyerCompanyId ? `Send ${drafts.length} product request(s) to the buyer`
+            : confirm ? `Confirm ${drafts.length} product request(s)`
             : isRequests ? (drafts.length === 1 ? "Save product request" : `Save ${drafts.length} product requests`)
             : sellerCompanyId ? `Send ${drafts.length} offer(s) to the seller`
             : drafts.length === 1 ? "Save offer" : `Publish ${drafts.length} offers`}

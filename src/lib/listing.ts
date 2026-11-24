@@ -138,7 +138,10 @@ export function matchOption(value: string, options: string[]): string {
   const alias = OPTION_ALIASES[v];
   if (alias && options.includes(alias)) return alias;
   const starts = options.find((o) => v.startsWith(norm(o)) || norm(o).startsWith(v));
-  return starts ?? "";
+  if (starts) return starts;
+  // Dosage forms in free text ("Film-coated tablets", "Hartkapseln") -> closest option
+  if (options === DOSAGE_FORMS) return formFromText(value);
+  return "";
 }
 
 // "Pharmaceuticals", "Arzneimittel", "IVD", "NEM" ... -> category

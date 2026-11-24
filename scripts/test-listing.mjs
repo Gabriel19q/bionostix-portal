@@ -5,8 +5,9 @@ import * as XLSX from "xlsx";
 import { toSheet } from "../src/lib/sheet.ts";
 import {
   guessListingMapping, rowsToDrafts, validateDraft, draftToPayload, parseCountryRule, parseExpiry, listingToDraft,
-  autoComplete, parseIngredients, serializeIngredients,
+  autoComplete, parseIngredients, serializeIngredients, matchOption, DOSAGE_FORMS,
 } from "../src/lib/listing.ts";
+import { WANTED_FIELDS } from "../src/lib/wanted.ts";
 import { parseProductName } from "../src/lib/product-name.ts";
 
 const ALL = ["pharma", "ivd", "supplements", "health"];
@@ -100,3 +101,15 @@ const half = { category: "supplements", values: { ...td[2].values, active_ingred
 assert.equal(validateDraft(half, ALL).active_ingredients, "Add amount and unit for Zinc");
 
 console.log("listing upload tests passed");
+
+// Wanted lists (product requests): free-text forms and typical tender columns
+assert.equal(matchOption("Film-coated tablets", DOSAGE_FORMS), "Tablet");
+assert.equal(matchOption("Hartkapseln", DOSAGE_FORMS), "Capsule");
+{
+  const m = guessListingMapping(["No.", "Item description", "Active substance", "Form", "Pack", "Qty", "Max. price EUR", "Delivery"], WANTED_FIELDS);
+  assert.equal(m.product_name, "Item description");
+  assert.equal(m.units_per_pack, "Pack");
+  assert.equal(m.quantity, "Qty");
+  assert.equal(m.delivery_country, "Delivery");
+  console.log("wanted list tests passed");
+}

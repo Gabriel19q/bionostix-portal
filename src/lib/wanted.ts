@@ -15,12 +15,12 @@ export const WANTED_FIELDS: FieldDef[] = [
   { key: "method", label: "Method", type: "select", options: METHODS, need: only({ ivd: "O" }), hints: ["method", "methode"] },
   { key: "product_type", label: "Product type", type: "select", options: PRODUCT_TYPES, need: only({ health: "R" }), hints: ["product type", "produktart", "type"] },
   { key: "size_variant", label: "Size / variant", type: "select", options: SIZES, need: only({ health: "O" }), hints: ["size", "größe", "groesse", "variant"] },
-  { key: "units_per_pack", label: "Units per pack", type: "int", need: all("O"), hints: ["units per pack", "pack size", "packungsgröße", "packungsgroesse", "inhalt"] },
+  { key: "units_per_pack", label: "Units per pack", type: "int", need: all("O"), hints: ["units per pack", "pack size", "packungsgröße", "packungsgroesse", "inhalt", "pack", "packung"] },
   { key: "unit", label: "Unit", type: "select", options: UNITS, need: all("O"), hints: ["unit", "einheit"] },
   { key: "quantity", label: "Quantity needed (packs)", type: "int", need: all("R"), hints: ["quantity", "qty", "menge", "bedarf", "anzahl", "amount"] },
   { key: "target_price", label: "Target price per pack (EUR)", type: "money", need: all("O"), hints: ["target price", "zielpreis", "price", "preis"] },
   { key: "needed_by", label: "Needed by", type: "date", need: all("O"), hints: ["needed by", "deadline", "bis", "termin", "liefertermin"] },
-  { key: "delivery_country", label: "Delivery country", type: "country", need: all("R"), hints: ["delivery country", "country", "land", "lieferland", "destination"] },
+  { key: "delivery_country", label: "Delivery country", type: "country", need: all("R"), hints: ["delivery country", "country", "land", "lieferland", "destination", "delivery", "ship to"] },
   { key: "note", label: "Note", type: "text", need: all("O"), hints: ["note", "notes", "comment", "bemerkung", "kommentar"] },
 ];
 export const WANTED_BY_KEY = fieldMap(WANTED_FIELDS);
