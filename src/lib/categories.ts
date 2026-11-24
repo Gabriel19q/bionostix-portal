@@ -64,19 +64,8 @@ export function docSlots(opts: {
   if (wantsSell && sellCats.includes("ivd")) {
     slots.push({ key: "iso", kind: "iso13485", label: DOC_KIND_LABEL.iso13485, required: false, category: "ivd" });
   }
-  if (wantsBuy && buyCats.includes("ivd")) {
-    sites.forEach((s, i) =>
-      slots.push({
-        key: `ivd-import-${i}`,
-        kind: "md_import_licence",
-        label: sites.length > 1 ? `Import licence for medical devices / IVD – ${s.country || `site ${i + 1}`}` : "Import licence for medical devices / IVD",
-        hint: "Only if your country requires one.",
-        required: false,
-        siteIndex: i,
-        category: "ivd",
-      }),
-    );
-  }
+  // IVD buyers: no import licence asked (feedback 24.11.2026). Their national import rules are the buyer's own
+  // responsibility; German sellers have no legal duty to check the buyer's entitlement for IVDs.
   if (wantsSell && sellCats.includes("supplements")) {
     slots.push({ key: "food", kind: "food_registration", label: DOC_KIND_LABEL.food_registration, required: false, category: "supplements" });
   }

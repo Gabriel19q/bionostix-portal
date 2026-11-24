@@ -19,7 +19,7 @@ Pharmaceuticals, IVD, Food supplements, Health products.
 - Nachweise (Upload, Drag & Drop oder Dateiauswahl):
   - Alle: Handelsregisterauszug oder Gewerbeanmeldung, USt-IdNr.
   - Pharma: Verkäufer Großhandels- oder Herstellungserlaubnis (Pflicht), GDP-Zertifikat (freiwillig); Käufer Großhandelserlaubnis bzw. Importlizenz (Pflicht).
-  - IVD: Verkäufer Häkchen „Händlerpflichten nach IVDR erfüllt“ (Pflicht), EUDAMED-SRN falls Hersteller/Importeur, ISO 13485 (freiwillig); Käufer außerhalb der EU Importlizenz für Medizinprodukte, falls vorhanden.
+  - IVD: Verkäufer Häkchen „Händlerpflichten nach IVDR erfüllt“ (Pflicht), EUDAMED-SRN falls Hersteller/Importeur, ISO 13485 (freiwillig); Käufer: kein zusätzlicher Nachweis (Importregeln im Zielland sind Sache des Käufers; deutsche Verkäufer müssen bei IVD keine Abnahmeberechtigung prüfen, Abgabebeschränkung der MPAV seit 20.02.2025 aufgehoben).
   - Nahrungsergänzung: Registrierung als Lebensmittelunternehmen (freiwillig).
   - Gesundheitsprodukte: keine zusätzlichen Nachweise.
   - (Vom Anwalt bzw. der Behörde zu bestätigen.)
