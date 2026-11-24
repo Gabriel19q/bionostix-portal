@@ -28,6 +28,7 @@ type Company = {
   verified_on: string | null;
   internal_note: string | null;
   created_at: string;
+  updated_at: string;
 };
 type Site = { id: string; company_id: string; country: string; address: string | null; status: Approval; licence_valid_until: string | null };
 type Cat = { company_id: string; role: "buy" | "sell"; category: Category; status: Approval };
@@ -66,7 +67,8 @@ function ApprovalSelect({ name, value }: { name: string; value: Approval | null 
   );
 }
 
-export default async function AdminPage() {
+export default async function AdminPage({ searchParams }: { searchParams: Promise<{ saved?: string }> }) {
+  const { saved } = await searchParams;
   const { supabase } = await getSession();
 
   const [{ data: companies }, { data: sites }, { data: cats }, { data: consents }, { data: docs }, { data: users },
@@ -174,7 +176,7 @@ export default async function AdminPage() {
           .map((s) => s.licence_valid_until!).sort()[0];
         const expiresIn = soonest ? daysUntil(soonest) : null;
         return (
-          <div key={c.id} className="card space-y-4">
+          <div key={c.id} id={`company-${c.id}`} className="card scroll-mt-6 space-y-4">
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
                 <h2 className="text-lg font-bold">{c.name}</h2>
@@ -198,7 +200,8 @@ export default async function AdminPage() {
               </div>
             </div>
 
-            <form action={saveCompanyReview} className="space-y-4 border-t border-slate-100 pt-4">
+            {/* key: after saving, the form is rebuilt with the saved values (otherwise the browser resets it to the old ones) */}
+            <form key={`${c.id}-${c.updated_at}`} action={saveCompanyReview} className="space-y-4 border-t border-slate-100 pt-4">
               <input type="hidden" name="company_id" value={c.id} />
 
               <div className="grid gap-4 md:grid-cols-2">
@@ -287,6 +290,7 @@ export default async function AdminPage() {
 
               <div className="flex flex-wrap gap-2">
                 <button className="btn-primary">Save review</button>
+                {saved === c.id && <span className="self-center text-sm font-bold text-success">✓ Saved</span>}
                 {c.status === "approved" && <button form={`status-${c.id}`} className="btn-secondary">Suspend</button>}
                 {c.status === "suspended" && <button form={`status-${c.id}`} className="btn-secondary">Reactivate (back to review)</button>}
               </div>

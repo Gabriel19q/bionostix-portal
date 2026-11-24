@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { emails, sendEmail } from "@/lib/email";
 
@@ -77,6 +78,8 @@ export async function saveCompanyReview(formData: FormData) {
     await sendEmail({ to: (people ?? []).map((p) => p.email), ...emails.accessApproved(before.name) });
   }
   revalidatePath("/admin");
+  // Show "Saved" at this company and keep it in view
+  redirect(`/admin?saved=${id}#company-${id}`);
 }
 
 export async function setStandardCommission(formData: FormData) {
