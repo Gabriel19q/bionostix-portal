@@ -31,7 +31,7 @@ export default async function AdminSourcingPage({
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Product search requests</h1>
+          <h1 className="text-2xl font-bold">Product requests</h1>
           <p className="text-sm text-slate-600">
             Products customers are looking for. {openCount > 0 && <strong>{openCount} new.</strong>}
           </p>

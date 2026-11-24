@@ -26,7 +26,7 @@ export default async function SourcingPage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Product search requests</h1>
+        <h1 className="text-2xl font-bold">Product requests</h1>
         <p className="text-sm text-slate-600">
           Looking for a product that is not in the catalog, or have a tender list? Tell us what you need. We check it with
           our European manufacturers and get back to you.

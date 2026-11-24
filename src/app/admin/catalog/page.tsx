@@ -1,218 +1,93 @@
 import Link from "next/link";
 import { getSession } from "@/lib/session";
-import { displayDate, eur, monthsUntil, sellPrice } from "@/lib/format";
-import { offerAction } from "./actions";
-import { ConfirmButton, SelectAll } from "./bulk-controls";
-import { SELLER_LABEL } from "@/lib/status";
+import { CATEGORY_LABEL, type Category } from "@/lib/categories";
+import { displayDate, eur } from "@/lib/format";
 
 type Row = {
-  id: string;
-  batch: string;
-  expiry_date: string | null;
-  available_qty: number | null;
-  moq: number;
-  purchase_price: number | null;
-  internal_note: string | null;
-  coa_available: boolean | null;
-  markup_override_pct: number | null;
-  incoterm: string;
-  stock_as_of: string;
-  is_active: boolean;
-  valid_until: string | null;
-  market_mode: "all" | "only" | "except";
-  market_countries: string[];
-  products: {
-    trade_name: string;
-    strength: string | null;
-    pack_size: string | null;
-    pzn: string | null;
-    is_cold_chain: boolean;
-    is_narcotic: boolean;
-    seller: string;
-    manufacturers: { name: string } | null;
-  };
+  id: string; category: Category; product_name: string; name_on_pack: string | null; brand: string;
+  active_ingredients: string | null; units_per_pack: number; unit: string; quantity: number; price: number;
+  expiry_date: string | null; min_shelf_life_months: number | null; valid_until: string; status: "active" | "ended" | "draft";
+  updated_at: string; companies: { name: string; seller_code: string | null } | null;
 };
 
-export default async function AdminCatalogPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ q?: string; m?: string; inactive?: string; msg?: string }>;
-}) {
-  const { q = "", m = "", inactive, msg } = await searchParams;
-  const { supabase } = await getSession();
-  const [{ data: offers }, { data: groups }, { data: manufacturers }] = await Promise.all([
-    supabase
-      .from("offers")
-      .select("*, products(trade_name, strength, pack_size, pzn, is_cold_chain, is_narcotic, seller, manufacturers(name))")
-      .order("expiry_date", { nullsFirst: false })
-      .returns<Row[]>(),
-    supabase.from("customer_groups").select("id, name, default_markup_pct").order("name"),
-    supabase.from("manufacturers").select("name").order("name"),
-  ]);
+const STATUS: Record<Row["status"], [string, string]> = {
+  active: ["Active", "tag-success"],
+  draft: ["Waiting for seller", "tag-attention"],
+  ended: ["Ended", "tag-neutral"],
+};
 
-  const needle = q.trim().toLowerCase();
-  const rows = (offers ?? []).filter((o) => {
-    if (!inactive && !o.is_active) return false;
-    if (m && o.products.manufacturers?.name !== m) return false;
-    if (!needle) return true;
-    return [o.products.trade_name, o.products.strength, o.products.pzn, o.batch, o.products.manufacturers?.name]
-      .some((v) => v?.toLowerCase().includes(needle));
-  });
+// Product offering: every offer of every seller (admins see the seller's name; buyers never do)
+export default async function ProductOfferingPage({ searchParams }: { searchParams: Promise<{ status?: string; q?: string }> }) {
+  const { status = "active", q = "" } = await searchParams;
+  const { supabase } = await getSession();
+  let query = supabase.from("listings")
+    .select("id, category, product_name, name_on_pack, brand, active_ingredients, units_per_pack, unit, quantity, price, expiry_date, min_shelf_life_months, valid_until, status, updated_at, companies(name, seller_code)")
+    .order("updated_at", { ascending: false }).limit(500);
+  if (status !== "all") query = query.eq("status", status);
+  if (q.trim()) query = query.or(`product_name.ilike.%${q.trim().replace(/[%,()]/g, "")}%,active_ingredients.ilike.%${q.trim().replace(/[%,()]/g, "")}%`);
+  const { data } = await query.returns<Row[]>();
+  const rows = data ?? [];
+  const today = new Date().toISOString().slice(0, 10);
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Catalog</h1>
-          <p className="text-sm text-slate-600">{rows.length} batch(es) shown. Purchase prices are visible to admins only.</p>
+          <h1 className="text-2xl font-bold">Product offering</h1>
+          <p className="text-sm text-slate-600">All offers of all sellers. Sellers manage their offers themselves.</p>
         </div>
-        <div className="flex gap-2">
-          <Link href="/admin/import" className="btn-secondary">Import stock list</Link>
-          <Link href="/admin/catalog/new" className="btn-primary">Add batch</Link>
-        </div>
-      </div>
-
-      <form className="flex flex-wrap items-end gap-3">
-        <div className="w-72">
-          <label className="label">Search</label>
-          <input name="q" className="input" defaultValue={q} placeholder="Name, PZN, batch…" />
-        </div>
-        <div className="w-56">
-          <label className="label">Manufacturer</label>
-          <select name="m" className="input" defaultValue={m}>
-            <option value="">All</option>
-            {(manufacturers ?? []).map((x) => <option key={x.name}>{x.name}</option>)}
+        <form className="flex flex-wrap items-end gap-2">
+          <input name="q" className="input w-56" placeholder="Product or ingredient" defaultValue={q} />
+          <select name="status" className="input w-48" defaultValue={status}>
+            <option value="active">Active</option>
+            <option value="draft">Waiting for seller</option>
+            <option value="ended">Ended</option>
+            <option value="all">All</option>
           </select>
+          <button className="btn-secondary">Filter</button>
+        </form>
+      </div>
+      {rows.length === 0 ? (
+        <div className="card text-sm text-slate-600">
+          No offers here. Sellers add offers under “My offers”, or you import a list for them under{" "}
+          <Link href="/admin/import" className="text-brand-600 underline">Import stock for seller</Link>.
         </div>
-        <label className="flex items-center gap-2 pb-2 text-sm">
-          <input type="checkbox" name="inactive" value="1" defaultChecked={!!inactive} /> Show hidden batches
-        </label>
-        <button className="btn-secondary">Filter</button>
-      </form>
-
-      {msg && <Notice msg={msg} />}
-
-      <form action={offerAction} className="space-y-2">
-      <input type="hidden" name="q" value={q} />
-      <input type="hidden" name="m" value={m} />
-      <input type="hidden" name="inactive" value={inactive ?? ""} />
-      <div className="flex flex-wrap items-center gap-2 text-sm">
-        <span className="text-slate-600">Selected batches:</span>
-        <button name="op" value="hide" className="btn-secondary px-3 py-1">Hide</button>
-        <button name="op" value="show" className="btn-secondary px-3 py-1">Show</button>
-        <ConfirmButton value="delete" className="btn-danger px-3 py-1"
-          message="Delete {n} selected batch(es)? This cannot be undone. Batches that appear in a customer request are hidden instead.">
-          Delete
-        </ConfirmButton>
-      </div>
-      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
-        <table className="min-w-full text-sm">
-          <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
-            <tr>
-              <th className="px-2 py-2"><SelectAll /></th>
-              <th className="px-2 py-2">Product</th>
-              <th className="px-2 py-2">Manufacturer</th>
-              <th className="px-2 py-2">Batch</th>
-              <th className="px-2 py-2">Expiry</th>
-              <th className="px-2 py-2 text-right">Qty / as of</th>
-              <th className="px-2 py-2 text-right">MOQ</th>
-              <th className="px-2 py-2 text-right">Purchase</th>
-              <th className="px-2 py-2 text-right">Markup</th>
-              {(groups ?? []).map((g) => (
-                <th key={g.id} className="px-2 py-2 text-right">{g.name}</th>
-              ))}
-              <th className="px-2 py-2">COA</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {rows.length === 0 && (
+      ) : (
+        <div className="card overflow-x-auto p-0">
+          <table className="w-full text-sm">
+            <thead className="bg-slate-50 text-left text-xs text-slate-600">
               <tr>
-                <td colSpan={11 + (groups?.length ?? 0)} className="px-3 py-6 text-center text-slate-500">
-                  No batches yet. Add one or import a manufacturer stock list.
-                </td>
+                <th className="p-3">Product</th><th className="p-3">Seller</th><th className="p-3">Category</th>
+                <th className="p-3 text-right">Quantity</th><th className="p-3 text-right">Price / pack</th>
+                <th className="p-3">Expiry</th><th className="p-3">Valid until</th><th className="p-3">Status</th>
               </tr>
-            )}
-            {rows.map((o) => {
-              const months = o.expiry_date ? monthsUntil(o.expiry_date) : null;
-              return (
-                <tr key={o.id} className={o.is_active ? "" : "bg-slate-50 text-slate-400"}>
-                  <td className="px-2 py-2">
-                    <input type="checkbox" name="offer_id" value={o.id} aria-label={`Select ${o.products.trade_name}`} />
-                  </td>
-                  <td className="px-2 py-2">
-                    <Link href={`/admin/catalog/${o.id}`} className="font-medium text-brand-600 hover:underline">
-                      {o.products.trade_name}
-                    </Link>
-                    <div className="text-xs text-slate-500">
-                      {[o.products.strength, o.products.pack_size, o.products.pzn && `PZN ${o.products.pzn}`]
-                        .filter(Boolean).join(" · ")}
-                      {o.products.is_cold_chain && " · cold chain"}
-                      {o.products.is_narcotic && " · BtM"}
-                    </div>
-                    <div className="text-xs text-slate-600">Seller: {SELLER_LABEL[o.products.seller] ?? o.products.seller}</div>
-                    {o.market_mode !== "all" && (
-                      <div className="text-xs font-bold text-slate-700">
-                        {o.market_mode === "only" ? "Only: " : "Not for: "}{o.market_countries.join(", ")}
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {rows.map((r) => {
+                const [label, cls] = r.status === "active" && r.valid_until < today ? ["Validity passed", "tag-attention"] : STATUS[r.status];
+                return (
+                  <tr key={r.id}>
+                    <td className="p-3">
+                      <div className="font-bold">{r.product_name}</div>
+                      <div className="text-xs text-slate-500">
+                        {r.brand}{r.active_ingredients ? ` · ${r.active_ingredients}` : ""} · {r.units_per_pack} {r.unit}
+                        {r.name_on_pack ? ` · on pack: ${r.name_on_pack}` : ""}
                       </div>
-                    )}
-                    {o.valid_until && (
-                      <div className={`text-xs ${o.valid_until < new Date().toISOString().slice(0, 10) ? "font-bold text-danger" : "text-slate-600"}`}>
-                        Offer valid until {displayDate(o.valid_until)}
-                      </div>
-                    )}
-                    {o.internal_note && <div className="text-xs italic text-slate-600">Internal: {o.internal_note}</div>}
-                    <button name="op" value={`toggle:${o.id}:${o.is_active ? "false" : "true"}`}
-                      className="text-xs text-slate-600 underline hover:text-brand-600">
-                      {o.is_active ? "Hide from customers" : "Show to customers"}
-                    </button>
-                  </td>
-                  <td className="px-2 py-2">{o.products.manufacturers?.name}</td>
-                  <td className="px-2 py-2 font-mono text-xs">{o.batch || "–"}</td>
-                  <td className={`px-2 py-2 whitespace-nowrap ${months === null ? "text-slate-400" : months < 6 ? "font-bold text-danger" : ""}`}>
-                    {o.expiry_date
-                      ? <span className={months !== null && months >= 6 && months < 12 ? "mark-attention" : ""}>{displayDate(o.expiry_date)}</span>
-                      : "open"}
-                  </td>
-                  <td className="px-2 py-2 text-right">
-                    {o.available_qty ?? <span className="text-slate-400">on request</span>}
-                    <div className="text-xs whitespace-nowrap text-slate-500">{displayDate(o.stock_as_of)}</div>
-                  </td>
-                  <td className="px-2 py-2 text-right">{o.moq}</td>
-                  <td className="px-2 py-2 text-right whitespace-nowrap">{o.purchase_price === null ? <span className="text-slate-400">on request</span> : eur(o.purchase_price)}</td>
-                  <td className="px-2 py-2 text-right">
-                    {o.markup_override_pct !== null ? `${o.markup_override_pct}%` : <span className="text-slate-400">group</span>}
-                  </td>
-                  {(groups ?? []).map((g) => (
-                    <td key={g.id} className="px-2 py-2 text-right whitespace-nowrap">
-                      {o.purchase_price === null ? <span className="text-slate-400">–</span>
-                        : eur(sellPrice(Number(o.purchase_price), o.markup_override_pct === null ? null : Number(o.markup_override_pct), Number(g.default_markup_pct)))}
                     </td>
-                  ))}
-                  <td className="px-2 py-2 text-xs">
-                    {o.coa_available === true ? <span className="label-neutral">yes</span>
-                      : o.coa_available === false ? "no" : <span className="text-slate-400">–</span>}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-      </form>
+                    <td className="p-3">{r.companies?.name}<div className="text-xs text-slate-500">{r.companies?.seller_code}</div></td>
+                    <td className="p-3">{CATEGORY_LABEL[r.category]}</td>
+                    <td className="p-3 text-right">{r.quantity}</td>
+                    <td className="p-3 text-right">{eur(r.price)}</td>
+                    <td className="p-3">{r.expiry_date ? displayDate(r.expiry_date) : `min ${r.min_shelf_life_months} months`}</td>
+                    <td className="p-3">{displayDate(r.valid_until)}</td>
+                    <td className="p-3"><span className={cls}>{label}</span></td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
-}
-
-function Notice({ msg }: { msg: string }) {
-  const [op, a, b] = msg.split(":");
-  let text = "";
-  if (op === "none") text = "Please tick at least one batch first.";
-  else if (op === "hide") text = `${a} batch(es) hidden from customers.`;
-  else if (op === "show") text = `${a} batch(es) visible to customers again.`;
-  else if (op === "delete") {
-    text = `${a} batch(es) deleted.`;
-    if (Number(b) > 0) text += ` ${b} batch(es) appear in customer requests and were hidden instead, so the request history stays complete.`;
-  }
-  if (!text) return null;
-  return <div className="notice-info">{text}</div>;
 }

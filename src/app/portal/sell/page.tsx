@@ -8,7 +8,7 @@ import { endListingsAction } from "./actions";
 type Listing = {
   id: string; category: Category; product_name: string; brand: string; active_ingredients: string | null;
   dosage_form: string | null; units_per_pack: number; unit: string; quantity: number; price: number;
-  expiry_date: string | null; min_shelf_life_months: number | null; valid_until: string; status: "active" | "ended";
+  expiry_date: string | null; min_shelf_life_months: number | null; valid_until: string; status: "active" | "ended" | "draft";
   country_prices: { country: string; price: number }[];
 };
 
@@ -42,6 +42,15 @@ export default async function MyOffersPage() {
           <Link href="/portal/sell/upload" className="btn-primary">+ Upload your list</Link>
         </div>
       </div>
+      {listings.some((l) => l.status === "draft") && (
+        <div className="notice-attention flex flex-wrap items-center justify-between gap-3">
+          <span>
+            Bionostix prepared {listings.filter((l) => l.status === "draft").length} offer(s) from your list. They are not
+            visible to buyers until you check and publish them.
+          </span>
+          <Link href="/portal/sell/upload?drafts=1" className="btn-primary">Check and publish</Link>
+        </div>
+      )}
       <p className="notice-info">
         Buyers see your offers without your company name, as “Seller {account?.company.seller_code}”. You are responsible
         for the information in your offers.
@@ -91,8 +100,8 @@ export default async function MyOffersPage() {
                     <td className="p-3">{l.expiry_date ? displayDate(l.expiry_date) : `min ${l.min_shelf_life_months} months`}</td>
                     <td className="p-3">{displayDate(l.valid_until)}</td>
                     <td className="p-3">
-                      <span className={l.status === "ended" ? "tag-neutral" : expired ? "tag-attention" : "tag-success"}>
-                        {l.status === "ended" ? "Ended" : expired ? "Validity passed" : "Active"}
+                      <span className={l.status === "ended" ? "tag-neutral" : l.status === "draft" || expired ? "tag-attention" : "tag-success"}>
+                        {l.status === "ended" ? "Ended" : l.status === "draft" ? "Prepared – not published" : expired ? "Validity passed" : "Active"}
                       </span>
                     </td>
                     <td className="p-3">

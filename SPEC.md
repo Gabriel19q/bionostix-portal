@@ -67,6 +67,15 @@ Standardsatz in der Provisionsvereinbarung; abweichender Satz je Verkäufer (eig
 ### Abo für Käufer
 9,99 € netto pro Monat (Entscheidung 23.11.2026; Preis bei Stripe änderbar), die ersten 3 Monate kostenlos, Kreditkarte bei der Anmeldung, automatische Verlängerung, monatlich kündbar zum Monatsende (auch im kostenlosen Zeitraum); nach dem kostenlosen Zeitraum wird ohne Kündigung automatisch abgebucht, ohne gesonderten Hinweis. Abwicklung über Stripe (Rechnungen, Reverse Charge für EU-Firmen mit USt-IdNr.). Verkäufer zahlen kein Abo; Firmen, die auch kaufen, brauchen es. Keine Zahlung per Überweisung (Entscheidung 23.11.2026).
 
+### Admin-Hilfe und Product requests (Feedback 24.11.2026)
+- **Import stock for seller:** Admin lädt die Liste eines Verkäufers für ihn hoch (gleiche Maske); die Angebote landen beim Verkäufer als Entwurf („Prepared – not published“), er bekommt eine E-Mail, prüft und veröffentlicht sie selbst. Umgesetzt.
+- **Admin-Reiter:** Purchase requests · Product requests · Companies · Product offering (alle Angebote aller Verkäufer) · Import stock for seller · Activity. „Customer groups“ entfällt. Käufer-Menü: My purchase requests, Product requests.
+- **Product requests als Liste (Etappe 2):** Käufer können ihre Gesuche auch als eigene, unformatierte Excel-Liste hochladen (gleiches Prinzip wie beim Verkäufer: Spalten erkennen, Maske, Fehlendes markieren). Analog zu „Import stock for seller“ kann der Admin eine Gesuchsliste für einen Käufer hochladen; sie landet beim Käufer zur Bestätigung.
+- **Matches zu Product requests (Etappe 2):** Zu jedem Gesuch schlägt das Portal passende Angebote vor:
+  - **Exact match:** gleicher Wirkstoff bzw. gleiche Wirkstoffe mit gleicher Stärke und Darreichungsform (bei IVD: gleicher Test und Methode; bei Gesundheitsprodukten: gleiche Produktart und Größe).
+  - **Similar:** gleicher Wirkstoff, aber andere Packungsgröße, andere Stärke/Konzentration oder andere Darreichungsform.
+  - Nur Angebote, die der Käufer kaufen darf (Länderregeln); Verkäufer bleiben anonym. Neue passende Angebote später auch per E-Mail-Hinweis.
+
 ### Menü
 „For buyers“: Catalog, My requests (Suche, Statusfilter, Archived), Sourcing requests. „For sellers“: My offers (+ Add offers), Incoming requests, Commissions. Wer nur kauft, sieht nur „For buyers“.
 

@@ -10,7 +10,7 @@ import {
 import { readSheetFile, type Sheet } from "@/lib/sheet";
 import { parseProductName } from "@/lib/product-name";
 import { eur } from "@/lib/format";
-import { saveListingsAction } from "../actions";
+import { adminPrepareListingsAction, saveListingsAction } from "../actions";
 
 type Step = "file" | "map" | "mask";
 
@@ -18,7 +18,10 @@ type Step = "file" | "map" | "mask";
 const BULK_KEYS = ["category", "incoterm", "incoterm_place", "valid_until", "packaging_language", "expiry", "lead_time_days",
   "buyers", "ship", "documents_available", "unit", "brand"];
 
-export function UploadWizard({ approved, initial }: { approved: Category[]; initial: Draft[] | null }) {
+export function UploadWizard({ approved, initial, sellerCompanyId }: {
+  approved: Category[]; initial: Draft[] | null;
+  sellerCompanyId?: string; // set when an admin prepares offers for a seller
+}) {
   const router = useRouter();
   const [step, setStep] = useState<Step>(initial ? "mask" : "file");
   const [sheet, setSheet] = useState<Sheet | null>(null);
@@ -89,13 +92,13 @@ export function UploadWizard({ approved, initial }: { approved: Category[]; init
   async function onSave() {
     setBusy(true);
     setError(null);
-    const res = await saveListingsAction(drafts);
+    const res = sellerCompanyId ? await adminPrepareListingsAction(sellerCompanyId, drafts) : await saveListingsAction(drafts);
     setBusy(false);
     if (!res.ok) {
       setError(res.error);
       return;
     }
-    router.push("/portal/sell");
+    router.push(sellerCompanyId ? `/admin/import?seller=${sellerCompanyId}&done=${res.saved}` : "/portal/sell");
     router.refresh();
   }
 
@@ -232,7 +235,7 @@ export function UploadWizard({ approved, initial }: { approved: Category[]; init
         const n = Object.keys(e).length;
         const isOpen = open === i || drafts.length === 1;
         const suggested = new Set(d.suggested ?? []);
-        const full = showAll.includes(i) || !!initial;
+        const full = showAll.includes(i) || initial?.length === 1;
         return (
           <div key={i} className={`card space-y-4 ${n > 0 ? "border-danger" : ""}`}>
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -285,7 +288,7 @@ export function UploadWizard({ approved, initial }: { approved: Category[]; init
                       ))}
                   </div>
                 )}
-                {d.category && !initial && (
+                {d.category && initial?.length !== 1 && (
                   <button type="button" className="text-sm text-brand-600 underline"
                     onClick={() => setShowAll((l) => (l.includes(i) ? l.filter((x) => x !== i) : [...l, i]))}>
                     {full ? "Show only fields to check" : "Show all fields"}
@@ -323,7 +326,8 @@ export function UploadWizard({ approved, initial }: { approved: Category[]; init
       <div className="flex flex-wrap items-center gap-3">
         {!initial && <button className="btn-secondary" onClick={() => setStep(sheet ? "map" : "file")}>Back</button>}
         <button className="btn-primary" disabled={busy || problemCount > 0 || drafts.length === 0} onClick={onSave}>
-          {busy ? "Saving…" : drafts.length === 1 ? "Save offer" : `Publish ${drafts.length} offers`}
+          {busy ? "Saving…" : sellerCompanyId ? `Send ${drafts.length} offer(s) to the seller`
+            : drafts.length === 1 ? "Save offer" : `Publish ${drafts.length} offers`}
         </button>
         {problemCount > 0 && <span className="text-sm text-slate-600">Please complete the offers marked in red first.</span>}
       </div>

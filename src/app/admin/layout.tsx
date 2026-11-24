@@ -4,11 +4,10 @@ import { NavLink } from "@/components/nav-link";
 
 const tabs = [
   { href: "/admin/requests", label: "Purchase requests" },
-  { href: "/admin/sourcing", label: "Product search" },
+  { href: "/admin/sourcing", label: "Product requests" },
   { href: "/admin", label: "Companies" },
-  { href: "/admin/catalog", label: "Catalog" },
-  { href: "/admin/import", label: "Import stock list" },
-  { href: "/admin/groups", label: "Customer groups" },
+  { href: "/admin/catalog", label: "Product offering" },
+  { href: "/admin/import", label: "Import stock for seller" },
   { href: "/admin/activity", label: "Activity" },
 ];
 

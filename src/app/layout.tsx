@@ -52,7 +52,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
                       <NavLink href="/portal" exact>Overview</NavLink>
                       <NavLink href="/portal/catalog">Catalog</NavLink>
                       <NavLink href="/portal/requests">My purchase requests</NavLink>
-                      <NavLink href="/portal/sourcing">Product search</NavLink>
+                      <NavLink href="/portal/sourcing">Product requests</NavLink>
                       {seller && <NavLink href="/portal/sell">My offers</NavLink>}
                     </>
                   )}

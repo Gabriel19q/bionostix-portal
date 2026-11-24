@@ -490,3 +490,18 @@ select pg_temp.as_user('00000000-0000-0000-0000-0000000000f1');
 select pg_temp.expect(public.save_listings(jsonb_build_array((select o from good_offer) || '{"product_name":"Paracetamol 500 mg tablets","name_on_pack":"Paracetamol 500 mg Tabletten"}')) = 1, 'offer with name on pack saved');
 select pg_temp.expect(exists (select 1 from jsonb_array_elements(public.get_my_listings()) l where l ->> 'name_on_pack' = 'Paracetamol 500 mg Tabletten'), 'name on pack returned');
 reset role;
+
+-- Admin prepares offers for a seller (drafts) ------------------------------------
+create temp table seller_co as select id from public.companies where name = 'Seller Co';
+grant select on seller_co to authenticated;
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f1');
+select pg_temp.expect_error($$select public.admin_prepare_listings((select id from seller_co), jsonb_build_array((select o from good_offer)))$$, 'seller cannot use admin import');
+select pg_temp.expect_error($$select public.save_listings_for((select id from seller_co), jsonb_build_array((select o from good_offer)), 'active')$$, 'internal save function not callable');
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000a');
+select pg_temp.expect(public.admin_prepare_listings((select id from seller_co), jsonb_build_array((select o from good_offer) || '{"product_name":"Draft offer"}')) = 1, 'admin prepares a draft for the seller');
+select pg_temp.expect((select status from public.listings where product_name = 'Draft offer') = 'draft', 'prepared offer is a draft');
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f1');
+select pg_temp.expect(public.save_listings(jsonb_build_array((select o from good_offer) || jsonb_build_object('id', (select l ->> 'id' from jsonb_array_elements(public.get_my_listings()) l where l ->> 'product_name' = 'Draft offer'), 'product_name', 'Draft offer'))) = 1, 'seller publishes the draft');
+reset role;
+select pg_temp.expect((select status from public.listings where product_name = 'Draft offer') = 'active', 'draft is now active');

@@ -85,6 +85,12 @@ export const emails = {
       (seller ? `- Commission agreement for sellers: ${SITE}/commission-agreement\n` : "") +
       `\nPlease keep this email for your records.${footer}`,
   }),
+  offersPrepared: (count: number) => ({
+    subject: `Bionostix prepared ${count} offer(s) for you – please check and publish`,
+    text:
+      `Bionostix Germany uploaded your stock list for you and prepared ${count} offer(s). They are not visible to buyers yet.\n\n` +
+      `Please check them and publish: ${SITE}/portal/sell${footer}`,
+  }),
   newsletterConfirm: (name: string, token: string) => ({
     subject: "Please confirm your newsletter subscription – Bionostix Germany",
     text:
