@@ -3,8 +3,8 @@ import { getSession } from "@/lib/session";
 import { NavLink } from "@/components/nav-link";
 
 const tabs = [
-  { href: "/admin/requests", label: "Requests" },
-  { href: "/admin/sourcing", label: "Sourcing" },
+  { href: "/admin/requests", label: "Purchase requests" },
+  { href: "/admin/sourcing", label: "Product search" },
   { href: "/admin", label: "Companies" },
   { href: "/admin/catalog", label: "Catalog" },
   { href: "/admin/import", label: "Import stock list" },

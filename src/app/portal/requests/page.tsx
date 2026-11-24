@@ -23,7 +23,7 @@ export default async function MyRequestsPage({ searchParams }: { searchParams: P
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">My orders</h1>
+      <h1 className="text-2xl font-bold">My purchase requests</h1>
       {Number(sent) > 1 && (
         <div className="notice-success">
           Thank you, your order was sent as {Number(sent)} separate order requests, one per seller. Each seller confirms
