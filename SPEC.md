@@ -69,7 +69,7 @@ Standardsatz in der Provisionsvereinbarung; abweichender Satz je Verkäufer (eig
 
 ### Admin-Hilfe und Product requests (Feedback 24.11.2026)
 - **Import stock for seller:** Admin lädt die Liste eines Verkäufers für ihn hoch (gleiche Maske); die Angebote landen beim Verkäufer als Entwurf („Prepared – not published“), er bekommt eine E-Mail, prüft und veröffentlicht sie selbst. Umgesetzt.
-- **Admin-Reiter:** Purchase requests · Product requests · Companies · Product offering (alle Angebote aller Verkäufer) · Import stock for seller · Activity. „Customer groups“ entfällt. Käufer-Menü: My purchase requests, Product requests.
+- **Admin-Reiter:** Orders · Product requests · Companies · Product offering (alle Angebote aller Verkäufer) · Import stock for seller · Import product requests for buyer (Etappe 2) · Activity. „Customer groups“ entfällt. Käufer-Menü: Product offering, My orders, Product requests. (Kaufanfragen und Bestellungen laufen unter „Orders“; der Status zeigt, ob angefragt oder angenommen.)
 - **Product requests als Liste (Etappe 2):** Käufer können ihre Gesuche auch als eigene, unformatierte Excel-Liste hochladen (gleiches Prinzip wie beim Verkäufer: Spalten erkennen, Maske, Fehlendes markieren). Analog zu „Import stock for seller“ kann der Admin eine Gesuchsliste für einen Käufer hochladen; sie landet beim Käufer zur Bestätigung.
 - **Matches zu Product requests (Etappe 2):** Zu jedem Gesuch schlägt das Portal passende Angebote vor:
   - **Exact match:** gleicher Wirkstoff bzw. gleiche Wirkstoffe mit gleicher Stärke und Darreichungsform (bei IVD: gleicher Test und Methode; bei Gesundheitsprodukten: gleiche Produktart und Größe).

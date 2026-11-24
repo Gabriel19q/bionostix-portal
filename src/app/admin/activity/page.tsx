@@ -104,7 +104,7 @@ export default async function ActivityPage() {
           </tbody>
         </table>
       </div>
-      <p className="text-xs text-slate-500">Counts cover the last 30 days. Requests are listed in detail under <Link href="/admin/requests" className="underline">Purchase requests</Link>.</p>
+      <p className="text-xs text-slate-500">Counts cover the last 30 days. Requests are listed in detail under <Link href="/admin/requests" className="underline">Orders</Link>.</p>
 
       <div className="space-y-2">
         <h2 className="text-lg font-bold">Latest activity</h2>

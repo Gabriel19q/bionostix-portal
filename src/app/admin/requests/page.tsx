@@ -40,7 +40,7 @@ export default async function AdminRequestsPage({ searchParams }: { searchParams
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Purchase requests</h1>
+          <h1 className="text-2xl font-bold">Orders</h1>
           <p className="text-sm text-slate-600">{newCount === 0 ? "No new requests." : `${newCount} new request(s) waiting.`}</p>
         </div>
         <div className="flex gap-1 text-sm">
