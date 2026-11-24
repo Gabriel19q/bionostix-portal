@@ -83,8 +83,7 @@ Jede Etappe zuerst als Vorschau (Pull Request), Freigabe durch die Inhaber.
 - **Registrierung: Nachweise und Anforderungen je Rolle und Bereich festlegen** (welche Dokumente Pflicht/freiwillig sind, Bezeichnungen). Die Liste der eingereichten Dokumente auf der Seite „Application is being reviewed“ bleibt; ein Nachreichen dort gibt es nicht mehr.
 - **Dokumente je Angebot** („Documents available on request“): Excel „Bionostix-Dokumente-je-Bereich.xlsx“ durchgehen (x je Bereich), danach zeigt das Portal je Bereich nur die passenden.
 - Screenshot-PDF Etappe 1 durchsehen und Änderungswünsche sammeln.
-- Supabase: Redirect URL `https://*--bionostix-portal.netlify.app/**` eintragen (Authentication → URL Configuration).
-- Portal-Reserveprojekt bei Vercel löschen.
+- Portal-Reserveprojekt bei Vercel löschen; danach in Supabase (Authentication → URL Configuration) die Redirect URL `https://bionostix-portal.vercel.app/**` entfernen.
 
 ### Vom Anwalt zu klären
 Nutzungsbedingungen (Vertragsschluss, Bindung der Anfrage, Nichtumgehung mit angemessener Vertragsstrafe, Haftung für Endbestimmungsland, anwendbares Recht/Gerichtsstand), Provisionsvereinbarung (Vorlage folgt von Jan), Abo-Bedingungen, Datenschutz (Weitergabe der Käuferdaten nach Annahme, Newsletter), Nachweisliste je Bereich. § 52c-AMG-Registrierung ist beantragt.
