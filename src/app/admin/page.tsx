@@ -231,7 +231,7 @@ export default async function AdminPage() {
               )}
 
               <div>
-                <h3 className="mb-1 text-sm font-medium">Sites</h3>
+                <h3 className="mb-1 text-sm font-medium">Location and licence</h3>
                 <div className="space-y-2">
                   {companySites.map((s) => (
                     <div key={s.id} className="grid items-end gap-2 text-sm md:grid-cols-[1fr_10rem_10rem]">
@@ -242,7 +242,7 @@ export default async function AdminPage() {
                     </div>
                   ))}
                 </div>
-                <p className="mt-1 text-xs text-slate-500">Date = licence of this site valid until. EU licences: EudraGMDP (eudragmdp.ema.europa.eu).</p>
+                <p className="mt-1 text-xs text-slate-500">Date = licence valid until. EU licences: EudraGMDP (eudragmdp.ema.europa.eu).</p>
               </div>
 
               <div>

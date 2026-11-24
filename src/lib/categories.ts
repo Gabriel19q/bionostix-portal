@@ -18,7 +18,7 @@ export type DocKind =
 
 export const DOC_KIND_LABEL: Record<DocKind, string> = {
   registry_extract: "Commercial register extract or business registration",
-  wholesale_licence: "Wholesale licence or import licence (pharmaceuticals)",
+  wholesale_licence: "Pharmaceutical wholesale licence or import licence",
   manufacturing_licence: "Manufacturing authorisation",
   import_licence: "Import licence",
   gdp_certificate: "GDP certificate",
@@ -48,7 +48,7 @@ export function docSlots(opts: {
       slots.push({
         key: `pharma-licence-${i}`,
         kind: "wholesale_licence",
-        label: sites.length > 1 ? `Pharmaceutical licence for ${s.country || `site ${i + 1}`}` : "Pharmaceutical licence",
+        label: sites.length > 1 ? `Pharmaceutical wholesale licence for ${s.country || `site ${i + 1}`}` : "Pharmaceutical wholesale licence",
         hint: wantsSell && sellCats.includes("pharma")
           ? "Wholesale distribution authorisation or manufacturing authorisation; outside the EU your national import licence."
           : "Wholesale distribution authorisation (EU) or your national import licence.",

@@ -7,12 +7,13 @@ import {
   DOCUMENTS, FIELDS, FIELD_BY_KEY, guessListingMapping, rowsToDrafts, validateDraft, type Draft, type FieldDef,
 } from "@/lib/listing";
 import { readSheetFile, type Sheet } from "@/lib/sheet";
+import { eur } from "@/lib/format";
 import { saveListingsAction } from "../actions";
 
 type Step = "file" | "map" | "mask";
 
 // Fields that make sense to set for all rows at once (often missing in sellers' lists)
-const BULK_KEYS = ["incoterm", "incoterm_place", "valid_until", "packaging_language", "expiry", "lead_time_days",
+const BULK_KEYS = ["category", "incoterm", "incoterm_place", "valid_until", "packaging_language", "expiry", "lead_time_days",
   "buyers", "ship", "documents_available", "unit", "brand"];
 
 export function UploadWizard({ approved, initial }: { approved: Category[]; initial: Draft[] | null }) {
@@ -25,7 +26,7 @@ export function UploadWizard({ approved, initial }: { approved: Category[]; init
   const [drafts, setDrafts] = useState<Draft[]>(initial ?? []);
   const [open, setOpen] = useState<number | null>(initial ? 0 : null);
   const [onlyProblems, setOnlyProblems] = useState(false);
-  const [bulkKey, setBulkKey] = useState("incoterm");
+  const [bulkKey, setBulkKey] = useState(approved.length > 1 ? "category" : "incoterm");
   const [bulkValue, setBulkValue] = useState("");
   const [over, setOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -73,6 +74,10 @@ export function UploadWizard({ approved, initial }: { approved: Category[]; init
   }
 
   function applyBulk() {
+    if (bulkKey === "category") {
+      if (bulkValue) setDrafts((list) => list.map((d) => ({ ...d, category: bulkValue as Category })));
+      return;
+    }
     setDrafts((list) => list.map((d) => ({ ...d, values: { ...d.values, [bulkKey]: bulkValue } })));
   }
 
@@ -190,11 +195,18 @@ export function UploadWizard({ approved, initial }: { approved: Category[]; init
             <div>
               <label className="label" htmlFor="bulk-key">Set for all offers</label>
               <select id="bulk-key" className="input py-1" value={bulkKey} onChange={(e) => { setBulkKey(e.target.value); setBulkValue(""); }}>
-                {BULK_KEYS.map((k) => <option key={k} value={k}>{FIELD_BY_KEY[k].label}</option>)}
+                {BULK_KEYS.map((k) => <option key={k} value={k}>{k === "category" ? "Category" : FIELD_BY_KEY[k].label}</option>)}
               </select>
             </div>
             <div className="min-w-56 flex-1">
-              <FieldInput field={FIELD_BY_KEY[bulkKey]} value={bulkValue} onChange={setBulkValue} id="bulk-value" />
+              {bulkKey === "category" ? (
+                <select id="bulk-value" className="input" value={bulkValue} onChange={(e) => setBulkValue(e.target.value)}>
+                  <option value="">Select…</option>
+                  {approved.map((c) => <option key={c} value={c}>{CATEGORY_LABEL[c]}</option>)}
+                </select>
+              ) : (
+                <FieldInput field={FIELD_BY_KEY[bulkKey]} value={bulkValue} onChange={setBulkValue} id="bulk-value" />
+              )}
             </div>
             <button className="btn-secondary" onClick={applyBulk}>Apply to all</button>
           </div>
@@ -213,7 +225,7 @@ export function UploadWizard({ approved, initial }: { approved: Category[]; init
               <button type="button" className="min-w-0 flex-1 text-left" onClick={() => setOpen(isOpen ? null : i)}>
                 <span className="font-bold">{d.values.product_name || "Untitled offer"}</span>
                 <span className="text-sm text-slate-500">
-                  {d.category ? ` · ${CATEGORY_LABEL[d.category]}` : ""}{d.values.price ? ` · € ${d.values.price}` : ""}
+                  {d.category ? ` · ${CATEGORY_LABEL[d.category]}` : ""}{d.values.price && Number(d.values.price) > 0 ? ` · ${eur(Number(d.values.price))}` : ""}
                 </span>
               </button>
               <div className="flex items-center gap-3">
