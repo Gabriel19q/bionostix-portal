@@ -79,6 +79,13 @@ Alle Uploads per Drag & Drop oder Dateiauswahl.
 3. Dokumente je Schritt, Zahlung/Versand melden, Erinnerungen; Abo (Stripe); Newsletter-Double-Opt-in.
 Jede Etappe zuerst als Vorschau (Pull Request), Freigabe durch die Inhaber.
 
+### To-dos für Gabriel (Stand 24.11.2026; Jan fragt danach)
+- **Registrierung: Nachweise und Anforderungen je Rolle und Bereich festlegen** (welche Dokumente Pflicht/freiwillig sind, Bezeichnungen). Die Liste der eingereichten Dokumente auf der Seite „Application is being reviewed“ bleibt; ein Nachreichen dort gibt es nicht mehr.
+- **Dokumente je Angebot** („Documents available on request“): Excel „Bionostix-Dokumente-je-Bereich.xlsx“ durchgehen (x je Bereich), danach zeigt das Portal je Bereich nur die passenden.
+- Screenshot-PDF Etappe 1 durchsehen und Änderungswünsche sammeln.
+- Supabase: Redirect URL `https://*--bionostix-portal.netlify.app/**` eintragen (Authentication → URL Configuration).
+- Portal-Reserveprojekt bei Vercel löschen.
+
 ### Vom Anwalt zu klären
 Nutzungsbedingungen (Vertragsschluss, Bindung der Anfrage, Nichtumgehung mit angemessener Vertragsstrafe, Haftung für Endbestimmungsland, anwendbares Recht/Gerichtsstand), Provisionsvereinbarung (Vorlage folgt von Jan), Abo-Bedingungen, Datenschutz (Weitergabe der Käuferdaten nach Annahme, Newsletter), Nachweisliste je Bereich. § 52c-AMG-Registrierung ist beantragt.
 
