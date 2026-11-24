@@ -41,13 +41,17 @@ export function ApplicationForm({ defaultName = "", withAccount = false }: { def
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
   const [vatId, setVatId] = useState("");
-  const [contact, setContact] = useState(defaultName);
+  const [firstName, setFirstName] = useState(defaultName.split(" ")[0] ?? "");
+  const [lastName, setLastName] = useState(defaultName.split(" ").slice(1).join(" "));
+  const contact = `${firstName.trim()} ${lastName.trim()}`.trim();
   const [phone, setPhone] = useState("");
   const [wantsBuy, setWantsBuy] = useState(true);
   const [wantsSell, setWantsSell] = useState(false);
   const [buyCats, setBuyCats] = useState<Category[]>([]);
   const [sellCats, setSellCats] = useState<Category[]>([]);
-  const [sites, setSites] = useState<Site[]>([{ country: "", address: "" }]);
+  const [country, setCountry] = useState("");
+  // One site per company (feedback 24.11.2026): the registered address and country
+  const sites = useMemo<Site[]>(() => [{ country, address }], [country, address]);
   const [srn, setSrn] = useState("");
   const [ivdr, setIvdr] = useState(false);
   const [files, setFiles] = useState<Record<string, File | null>>({});
@@ -61,10 +65,6 @@ export function ApplicationForm({ defaultName = "", withAccount = false }: { def
     [wantsBuy, wantsSell, buyCats, sellCats, sites],
   );
   const sellsIvd = wantsSell && sellCats.includes("ivd");
-
-  function setSite(i: number, patch: Partial<Site>) {
-    setSites((s) => s.map((site, j) => (j === i ? { ...site, ...patch } : site)));
-  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -161,12 +161,12 @@ export function ApplicationForm({ defaultName = "", withAccount = false }: { def
         {withAccount && (
           <section className="grid gap-4 md:grid-cols-2">
             <div>
-              <label className="label" htmlFor="email">Business email</label>
+              <label className="label" htmlFor="email">Business email <span className="text-danger">*</span></label>
               <input id="email" type="email" className="input" required autoComplete="email" value={email}
                 onChange={(e) => setEmail(e.target.value)} />
             </div>
             <div>
-              <label className="label" htmlFor="password">Password</label>
+              <label className="label" htmlFor="password">Password <span className="text-danger">*</span></label>
               <input id="password" type="password" className="input" required minLength={10} autoComplete="new-password"
                 value={password} onChange={(e) => setPassword(e.target.value)} />
               <p className="mt-1 text-xs text-slate-500">At least 10 characters.</p>
@@ -177,35 +177,47 @@ export function ApplicationForm({ defaultName = "", withAccount = false }: { def
         {/* Company */}
         <section className="grid gap-4 md:grid-cols-2">
           <div className="md:col-span-2">
-            <label className="label" htmlFor="company">Company name</label>
+            <label className="label" htmlFor="company">Company name <span className="text-danger">*</span></label>
             <input id="company" className="input" required value={name} onChange={(e) => setName(e.target.value)} />
           </div>
-          <div className="md:col-span-2">
-            <label className="label" htmlFor="address">Registered address</label>
+          <div>
+            <label className="label" htmlFor="address">Registered address <span className="text-danger">*</span></label>
             <input id="address" className="input" required value={address} onChange={(e) => setAddress(e.target.value)} />
+          </div>
+          <div>
+            <label className="label" htmlFor="country">Country <span className="text-danger">*</span></label>
+            <select id="country" className="input" required value={country} onChange={(e) => setCountry(e.target.value)}>
+              <option value="" disabled>Select…</option>
+              {COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="label" htmlFor="first-name">First name <span className="text-danger">*</span></label>
+            <input id="first-name" className="input" required autoComplete="given-name" value={firstName}
+              onChange={(e) => setFirstName(e.target.value)} />
+          </div>
+          <div>
+            <label className="label" htmlFor="last-name">Last name <span className="text-danger">*</span></label>
+            <input id="last-name" className="input" required autoComplete="family-name" value={lastName}
+              onChange={(e) => setLastName(e.target.value)} />
+          </div>
+          <div>
+            <label className="label" htmlFor="phone">Phone (international format) <span className="text-danger">*</span></label>
+            <input id="phone" type="tel" className="input" required autoComplete="tel" placeholder="+49 711 1234567"
+              pattern="\+[1-9][0-9 \(\)\.\/\-]{6,24}" title="Start with + and the country code, e.g. +49 711 1234567"
+              value={phone} onChange={(e) => setPhone(e.target.value)} />
+            <p className="mt-1 text-xs text-slate-600">Start with + and the country code, e.g. +49 or +964.</p>
           </div>
           <div>
             <label className="label" htmlFor="vat">VAT ID</label>
             <input id="vat" className="input" placeholder="e.g. DE123456789" value={vatId} onChange={(e) => setVatId(e.target.value)} />
             <p className="mt-1 text-xs text-slate-500">If your company has one.</p>
           </div>
-          <div />
-          <div>
-            <label className="label" htmlFor="contact">Contact person</label>
-            <input id="contact" className="input" required value={contact} onChange={(e) => setContact(e.target.value)} />
-          </div>
-          <div>
-            <label className="label" htmlFor="phone">Phone (international format)</label>
-            <input id="phone" type="tel" className="input" required autoComplete="tel" placeholder="+49 711 1234567"
-              pattern="\+[1-9][0-9 \(\)\.\/\-]{6,24}" title="Start with + and the country code, e.g. +49 711 1234567"
-              value={phone} onChange={(e) => setPhone(e.target.value)} />
-            <p className="mt-1 text-xs text-slate-600">Start with + and the country code, e.g. +49 or +964.</p>
-          </div>
         </section>
 
         {/* Roles and categories */}
         <section className="space-y-4">
-          <h2 className="font-bold">What do you want to do on the platform?</h2>
+          <h2 className="font-bold">What do you want to do on the platform? <span className="text-danger">*</span></h2>
           <div className="grid gap-4 md:grid-cols-2">
             <fieldset className="rounded-md border border-slate-200 p-4">
               <label className="flex items-center gap-2 font-bold">
@@ -243,44 +255,6 @@ export function ApplicationForm({ defaultName = "", withAccount = false }: { def
               )}
             </fieldset>
           </div>
-        </section>
-
-        {/* Sites */}
-        <section className="space-y-3">
-          <div>
-            <h2 className="font-bold">Sites</h2>
-            <p className="text-sm text-slate-600">
-              Every country in which your company has a licensed site. Offers and prices are shown for these countries.
-            </p>
-          </div>
-          {sites.map((site, i) => (
-            <div key={i} className="grid gap-3 md:grid-cols-[1fr_2fr_auto]">
-              <div>
-                <label className="label" htmlFor={`country-${i}`}>Country</label>
-                <select id={`country-${i}`} className="input" required value={site.country}
-                  onChange={(e) => setSite(i, { country: e.target.value })}>
-                  <option value="" disabled>Select…</option>
-                  {COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="label" htmlFor={`site-address-${i}`}>Address of the site</label>
-                <input id={`site-address-${i}`} className="input" value={site.address}
-                  onChange={(e) => setSite(i, { address: e.target.value })} />
-              </div>
-              <div className="flex items-end">
-                {sites.length > 1 && (
-                  <button type="button" className="text-sm text-slate-500 underline"
-                    onClick={() => setSites((s) => s.filter((_, j) => j !== i))}>
-                    Remove
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
-          <button type="button" className="btn-secondary" onClick={() => setSites((s) => [...s, { country: "", address: "" }])}>
-            + Add another site
-          </button>
         </section>
 
         {/* Seller profile */}
@@ -346,10 +320,11 @@ export function ApplicationForm({ defaultName = "", withAccount = false }: { def
             <input type="checkbox" className="mt-1" checked={newsletter} onChange={(e) => setNewsletter(e.target.checked)} />
             <span>
               Yes, I would like to receive news and offers from Bionostix Germany by email. I can unsubscribe at any time.
-              See our <a href="https://www.bionostix-germany.de/en/privacy" target="_blank" rel="noreferrer" className="text-brand-600 underline">privacy policy</a>. (optional)
+              See our <a href="https://www.bionostix-germany.de/en/privacy" target="_blank" rel="noreferrer" className="text-brand-600 underline">privacy policy</a>.
             </span>
           </label>
           <p className="text-xs text-slate-500">You receive a copy of the accepted agreements by email.</p>
+          <p className="text-xs text-slate-500"><span className="text-danger">*</span> Mandatory</p>
         </section>
 
         {error && <p className="text-sm text-danger">{error}</p>}

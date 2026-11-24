@@ -15,7 +15,7 @@ Pharmaceuticals, IVD, Food supplements, Health products.
 
 ### Registrierung und Freigabe
 - Rollen pro Firma: „I want to buy“ und/oder „I want to sell“; Admin schaltet beides getrennt frei. Verkäufer wählen ihre Bereiche, Admin schaltet je Bereich frei (Nahrungsergänzung und Gesundheitsprodukte ohne besonderen Nachweis).
-- Mehrere Standorte/Länder je Firma möglich, jeweils mit Nachweis; Admin prüft je Standort.
+- Ein Standort je Firma (Firmensitz mit Land; Entscheidung 24.11.2026, mehrere Standorte zu kompliziert). Ansprechpartner mit Vor- und Nachname. Pflichtfelder mit * gekennzeichnet, Hinweis „* Mandatory“.
 - Nachweise (Upload, Drag & Drop oder Dateiauswahl):
   - Alle: Handelsregisterauszug oder Gewerbeanmeldung, USt-IdNr.
   - Pharma: Verkäufer Großhandels- oder Herstellungserlaubnis (Pflicht), GDP-Zertifikat (freiwillig); Käufer Großhandelserlaubnis bzw. Importlizenz (Pflicht).
@@ -41,7 +41,7 @@ Pharmaceuticals, IVD, Food supplements, Health products.
 - Der bisherige Test-Katalog (Produkte, Angebote, Testbestellungen) wird gelöscht; neue Beispielangebote werden über die neue Maske angelegt.
 
 ### Länder
-Je Angebot (Standard je Verkäufer): „Buyers based in“ (Sitz/Standort des Käufers) und „Ship to“ (Liefer- und Endmarkt), jeweils alle / nur / alle außer. Die Datenbank prüft beides; in der Anfrage gibt der Käufer verbindlich das Endbestimmungsland an (vorausgefüllt mit dem Lieferland). Länderlisten bleiben für Käufer unsichtbar; Käufer sehen nur Angebote, die sie kaufen dürfen. Firmen mit mehreren Standorten wählen im Katalog „Prices for: …“ aus ihren geprüften Standorten.
+Je Angebot (Standard je Verkäufer): „Buyers based in“ (Sitz/Standort des Käufers) und „Ship to“ (Liefer- und Endmarkt), jeweils alle / nur / alle außer. Die Datenbank prüft beides; in der Anfrage gibt der Käufer verbindlich das Endbestimmungsland an (vorausgefüllt mit dem Lieferland). Länderlisten bleiben für Käufer unsichtbar; Käufer sehen nur Angebote, die sie kaufen dürfen.
 
 ### Katalog
 - Karten nach Vorbild Pipelinepharma: Überschrift Wirkstoffe, darunter Form, Stärke, Packungsgröße; Angaben zu Brand, Sprache, Haltbarkeit, Menge, MOQ, Preis für meinen Markt, Lieferbedingung, gültig bis, verfügbare Dokumente, Registered in; anonymer Verkäufer („Seller S-12345 · Verified by Bionostix“, Land und Firmenart, typische Antwortzeit ab 3 Anfragen); Knopf „Send request“.

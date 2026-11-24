@@ -48,7 +48,7 @@ export function docSlots(opts: {
       slots.push({
         key: `pharma-licence-${i}`,
         kind: "wholesale_licence",
-        label: `Pharmaceutical licence for ${s.country || `site ${i + 1}`}`,
+        label: sites.length > 1 ? `Pharmaceutical licence for ${s.country || `site ${i + 1}`}` : "Pharmaceutical licence",
         hint: wantsSell && sellCats.includes("pharma")
           ? "Wholesale distribution authorisation or manufacturing authorisation; outside the EU your national import licence."
           : "Wholesale distribution authorisation (EU) or your national import licence.",
@@ -69,7 +69,7 @@ export function docSlots(opts: {
       slots.push({
         key: `ivd-import-${i}`,
         kind: "md_import_licence",
-        label: `Import licence for medical devices / IVD – ${s.country || `site ${i + 1}`}`,
+        label: sites.length > 1 ? `Import licence for medical devices / IVD – ${s.country || `site ${i + 1}`}` : "Import licence for medical devices / IVD",
         hint: "Only if your country requires one.",
         required: false,
         siteIndex: i,

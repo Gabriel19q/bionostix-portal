@@ -39,7 +39,7 @@ export function FileDrop({
   return (
     <div>
       <label className="label" htmlFor={id}>
-        {label} {required ? <span className="text-danger">*</span> : <span className="font-normal text-slate-500">(optional)</span>}
+        {label} {required && <span className="text-danger">*</span>}
       </label>
       <div
         onDragOver={(e) => {
