@@ -21,6 +21,10 @@ export async function GET(request: Request) {
         const { data: { user } } = await supabase.auth.getUser();
         if (user?.email) await sendApplicationEmails(supabase, user.email);
       }
+      // Password reset link that lost its "next" (e.g. Supabase sent it to the start page): go to the reset form
+      const { data: auth } = await supabase.auth.getClaims();
+      const amr = (auth?.claims?.amr ?? []) as { method?: string }[];
+      if (amr.some((a) => a.method === "recovery")) return NextResponse.redirect(`${origin}/reset-password`);
       return NextResponse.redirect(`${origin}${next}`);
     }
   }

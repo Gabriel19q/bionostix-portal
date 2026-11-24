@@ -17,7 +17,10 @@ const steps = [
   },
 ];
 
-export default async function Home() {
+export default async function Home({ searchParams }: { searchParams: Promise<{ code?: string }> }) {
+  // Email links (confirmation, password reset) that land on the start page still carry their one-time code
+  const { code } = await searchParams;
+  if (code && /^[\w-]{10,200}$/.test(code)) redirect(`/auth/callback?code=${encodeURIComponent(code)}`);
   // Signed-in users (e.g. right after confirming their email) go straight to the portal
   const { user } = await getSession();
   if (user) redirect("/portal");
