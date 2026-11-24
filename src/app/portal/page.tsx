@@ -3,7 +3,6 @@ import { getSession } from "@/lib/session";
 import { sendApplicationEmails } from "@/lib/application-emails";
 import { CATEGORY_LABEL, DOC_KIND_LABEL, type Category, type DocKind } from "@/lib/categories";
 import { ApplicationForm } from "./application-form";
-import { DocumentUpload } from "./document-upload";
 import { Overview } from "./overview";
 
 type Account = {
@@ -54,6 +53,9 @@ export default async function PortalPage() {
         </div>
         <div className="card space-y-4">
           <h2 className="font-bold">Submitted documents</h2>
+          <p className="text-sm text-slate-600">
+            If we need anything else, we will contact you by email.
+          </p>
           {docs.length > 0 ? (
             <ul className="divide-y divide-slate-100 text-sm">
               {docs.map((d) => (
@@ -67,9 +69,8 @@ export default async function PortalPage() {
               ))}
             </ul>
           ) : (
-            <p className="notice-attention">No documents uploaded yet. Please add them below.</p>
+            <p className="text-sm text-slate-600">No documents received.</p>
           )}
-          <DocumentUpload companyId={company.id} sites={sites.map((s) => ({ id: s.id, country: s.country }))} />
         </div>
       </div>
     );
