@@ -5,7 +5,9 @@ import * as XLSX from "xlsx";
 import { toSheet } from "../src/lib/sheet.ts";
 import {
   guessListingMapping, rowsToDrafts, validateDraft, draftToPayload, parseCountryRule, parseExpiry, listingToDraft,
+  autoComplete, parseIngredients, serializeIngredients,
 } from "../src/lib/listing.ts";
+import { parseProductName } from "../src/lib/product-name.ts";
 
 const ALL = ["pharma", "ivd", "supplements", "health"];
 const future = "2099-12-31";
@@ -69,5 +71,25 @@ assert.equal(p.test_parameter, null, "fields of other categories are not sent");
 const back = listingToDraft({ ...p, id: "x", country_prices: [{ country: "Iraq", price: 1.1 }] });
 assert.equal(back.values.ship, "all except Russia");
 assert.deepEqual(validateDraft(back, ["pharma"]), {});
+
+// Recognising category and filling in from the product name (marked as suggested)
+const raw = { category: "", values: { product_name: "Ibuprofen 400 mg Filmtabletten, 50 Stück", unit: "pieces" }, country_prices: [] };
+const ac = autoComplete(raw, ["pharma", "supplements"], parseProductName);
+assert.equal(ac.category, "pharma");
+assert.equal(ac.values.active_ingredients, "Ibuprofen 400 mg");
+assert.equal(ac.values.dosage_form, "Tablet");
+assert.equal(ac.values.units_per_pack, "50");
+assert.equal(ac.values.unit, "tablets");
+assert.deepEqual([...ac.suggested].sort(), ["active_ingredients", "category", "dosage_form", "unit", "units_per_pack"]);
+assert.equal(autoComplete({ category: "", values: { product_name: "Vitamin C 1000 mg Brausetabletten" }, country_prices: [] }, ["pharma", "supplements"], parseProductName).category, "supplements");
+assert.equal(autoComplete({ category: "", values: { product_name: "TSH ELISA kit" }, country_prices: [] }, ["pharma"], parseProductName).category, "", "IVD not approved: no guess");
+assert.equal(autoComplete({ category: "", values: { product_name: "Nitrile examination gloves" }, country_prices: [] }, ["health", "pharma"], parseProductName).category, "health");
+
+// Ingredients: name, amount and unit separately
+assert.deepEqual(parseIngredients("Vitamin C 1000 mg; Zinc 10 mg"), [{ name: "Vitamin C", amount: "1000", unit: "mg" }, { name: "Zinc", amount: "10", unit: "mg" }]);
+assert.equal(serializeIngredients([{ name: "Zinc", amount: "", unit: "mg" }]), "Zinc ? mg");
+assert.deepEqual(parseIngredients("Zinc ? mg"), [{ name: "Zinc", amount: "", unit: "mg" }]);
+const half = { category: "supplements", values: { ...td[2].values, active_ingredients: "Zinc ? mg", valid_until: future }, country_prices: [] };
+assert.equal(validateDraft(half, ALL).active_ingredients, "Add amount and unit for Zinc");
 
 console.log("listing upload tests passed");

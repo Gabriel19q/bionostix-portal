@@ -4,9 +4,11 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { CATEGORY_LABEL, type Category } from "@/lib/categories";
 import {
-  DOCUMENTS, FIELDS, FIELD_BY_KEY, guessListingMapping, rowsToDrafts, validateDraft, type Draft, type FieldDef,
+  DOCUMENTS, FIELDS, FIELD_BY_KEY, PACKAGING_OPTIONS, STRENGTH_UNITS, autoComplete, guessListingMapping, parseIngredients,
+  rowsToDrafts, serializeIngredients, validateDraft, type Draft, type FieldDef, type Ingredient,
 } from "@/lib/listing";
 import { readSheetFile, type Sheet } from "@/lib/sheet";
+import { parseProductName } from "@/lib/product-name";
 import { eur } from "@/lib/format";
 import { saveListingsAction } from "../actions";
 
@@ -26,6 +28,7 @@ export function UploadWizard({ approved, initial }: { approved: Category[]; init
   const [drafts, setDrafts] = useState<Draft[]>(initial ?? []);
   const [open, setOpen] = useState<number | null>(initial ? 0 : null);
   const [onlyProblems, setOnlyProblems] = useState(false);
+  const [showAll, setShowAll] = useState<number[]>([]);
   const [bulkKey, setBulkKey] = useState(approved.length > 1 ? "category" : "incoterm");
   const [bulkValue, setBulkValue] = useState("");
   const [over, setOver] = useState(false);
@@ -59,7 +62,8 @@ export function UploadWizard({ approved, initial }: { approved: Category[]; init
 
   function toMask() {
     if (!sheet) return;
-    const rows = rowsToDrafts(sheet.headers, sheet.rows, mapping, defaultCategory);
+    const rows = rowsToDrafts(sheet.headers, sheet.rows, mapping, defaultCategory)
+      .map((d) => autoComplete(d, approved, parseProductName));
     setDrafts(rows);
     setOpen(null);
     setOnlyProblems(rows.some((d) => Object.keys(validateDraft(d, approved)).length > 0));
@@ -70,7 +74,8 @@ export function UploadWizard({ approved, initial }: { approved: Category[]; init
     setDrafts((list) => list.map((d, j) => (j === i ? (typeof patch === "function" ? patch(d) : { ...d, ...patch }) : d)));
   }
   function setValue(i: number, key: string, value: string) {
-    update(i, (d) => ({ ...d, values: { ...d.values, [key]: value } }));
+    // Editing a field confirms it: it is no longer marked as suggested
+    update(i, (d) => ({ ...d, values: { ...d.values, [key]: value }, suggested: (d.suggested ?? []).filter((k) => k !== key) }));
   }
 
   function applyBulk() {
@@ -140,7 +145,14 @@ export function UploadWizard({ approved, initial }: { approved: Category[]; init
       const v = sheet.rows.find((r) => r[i] !== null && r[i] !== undefined && String(r[i]).trim() !== "")?.[i];
       return v === undefined ? "" : String(v).slice(0, 40);
     };
-    const mappable = [{ key: "category", label: "Category" }, ...FIELDS.filter((f) => f.hints.length > 0)];
+    // Only the fields of the categories this seller may sell
+    const relevant = FIELDS.filter((f) => f.hints.length > 0 && approved.some((c) => f.need[c] !== "N"));
+    const withStrength = approved.some((c) => c === "pharma" || c === "supplements");
+    const mappable = [
+      ...(approved.length > 1 ? [{ key: "category", label: "Category" }] : []),
+      ...relevant.flatMap((f) => f.key === "active_ingredients" && withStrength
+        ? [f, { key: "strength", label: "Strength (if a separate column)" }] : [f]),
+    ];
     return (
       <div className="card space-y-4">
         <div>
@@ -219,6 +231,8 @@ export function UploadWizard({ approved, initial }: { approved: Category[]; init
         const e = errors[i];
         const n = Object.keys(e).length;
         const isOpen = open === i || drafts.length === 1;
+        const suggested = new Set(d.suggested ?? []);
+        const full = showAll.includes(i) || !!initial;
         return (
           <div key={i} className={`card space-y-4 ${n > 0 ? "border-danger" : ""}`}>
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -244,16 +258,19 @@ export function UploadWizard({ approved, initial }: { approved: Category[]; init
                 <div className="max-w-sm">
                   <label className="label" htmlFor={`cat-${i}`}>Category <span className="text-danger">*</span></label>
                   <select id={`cat-${i}`} className={`input ${e.category ? "input-error" : ""}`} value={d.category}
-                    onChange={(ev) => update(i, { category: ev.target.value as Category })}>
+                    onChange={(ev) => update(i, (x) => ({ ...x, category: ev.target.value as Category, suggested: (x.suggested ?? []).filter((k) => k !== "category") }))}>
                     <option value="">Select…</option>
                     {approved.map((c) => <option key={c} value={c}>{CATEGORY_LABEL[c]}</option>)}
                   </select>
-                  {e.category && <p className="field-error">{e.category}</p>}
+                  {e.category ? <p className="field-error">{e.category}</p>
+                    : suggested.has("category") && <p className="mt-1 text-xs font-bold text-attention">Suggested – please check</p>}
                 </div>
                 {d.category && (
                   <div className="grid gap-4 md:grid-cols-3">
                     {FIELDS.filter((f) => f.need[d.category as Category] !== "N")
                       .filter((f) => !f.key.endsWith("_other") || d.values[f.key.replace(/_other$/, "")] === "Other")
+                      // Only what is unclear: missing, invalid or filled in by the portal. "Show all fields" for the rest.
+                      .filter((f) => full || e[f.key] || suggested.has(f.key) || (f.key.endsWith("_other") && e[f.key]))
                       .map((f) => (
                         <div key={f.key} className={f.type === "documents" ? "md:col-span-3" : ""}>
                           <label className="label" htmlFor={`f-${i}-${f.key}`}>
@@ -262,12 +279,19 @@ export function UploadWizard({ approved, initial }: { approved: Category[]; init
                           <FieldInput field={f} value={d.values[f.key] ?? ""} invalid={!!e[f.key]}
                             onChange={(v) => setValue(i, f.key, v)} id={`f-${i}-${f.key}`} />
                           {e[f.key] ? <p className="field-error">{e[f.key]}</p>
+                            : suggested.has(f.key) ? <p className="mt-1 text-xs font-bold text-attention">Suggested – please check</p>
                             : f.help && <p className="mt-1 text-xs text-slate-500">{f.help}</p>}
                         </div>
                       ))}
                   </div>
                 )}
-                {d.category && (
+                {d.category && !initial && (
+                  <button type="button" className="text-sm text-brand-600 underline"
+                    onClick={() => setShowAll((l) => (l.includes(i) ? l.filter((x) => x !== i) : [...l, i]))}>
+                    {full ? "Show only fields to check" : "Show all fields"}
+                  </button>
+                )}
+                {d.category && full && (
                   <div className="space-y-2">
                     <h3 className="text-sm font-medium">Prices for single countries (optional)</h3>
                     <p className="text-xs text-slate-500">Buyers in these countries see this price instead of the standard price.</p>
@@ -321,6 +345,25 @@ function FieldInput({ field, value, onChange, invalid, id }: {
       </select>
     );
   }
+  if (field.type === "packaging") {
+    // A country from the list, or "Custom" with free text (stored as the text itself)
+    const mode = value === "" ? "" : PACKAGING_OPTIONS.includes(value) && value !== "Custom" ? value : "Custom";
+    return (
+      <div className="space-y-2">
+        <select id={id} className={cls} value={mode} onChange={(e) => onChange(e.target.value === "Custom" ? " " : e.target.value)}>
+          <option value="">Select…</option>
+          {PACKAGING_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+        </select>
+        {mode === "Custom" && (
+          <input className={cls} placeholder="e.g. German, English" value={value.trim()} aria-label="Custom packaging"
+            onChange={(e) => onChange(e.target.value || " ")} />
+        )}
+      </div>
+    );
+  }
+  if (field.type === "ingredients") {
+    return <IngredientsInput value={value} onChange={onChange} invalid={invalid} id={id} />;
+  }
   if (field.type === "date") {
     return <input id={id} type="date" className={cls} value={/^\d{4}-\d{2}-\d{2}$/.test(value) ? value : ""} onChange={(e) => onChange(e.target.value)} />;
   }
@@ -341,5 +384,43 @@ function FieldInput({ field, value, onChange, invalid, id }: {
   return (
     <input id={id} className={cls} value={value} onChange={(e) => onChange(e.target.value)}
       inputMode={field.type === "int" || field.type === "money" ? "decimal" : undefined} />
+  );
+}
+
+// Active ingredients: one line per ingredient with name, amount and unit (unit from the list or free text)
+function IngredientsInput({ value, onChange, invalid, id }: { value: string; onChange: (v: string) => void; invalid?: boolean; id: string }) {
+  const list: Ingredient[] = value.trim() ? parseIngredients(value) : [{ name: "", amount: "", unit: "mg" }];
+  const set = (next: Ingredient[]) => onChange(serializeIngredients(next) || " ");
+  const cls = `input py-1 ${invalid ? "input-error" : ""}`;
+  return (
+    <div className="space-y-2">
+      {list.map((ing, k) => {
+        const known = STRENGTH_UNITS.includes(ing.unit);
+        return (
+          <div key={k} className="grid grid-cols-[1fr_5rem_6rem_auto] items-center gap-2">
+            <input id={k === 0 ? id : undefined} className={cls} placeholder="Ingredient, e.g. Paracetamol" value={ing.name}
+              onChange={(e) => set(list.map((x, m) => (m === k ? { ...x, name: e.target.value } : x)))} />
+            <input className={cls} placeholder="500" inputMode="decimal" value={ing.amount} aria-label="Amount"
+              onChange={(e) => set(list.map((x, m) => (m === k ? { ...x, amount: e.target.value.replace(",", ".") } : x)))} />
+            {known || !ing.unit ? (
+              <select className={cls} value={ing.unit} aria-label="Unit"
+                onChange={(e) => set(list.map((x, m) => (m === k ? { ...x, unit: e.target.value === "other" ? "…" : e.target.value } : x)))}>
+                <option value="">Unit</option>
+                {STRENGTH_UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+                <option value="other">Other…</option>
+              </select>
+            ) : (
+              <input className={cls} value={ing.unit === "…" ? "" : ing.unit} placeholder="Unit" aria-label="Unit"
+                onChange={(e) => set(list.map((x, m) => (m === k ? { ...x, unit: e.target.value || "…" } : x)))} />
+            )}
+            {list.length > 1 ? (
+              <button type="button" className="text-sm text-slate-500 underline" onClick={() => set(list.filter((_, m) => m !== k))}>Remove</button>
+            ) : <span />}
+          </div>
+        );
+      })}
+      <button type="button" className="text-sm text-brand-600 underline"
+        onClick={() => set([...list, { name: "", amount: "", unit: "mg" }])}>+ Add ingredient</button>
+    </div>
   );
 }

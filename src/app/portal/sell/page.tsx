@@ -35,7 +35,6 @@ export default async function MyOffersPage() {
           <h1 className="text-2xl font-bold">My offers</h1>
           <p className="text-sm text-slate-600">
             Seller {account?.company.seller_code} · approved for {approved.map((c) => CATEGORY_LABEL[c.category]).join(", ")}
-            {account?.company.commission_pct != null && <> · commission {account.company.commission_pct} %</>}
           </p>
         </div>
         <div className="flex gap-2">

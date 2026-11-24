@@ -40,3 +40,10 @@ export function matchCountry(value: string | null | undefined): string {
   if (!v) return "";
   return COUNTRIES.find((c) => c.toLowerCase() === v) ?? ALIASES[v] ?? ISO2[v.toUpperCase()] ?? "";
 }
+
+// EU member states (VAT ID required at registration, EUDAMED only exists here)
+export const EU_COUNTRIES = [
+  "Austria", "Belgium", "Bulgaria", "Croatia", "Cyprus", "Czechia", "Denmark", "Estonia", "Finland", "France",
+  "Germany", "Greece", "Hungary", "Ireland", "Italy", "Latvia", "Lithuania", "Luxembourg", "Malta", "Netherlands",
+  "Poland", "Portugal", "Romania", "Slovakia", "Slovenia", "Spain", "Sweden",
+];

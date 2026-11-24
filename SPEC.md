@@ -15,7 +15,7 @@ Pharmaceuticals, IVD, Food supplements, Health products.
 
 ### Registrierung und Freigabe
 - Rollen pro Firma: „I want to buy“ und/oder „I want to sell“; Admin schaltet beides getrennt frei. Verkäufer wählen ihre Bereiche, Admin schaltet je Bereich frei (Nahrungsergänzung und Gesundheitsprodukte ohne besonderen Nachweis).
-- Ein Standort je Firma (Firmensitz mit Land; Entscheidung 24.11.2026, mehrere Standorte zu kompliziert). Ansprechpartner mit Vor- und Nachname. Pflichtfelder mit * gekennzeichnet, Hinweis „* Mandatory“.
+- Ein Standort je Firma (Firmensitz mit Land; Entscheidung 24.11.2026, mehrere Standorte zu kompliziert). Ansprechpartner mit Vor- und Nachname. Adresse mit Straße, Hausnummer, Adresszusatz, PLZ, Ort, Land. USt-IdNr. nur bei EU-Ländern, dann Pflicht. EUDAMED-Nummer nur für IVD-Verkäufer in der EU (freiwillig). Pflichtfelder mit * gekennzeichnet, Hinweis „* Mandatory“. Kein Hinweis „Firma hat schon Zugang“.
 - Nachweise (Upload, Drag & Drop oder Dateiauswahl):
   - Alle: Handelsregisterauszug oder Gewerbeanmeldung, USt-IdNr.
   - Pharma: Verkäufer Großhandels- oder Herstellungserlaubnis (Pflicht), GDP-Zertifikat (freiwillig); Käufer Großhandelserlaubnis bzw. Importlizenz (Pflicht).
@@ -37,6 +37,9 @@ Pharmaceuticals, IVD, Food supplements, Health products.
 - In der Maske sind fehlende oder ungültige Angaben markiert (mit Begründung); der Verkäufer ergänzt sie direkt in der Maske im Browser und bestätigt dann. Danach sind die Angebote sofort im Katalog. **Keine Prüfung durch Bionostix**; der Verkäufer ist für seine Angaben verantwortlich.
 - Die Excel-Vorlage („Bionostix-Offer-Upload-Template.xlsx“) ist nur optional zum Herunterladen; sie zeigt die Felder je Bereich.
 - Portal-Felder (Pflicht/freiwillig je Bereich wie in der Vorlage): Category, Your item no., Product name, Brand, Active ingredients with strength (mehrere mit „;“), Dosage form (Tablet, Effervescent tablet, Capsule, Powder, Effervescent powder, Solution for injection, Gummies, Lozenge, Drops, Spray, Cream, Other + Freifeld), IVD: Test/parameter, Method, CE marking, IVDR class, Sample type; Health products: Product type, Size/variant, Material; Units per pack + Unit; National code, MA holder, EAN; Packaging language; Quantity available; MOQ; Price per pack (EUR); Expiry (Datum, Monat/Jahr oder „min X months“); Incoterm + Ort; Lead time; Offer valid until; Buyers based in; Ship to (destination); Registered in; Documents available on request (CoA, CPP, FSC, GMP certificate, Registration dossier, Stability data, Declaration of conformity/CE, ISO 13485, Certificate of origin, Other). Keine Charge, keine Kennzeichen Kühlware/Rx/BtM.
+- Upload erkennt selbst (ohne KI, Regeln): Bereich aus dem Produktnamen (z. B. Ibuprofen → Arzneimittel, Vitamin C → Nahrungsergänzung) sowie Wirkstoff, Stärke, Darreichungsform und Packungsgröße aus dem Namen; so ergänzte Werte sind als „Suggested – please check“ markiert. Zuordnung und Maske zeigen nur die Felder der freigeschalteten Bereiche; in der Maske je Angebot zuerst nur unklare oder fehlende Felder („Show all fields“ für den Rest). Echte KI-Erkennung erst, wenn die Regeln nicht reichen (Kosten, Datenweitergabe).
+- Wirkstoffe: je Wirkstoff Name, Menge und Einheit getrennt (Einheit aus Liste mg, g, µg, IU, mg/ml, µg/ml, %, mmol, CFU, ml oder frei), mehrere mit „+ Add ingredient“.
+- Packaging: Auswahlliste mit Ländern, „Custom“ (Freitext, z. B. „German, English“) ganz oben.
 - Länderpreise: in der Maske je Angebot zusätzlich Preise für einzelne Länder eintragbar; Käufer sieht nur den Preis für sein Land, sonst den Standardpreis.
 - Der bisherige Test-Katalog (Produkte, Angebote, Testbestellungen) wird gelöscht; neue Beispielangebote werden über die neue Maske angelegt.
 
@@ -59,7 +62,7 @@ Je Angebot (Standard je Verkäufer): „Buyers based in“ (Sitz/Standort des K�
 Niemand kann eigene Angebote anfragen. Kommunikation über das Portal.
 
 ### Provision
-Standardsatz in der Provisionsvereinbarung; abweichender Satz je Verkäufer (eigener Vertrag), optional je Bereich; der gültige Satz wird bei Annahme in der Bestellung gespeichert. Fällig **bei Annahme** (Zahlungsmoral des Käufers ist nicht Sache von Bionostix). Verkäufer sieht seinen Satz; Admin-Übersicht fälliger Provisionen je Verkäufer und Monat. Käufer sehen nirgends eine Provision.
+Standardsatz in der Provisionsvereinbarung; abweichender Satz je Verkäufer (eigener Vertrag), optional je Bereich; der gültige Satz wird bei Annahme in der Bestellung gespeichert. Fällig **bei Annahme** (Zahlungsmoral des Käufers ist nicht Sache von Bionostix). Der Satz steht in der Provisionsvereinbarung bei der Registrierung, wird danach im Portal nicht aktiv angezeigt; Admin-Übersicht fälliger Provisionen je Verkäufer und Monat. Käufer sehen nirgends eine Provision.
 
 ### Abo für Käufer
 9,99 € netto pro Monat (Entscheidung 23.11.2026; Preis bei Stripe änderbar), die ersten 3 Monate kostenlos, Kreditkarte bei der Anmeldung, automatische Verlängerung, monatlich kündbar zum Monatsende (auch im kostenlosen Zeitraum); nach dem kostenlosen Zeitraum wird ohne Kündigung automatisch abgebucht, ohne gesonderten Hinweis. Abwicklung über Stripe (Rechnungen, Reverse Charge für EU-Firmen mit USt-IdNr.). Verkäufer zahlen kein Abo; Firmen, die auch kaufen, brauchen es. Keine Zahlung per Überweisung (Entscheidung 23.11.2026).

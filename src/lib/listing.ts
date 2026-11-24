@@ -1,6 +1,6 @@
 // Offer (listing) fields of the marketplace, shared by the upload mask and the server.
 // Required/optional per category as in SPEC.md (Angebote hochladen). The database checks the rules again.
-import { matchCountry } from "@/lib/countries";
+import { COUNTRIES, matchCountry } from "@/lib/countries";
 import { parseDate, parseNumber, parseYesNo } from "@/lib/parse";
 import type { Category } from "@/lib/categories";
 
@@ -23,7 +23,7 @@ export const INCOTERMS = ["EXW", "FCA", "CPT", "CIP", "DAP", "DPU", "DDP", "FAS"
 export const DOCUMENTS = ["CoA", "CPP", "FSC", "GMP certificate", "Registration dossier", "Stability data",
   "Declaration of conformity / CE certificate", "ISO 13485 certificate", "Certificate of origin", "Other"];
 
-export type FieldType = "text" | "int" | "money" | "select" | "bool" | "expiry" | "date" | "countryRule" | "countries" | "documents";
+export type FieldType = "packaging" | "ingredients" | "text" | "int" | "money" | "select" | "bool" | "expiry" | "date" | "countryRule" | "countries" | "documents";
 
 export type FieldDef = {
   key: string;
@@ -42,7 +42,7 @@ export const FIELDS: FieldDef[] = [
   { key: "item_no", label: "Your item no.", type: "text", need: all("O"), hints: ["item no", "article no", "art.-nr", "artikelnummer", "artikelnr", "sku", "item", "ref"] },
   { key: "product_name", label: "Product name", type: "text", need: all("R"), hints: ["product name", "product", "name", "bezeichnung", "artikelbezeichnung", "handelsname", "description", "produkt", "artikel"] },
   { key: "brand", label: "Brand", type: "text", need: all("R"), hints: ["brand", "marke", "manufacturer", "hersteller", "trade name"] },
-  { key: "active_ingredients", label: "Active ingredients with strength", type: "text", need: only({ pharma: "R", supplements: "R" }), hints: ["active ingredient", "ingredients", "wirkstoff", "inhaltsstoffe", "inn", "substance", "composition", "strength", "stärke"], help: "e.g. Vitamin C 1000 mg; Zinc 10 mg" },
+  { key: "active_ingredients", label: "Active ingredients", type: "ingredients", need: only({ pharma: "R", supplements: "R" }), hints: ["active ingredient", "ingredients", "wirkstoff", "inhaltsstoffe", "inn", "substance", "composition"], help: "Each ingredient with amount and unit per unit" },
   { key: "dosage_form", label: "Dosage form", type: "select", options: DOSAGE_FORMS, need: only({ pharma: "R", supplements: "R" }), hints: ["dosage form", "darreichungsform", "darreichung", "form"] },
   { key: "dosage_form_other", label: "Dosage form – other", type: "text", need: only({ pharma: "O", supplements: "O" }), hints: [] },
   { key: "test_parameter", label: "Test / parameter", type: "select", options: TESTS, need: only({ ivd: "R" }), hints: ["test", "parameter", "analyte", "analyt"] },
@@ -62,7 +62,7 @@ export const FIELDS: FieldDef[] = [
   { key: "national_code", label: "National code (e.g. PZN)", type: "text", need: only({ pharma: "O" }), hints: ["pzn", "national code", "nationale nummer"] },
   { key: "ma_holder", label: "MA holder", type: "text", need: only({ pharma: "O" }), hints: ["ma holder", "zulassungsinhaber", "marketing authorisation holder", "pharmazeutischer unternehmer"] },
   { key: "ean", label: "EAN / GTIN", type: "text", need: all("O"), hints: ["ean", "gtin", "barcode"] },
-  { key: "packaging_language", label: "Packaging language", type: "text", need: all("R"), hints: ["packaging language", "language", "sprache", "packaging", "origin", "herkunft"], help: "e.g. German, English" },
+  { key: "packaging_language", label: "Packaging (country / language)", type: "packaging", need: all("R"), hints: ["packaging language", "packaging", "language", "sprache", "origin", "herkunft", "pack country"], help: "Country of the pack, or Custom for e.g. “German, English”" },
   { key: "quantity", label: "Quantity available (packs)", type: "int", need: all("R"), hints: ["quantity", "qty", "menge", "stock", "bestand", "available", "verfügbar", "verfuegbar", "anzahl"] },
   { key: "moq", label: "MOQ (packs)", type: "int", need: all("O"), hints: ["moq", "minimum order", "mindestmenge", "mindestabnahme"] },
   { key: "price", label: "Price per pack (EUR)", type: "money", need: all("R"), hints: ["price", "preis", "unit price", "eur", "€", "netto"] },
@@ -87,7 +87,31 @@ export type Draft = {
   category: Category | "";
   values: Record<string, string>;
   country_prices: { country: string; price: string }[];
+  suggested?: string[]; // fields the portal filled in itself: shown as "suggested – please check"
 };
+
+// Active ingredients: name, amount and unit as separate fields; stored as "Vitamin C 1000 mg; Zinc 10 mg"
+export const STRENGTH_UNITS = ["mg", "g", "µg", "IU", "mg/ml", "µg/ml", "%", "mmol", "CFU", "ml"];
+export type Ingredient = { name: string; amount: string; unit: string };
+
+export function parseIngredients(text: string): Ingredient[] {
+  return text.split(";").map((part) => part.trim()).filter(Boolean).map((part) => {
+    // "?" marks a value the seller has not entered yet (while editing)
+    const m = part.match(/^(.+?)\s+(\d+(?:[.,]\d+)?|\?)\s*(\S.*)$/);
+    if (!m) return { name: part, amount: "", unit: "" };
+    const unit = m[3].trim() === "?" ? "" : m[3].trim();
+    if (m[2] === "?") return { name: m[1].trim(), amount: "", unit };
+    const known = STRENGTH_UNITS.find((u) => u.toLowerCase() === unit.toLowerCase().replace("mcg", "µg").replace("ug", "µg").replace(/^i\.?e\.?$/, "iu"));
+    return { name: m[1].trim(), amount: m[2].replace(",", "."), unit: known ?? unit };
+  });
+}
+
+export function serializeIngredients(list: Ingredient[]): string {
+  return list
+    .filter((i) => i.name.trim() || i.amount.trim() || i.unit.trim())
+    .map((i) => `${i.name.trim() || "?"} ${i.amount.trim() || "?"} ${i.unit.trim() || "?"}`)
+    .join("; ");
+}
 
 const norm = (s: string) => s.toLowerCase().replace(/[*()]/g, " ").replace(/\s+/g, " ").trim();
 
@@ -129,7 +153,8 @@ export function matchCategory(value: unknown): Category | "" {
 export function guessListingMapping(headers: string[]): Record<string, string> {
   const result: Record<string, string> = {};
   const used = new Set<string>();
-  const usable = [{ key: "category", hints: ["category", "kategorie", "bereich", "produktbereich"] }, ...FIELDS.filter((f) => f.hints.length > 0)];
+  const usable = [{ key: "category", hints: ["category", "kategorie", "bereich", "produktbereich"] }, ...FIELDS.filter((f) => f.hints.length > 0),
+    { key: "strength", hints: ["strength", "stärke", "staerke", "wirkstärke", "dosierung", "dosage"] }];
   for (const pass of ["exact", "contains"] as const) {
     for (const field of usable) {
       if (result[field.key]) continue;
@@ -169,17 +194,29 @@ export function cellToText(field: FieldDef, raw: unknown): string {
       const n = parseNumber(raw);
       return n === null ? String(raw).trim() : String(field.type === "int" ? Math.round(n) : n);
     }
+    case "packaging": {
+      const text = String(raw).trim();
+      return matchCountry(text) || LANGUAGE_COUNTRY[text.toLowerCase()] || text;
+    }
     default:
       return String(raw).trim();
   }
 }
+
+// "Deutsch" / "German" in a seller list usually means a German pack
+const LANGUAGE_COUNTRY: Record<string, string> = {
+  german: "Germany", deutsch: "Germany", french: "France", französisch: "France", italian: "Italy", italienisch: "Italy",
+  spanish: "Spain", spanisch: "Spain", dutch: "Netherlands", niederländisch: "Netherlands", polish: "Poland", polnisch: "Poland",
+  arabic: "", arabisch: "",
+};
+export const PACKAGING_OPTIONS = ["Custom", ...COUNTRIES];
 
 // Builds mask rows from the seller's sheet and the chosen column mapping.
 export function rowsToDrafts(headers: string[], rows: unknown[][], mapping: Record<string, string>, defaultCategory: Category | ""): Draft[] {
   return rows.map((r) => {
     const values: Record<string, string> = {};
     for (const [key, header] of Object.entries(mapping)) {
-      if (key === "category") continue;
+      if (key === "category" || key === "strength") continue;
       const field = FIELD_BY_KEY[key];
       const i = headers.indexOf(header);
       if (!field || i < 0) continue;
@@ -191,10 +228,97 @@ export function rowsToDrafts(headers: string[], rows: unknown[][], mapping: Reco
       }
       values[key] = text;
     }
+    // A separate strength column ("500 mg") belongs to a single ingredient without amount
+    const strengthIndex = mapping.strength ? headers.indexOf(mapping.strength) : -1;
+    const strength = strengthIndex >= 0 ? String(r[strengthIndex] ?? "").trim() : "";
+    if (strength && values.active_ingredients && !/\d/.test(values.active_ingredients) && !values.active_ingredients.includes(";")) {
+      values.active_ingredients = `${values.active_ingredients} ${strength}`;
+    }
     const catIndex = mapping.category ? headers.indexOf(mapping.category) : -1;
     const category = (catIndex >= 0 ? matchCategory(r[catIndex]) : "") || defaultCategory;
     return { category, values, country_prices: [] };
   });
+}
+
+// "film-coated tablets" -> Tablet, "solution for infusion" -> Solution for injection ...
+function formFromText(text: string): string {
+  const t = text.toLowerCase();
+  if (/brause|efferves/.test(t)) return /pulver|powder/.test(t) ? "Effervescent powder" : "Effervescent tablet";
+  if (/lutsch|lozenge/.test(t)) return "Lozenge";
+  if (/tablet|tablett/.test(t)) return "Tablet";
+  if (/kapsel|capsule/.test(t)) return "Capsule";
+  if (/inj|infus|ampul|ampoule|vial|syringe|spritze/.test(t)) return "Solution for injection";
+  if (/pulver|powder/.test(t)) return "Powder";
+  if (/tropfen|drops/.test(t)) return "Drops";
+  if (/spray/.test(t)) return "Spray";
+  if (/creme|cream|salbe|ointment|gel\b/.test(t)) return "Cream";
+  if (/gumm/.test(t)) return "Gummies";
+  return "";
+}
+
+// Fills in what can be read from the product name and recognises the category. Everything filled in
+// here is marked as suggested so the seller checks it.
+export function autoComplete(d: Draft, approved: Category[], parseName: (name: string) => {
+  active_ingredient: string | null; strength: string | null; dosage_form: string | null; pack_size: string | null;
+}): Draft {
+  const values = { ...d.values };
+  const suggested = new Set(d.suggested ?? []);
+  const name = values.product_name ?? "";
+  const text = `${name} ${values.active_ingredients ?? ""} ${values.dosage_form ?? ""}`.toLowerCase();
+  let category = d.category;
+  if (!category) {
+    const guess: Category | "" =
+      /\b(elisa|clia|assay|reagen[st]|test ?kit|rapid test|schnelltest|teststreifen|test strips?|immunoassay)\b/.test(text) || /\btests?\b/.test(text) ? "ivd"
+      : /(glove|handschuh|dressing|verband|bandage|gauze|kompresse|syringe|spritze|needle|kanüle|cannula|mask\b|maske|gown|kittel|desinfekt|disinfect|pflaster|plaster)/.test(text) ? "health"
+      : /(vitamin|zink|zinc|magnes|calcium|kalzium|omega|probiot|collagen|kollagen|biotin|folsäure|folic|selen|q10|nahrungserg|supplement|gumm|multivit)/.test(text) ? "supplements"
+      : /\d\s*(mg|µg|mcg|g|ml|iu|ie)\b/.test(text) || /(tablet|tablett|kapsel|capsule|injekt|inject|infus|ampul|ampoule|sirup|syrup|salbe|creme|cream)/.test(text) ? "pharma"
+      : "";
+    if (guess && approved.includes(guess)) {
+      category = guess;
+      suggested.add("category");
+    }
+  }
+  if (category === "pharma" || category === "supplements") {
+    const parsed = name ? parseName(name) : null;
+    if (parsed) {
+      const ingredients = values.active_ingredients ?? "";
+      if (!ingredients && parsed.active_ingredient && parsed.strength) {
+        values.active_ingredients = `${parsed.active_ingredient} ${parsed.strength}`;
+        suggested.add("active_ingredients");
+      } else if (ingredients && !/\d/.test(ingredients) && !ingredients.includes(";") && parsed.strength) {
+        values.active_ingredients = `${ingredients} ${parsed.strength}`;
+        suggested.add("active_ingredients");
+      }
+      if (!values.dosage_form && parsed.dosage_form) {
+        const form = matchOption(parsed.dosage_form, DOSAGE_FORMS) || formFromText(parsed.dosage_form);
+        if (form) {
+          values.dosage_form = form;
+          suggested.add("dosage_form");
+        }
+      }
+      const pack = parsed.pack_size?.match(/^(\d+)\s+(\S+)/);
+      if (pack && !values.units_per_pack) {
+        values.units_per_pack = pack[1];
+        suggested.add("units_per_pack");
+      }
+      if (pack && (!values.unit || values.unit === "pieces")) {
+        const unit = matchOption(pack[2], UNITS) || (/tabl/i.test(pack[2]) ? "tablets" : /kaps|caps/i.test(pack[2]) ? "capsules" : "");
+        if (unit && unit !== values.unit) {
+          values.unit = unit;
+          suggested.add("unit");
+        }
+      }
+    }
+    // "Stk" next to a tablet form means tablets
+    if (values.unit === "pieces" && /tablet/i.test(values.dosage_form ?? "")) {
+      values.unit = "tablets";
+      suggested.add("unit");
+    } else if (values.unit === "pieces" && /capsule/i.test(values.dosage_form ?? "")) {
+      values.unit = "capsules";
+      suggested.add("unit");
+    }
+  }
+  return { ...d, category, values, suggested: [...suggested] };
 }
 
 export function parseExpiry(text: string): { date: string | null; months: number | null; ok: boolean } {
@@ -241,7 +365,6 @@ export function parseDocuments(text: string): { docs: string[]; unknown: string[
   return { docs: [...new Set(docs)], unknown };
 }
 
-const INGREDIENT_RE = /^.+?\s\d+(?:[.,]\d+)?\s*(?:mg|g|µg|mcg|ug|ml|iu|ie|i\.e\.|%|mmol|kbe|cfu|e)(?:\s*\/\s*\d*(?:[.,]\d+)?\s*(?:ml|g|l))?$/i;
 
 // Errors per field key for one row. approved: the categories this seller may sell.
 export function validateDraft(d: Draft, approved: Category[], today = new Date().toISOString().slice(0, 10)): Record<string, string> {
@@ -309,9 +432,9 @@ export function validateDraft(d: Draft, approved: Category[], today = new Date()
       }
     }
   }
-  if (!e.active_ingredients && v("active_ingredients")) {
-    const bad = v("active_ingredients").split(";").map((s) => s.trim()).filter(Boolean).filter((s) => !INGREDIENT_RE.test(s));
-    if (bad.length) e.active_ingredients = `Add the amount, e.g. “${bad[0]} 500 mg”`;
+  if (!e.active_ingredients && v("active_ingredients") && FIELD_BY_KEY.active_ingredients.need[d.category] !== "N") {
+    const bad = parseIngredients(v("active_ingredients")).find((i) => !i.name || i.name === "?" || !(Number(i.amount) > 0) || !i.unit || i.unit === "…");
+    if (bad) e.active_ingredients = bad.name && bad.name !== "?" ? `Add amount and unit for ${bad.name}` : "Add the ingredient name";
   }
   if (!e.moq && v("moq") && v("quantity") && Number(v("moq")) > Number(v("quantity"))) e.moq = "MOQ is above the quantity";
   d.country_prices.forEach((cp, i) => {

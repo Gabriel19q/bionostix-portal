@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { FileDrop } from "@/components/file-drop";
 import { CATEGORIES, docSlots, type Category } from "@/lib/categories";
-import { COUNTRIES } from "@/lib/countries";
+import { COUNTRIES, EU_COUNTRIES } from "@/lib/countries";
 import { LEGAL_VERSION } from "@/lib/legal";
 import { createClient } from "@/lib/supabase/client";
 import { uploadCompanyDocumentV2, uploadPendingDocument } from "@/lib/upload";
@@ -39,7 +39,13 @@ export function ApplicationForm({ defaultName = "", withAccount = false }: { def
   const [sent, setSent] = useState(false);
 
   const [name, setName] = useState("");
-  const [address, setAddress] = useState("");
+  const [street, setStreet] = useState("");
+  const [houseNo, setHouseNo] = useState("");
+  const [addressLine2, setAddressLine2] = useState("");
+  const [postalCode, setPostalCode] = useState("");
+  const [city, setCity] = useState("");
+  const address = [`${street.trim()} ${houseNo.trim()}`.trim(), addressLine2.trim(), `${postalCode.trim()} ${city.trim()}`.trim()]
+    .filter(Boolean).join(", ");
   const [vatId, setVatId] = useState("");
   const [firstName, setFirstName] = useState(defaultName.split(" ")[0] ?? "");
   const [lastName, setLastName] = useState(defaultName.split(" ").slice(1).join(" "));
@@ -65,6 +71,7 @@ export function ApplicationForm({ defaultName = "", withAccount = false }: { def
     [wantsBuy, wantsSell, buyCats, sellCats, sites],
   );
   const sellsIvd = wantsSell && sellCats.includes("ivd");
+  const inEu = EU_COUNTRIES.includes(country);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -78,12 +85,12 @@ export function ApplicationForm({ defaultName = "", withAccount = false }: { def
     setError(null);
     const supabase = createClient();
     const application = {
-      name, address, vat_id: vatId, contact_name: contact, phone,
+      name, address, vat_id: inEu ? vatId : null, contact_name: contact, phone,
       wants_buy: wantsBuy, wants_sell: wantsSell,
       buy_categories: wantsBuy ? buyCats : [],
       sell_categories: wantsSell ? sellCats : [],
       sites,
-      eudamed_srn: sellsIvd ? srn : null,
+      eudamed_srn: sellsIvd && inEu ? srn : null,
       ivdr_confirmed: sellsIvd ? ivdr : false,
       version: LEGAL_VERSION,
       consents: { terms, confidentiality, commission: wantsSell && commission, newsletter },
@@ -152,10 +159,6 @@ export function ApplicationForm({ defaultName = "", withAccount = false }: { def
       <p className="mb-6 text-sm text-slate-600">
         We verify every company before it can buy or sell on the platform. You confirm your email at the end.
       </p>
-      <p className="notice-info mb-6">
-        Does your company already have access? Then do not fill in this form. Send us a short email to{" "}
-        {process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? "info@bionostix-germany.de"} and we add you to your company&apos;s account.
-      </p>
 
       <form onSubmit={onSubmit} className="space-y-8">
         {withAccount && (
@@ -180,9 +183,30 @@ export function ApplicationForm({ defaultName = "", withAccount = false }: { def
             <label className="label" htmlFor="company">Company name <span className="text-danger">*</span></label>
             <input id="company" className="input" required value={name} onChange={(e) => setName(e.target.value)} />
           </div>
-          <div>
-            <label className="label" htmlFor="address">Registered address <span className="text-danger">*</span></label>
-            <input id="address" className="input" required value={address} onChange={(e) => setAddress(e.target.value)} />
+          <div className="grid grid-cols-[1fr_7rem] gap-4 md:col-span-2">
+            <div>
+              <label className="label" htmlFor="street">Street <span className="text-danger">*</span></label>
+              <input id="street" className="input" required autoComplete="address-line1" value={street} onChange={(e) => setStreet(e.target.value)} />
+            </div>
+            <div>
+              <label className="label" htmlFor="house-no">No. <span className="text-danger">*</span></label>
+              <input id="house-no" className="input" required value={houseNo} onChange={(e) => setHouseNo(e.target.value)} />
+            </div>
+          </div>
+          <div className="md:col-span-2">
+            <label className="label" htmlFor="address-line2">Address line 2</label>
+            <input id="address-line2" className="input" autoComplete="address-line2" placeholder="e.g. building, floor, PO box"
+              value={addressLine2} onChange={(e) => setAddressLine2(e.target.value)} />
+          </div>
+          <div className="grid grid-cols-[8rem_1fr] gap-4 md:col-span-2">
+            <div>
+              <label className="label" htmlFor="postal-code">Postal code <span className="text-danger">*</span></label>
+              <input id="postal-code" className="input" required autoComplete="postal-code" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} />
+            </div>
+            <div>
+              <label className="label" htmlFor="city">City <span className="text-danger">*</span></label>
+              <input id="city" className="input" required autoComplete="address-level2" value={city} onChange={(e) => setCity(e.target.value)} />
+            </div>
           </div>
           <div>
             <label className="label" htmlFor="country">Country <span className="text-danger">*</span></label>
@@ -191,6 +215,14 @@ export function ApplicationForm({ defaultName = "", withAccount = false }: { def
               {COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
+          {inEu ? (
+            <div>
+              <label className="label" htmlFor="vat">VAT ID <span className="text-danger">*</span></label>
+              <input id="vat" className="input" required placeholder="e.g. DE123456789" value={vatId}
+                pattern="[A-Za-z]{2}[0-9A-Za-z+*. ]{2,13}" title="EU VAT ID starting with the country code, e.g. DE123456789"
+                onChange={(e) => setVatId(e.target.value)} />
+            </div>
+          ) : <div />}
           <div>
             <label className="label" htmlFor="first-name">First name <span className="text-danger">*</span></label>
             <input id="first-name" className="input" required autoComplete="given-name" value={firstName}
@@ -207,11 +239,6 @@ export function ApplicationForm({ defaultName = "", withAccount = false }: { def
               pattern="\+[1-9][0-9 \(\)\.\/\-]{6,24}" title="Start with + and the country code, e.g. +49 711 1234567"
               value={phone} onChange={(e) => setPhone(e.target.value)} />
             <p className="mt-1 text-xs text-slate-600">Start with + and the country code, e.g. +49 or +964.</p>
-          </div>
-          <div>
-            <label className="label" htmlFor="vat">VAT ID</label>
-            <input id="vat" className="input" placeholder="e.g. DE123456789" value={vatId} onChange={(e) => setVatId(e.target.value)} />
-            <p className="mt-1 text-xs text-slate-500">If your company has one.</p>
           </div>
         </section>
 
@@ -263,11 +290,11 @@ export function ApplicationForm({ defaultName = "", withAccount = false }: { def
             <h2 className="font-bold">IVD</h2>
             {sellsIvd && (
               <>
-                <div>
+                {inEu && <div>
                   <label className="label" htmlFor="srn">EUDAMED registration number (SRN)</label>
                   <input id="srn" className="input" value={srn} onChange={(e) => setSrn(e.target.value)} placeholder="e.g. DE-MF-000012345" />
-                  <p className="mt-1 text-xs text-slate-500">Only if you are a manufacturer or importer of IVDs.</p>
-                </div>
+                  <p className="mt-1 text-xs text-slate-500">Only if you are a manufacturer, importer or authorised representative of IVDs.</p>
+                </div>}
                 <label className="flex items-start gap-2 text-sm">
                   <input type="checkbox" className="mt-1" checked={ivdr} onChange={(e) => setIvdr(e.target.checked)} required />
                   <span>
