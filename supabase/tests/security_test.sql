@@ -485,3 +485,8 @@ select pg_temp.expect((select count(*) from jsonb_array_elements(public.get_my_a
 select pg_temp.expect(public.claim_pending_application() is null, 'claim only once');
 reset role;
 select pg_temp.expect((select raw_user_meta_data ? 'application' from auth.users where id = '00000000-0000-0000-0000-0000000000f4') = false, 'application removed from metadata');
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f1');
+select pg_temp.expect(public.save_listings(jsonb_build_array((select o from good_offer) || '{"product_name":"Paracetamol 500 mg tablets","name_on_pack":"Paracetamol 500 mg Tabletten"}')) = 1, 'offer with name on pack saved');
+select pg_temp.expect(exists (select 1 from jsonb_array_elements(public.get_my_listings()) l where l ->> 'name_on_pack' = 'Paracetamol 500 mg Tabletten'), 'name on pack returned');
+reset role;

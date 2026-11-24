@@ -3,6 +3,7 @@
 import { COUNTRIES, matchCountry } from "@/lib/countries";
 import { parseDate, parseNumber, parseYesNo } from "@/lib/parse";
 import type { Category } from "@/lib/categories";
+import { looksGerman, translateIngredientsText, translateProductName } from "@/lib/translate";
 
 export type Need = "R" | "O" | "N"; // required, optional, not used
 
@@ -41,6 +42,7 @@ const only = (m: Partial<Record<Category, Need>>): Record<Category, Need> => ({ 
 export const FIELDS: FieldDef[] = [
   { key: "item_no", label: "Your item no.", type: "text", need: all("O"), hints: ["item no", "article no", "art.-nr", "artikelnummer", "artikelnr", "sku", "item", "ref"] },
   { key: "product_name", label: "Product name", type: "text", need: all("R"), hints: ["product name", "product", "name", "bezeichnung", "artikelbezeichnung", "handelsname", "description", "produkt", "artikel"] },
+  { key: "name_on_pack", label: "Name on pack (original)", type: "text", need: all("O"), hints: [], help: "Original name as printed on the pack" },
   { key: "brand", label: "Brand", type: "text", need: all("R"), hints: ["brand", "marke", "manufacturer", "hersteller", "trade name"] },
   { key: "active_ingredients", label: "Active ingredients", type: "ingredients", need: only({ pharma: "R", supplements: "R" }), hints: ["active ingredient", "ingredients", "wirkstoff", "inhaltsstoffe", "inn", "substance", "composition"], help: "Each ingredient with amount and unit per unit" },
   { key: "dosage_form", label: "Dosage form", type: "select", options: DOSAGE_FORMS, need: only({ pharma: "R", supplements: "R" }), hints: ["dosage form", "darreichungsform", "darreichung", "form"] },
@@ -263,7 +265,14 @@ export function autoComplete(d: Draft, approved: Category[], parseName: (name: s
 }): Draft {
   const values = { ...d.values };
   const suggested = new Set(d.suggested ?? []);
-  const name = values.product_name ?? "";
+  // English product name and ingredients; the original stays as "name on pack"
+  const original = values.product_name ?? "";
+  if (original && looksGerman(original)) {
+    if (!values.name_on_pack) values.name_on_pack = original;
+    values.product_name = translateProductName(original);
+    suggested.add("product_name");
+  }
+  const name = original;
   const text = `${name} ${values.active_ingredients ?? ""} ${values.dosage_form ?? ""}`.toLowerCase();
   let category = d.category;
   if (!category) {
@@ -278,15 +287,22 @@ export function autoComplete(d: Draft, approved: Category[], parseName: (name: s
       suggested.add("category");
     }
   }
+  if (values.active_ingredients) {
+    const english = translateIngredientsText(values.active_ingredients);
+    if (english !== values.active_ingredients) {
+      values.active_ingredients = english;
+      suggested.add("active_ingredients");
+    }
+  }
   if (category === "pharma" || category === "supplements") {
     const parsed = name ? parseName(name) : null;
     if (parsed) {
       const ingredients = values.active_ingredients ?? "";
       if (!ingredients && parsed.active_ingredient && parsed.strength) {
-        values.active_ingredients = `${parsed.active_ingredient} ${parsed.strength}`;
+        values.active_ingredients = translateIngredientsText(`${parsed.active_ingredient} ${parsed.strength}`);
         suggested.add("active_ingredients");
       } else if (ingredients && !/\d/.test(ingredients) && !ingredients.includes(";") && parsed.strength) {
-        values.active_ingredients = `${ingredients} ${parsed.strength}`;
+        values.active_ingredients = translateIngredientsText(`${ingredients} ${parsed.strength}`);
         suggested.add("active_ingredients");
       }
       if (!values.dosage_form && parsed.dosage_form) {
@@ -456,6 +472,7 @@ export function draftToPayload(d: Draft) {
     category: d.category,
     item_no: v("item_no") || null,
     product_name: v("product_name"),
+    name_on_pack: v("name_on_pack") || null,
     brand: v("brand"),
     active_ingredients: keep("active_ingredients"),
     dosage_form: keep("dosage_form"),

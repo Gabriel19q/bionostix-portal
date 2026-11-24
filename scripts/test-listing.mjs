@@ -80,7 +80,14 @@ assert.equal(ac.values.active_ingredients, "Ibuprofen 400 mg");
 assert.equal(ac.values.dosage_form, "Tablet");
 assert.equal(ac.values.units_per_pack, "50");
 assert.equal(ac.values.unit, "tablets");
-assert.deepEqual([...ac.suggested].sort(), ["active_ingredients", "category", "dosage_form", "unit", "units_per_pack"]);
+assert.deepEqual([...ac.suggested].sort(), ["active_ingredients", "category", "dosage_form", "product_name", "unit", "units_per_pack"]);
+// German names become English; the original is kept as name on pack
+assert.equal(ac.values.product_name, "Ibuprofen 400 mg film-coated tablets, 50 pieces");
+assert.equal(ac.values.name_on_pack, "Ibuprofen 400 mg Filmtabletten, 50 Stück");
+const de = autoComplete({ category: "supplements", values: { product_name: "Vitamin C + Zink Brausetabletten", active_ingredients: "Ascorbinsäure 1000 mg; Zink 10 mg" }, country_prices: [] }, ["supplements"], parseProductName);
+assert.equal(de.values.product_name, "Vitamin C + Zinc effervescent tablets");
+assert.equal(de.values.active_ingredients, "Ascorbic acid 1000 mg; Zinc 10 mg");
+assert.equal(autoComplete({ category: "pharma", values: { product_name: "Paracetamol 500 mg tablets" }, country_prices: [] }, ["pharma"], parseProductName).values.name_on_pack, undefined, "English names stay");
 assert.equal(autoComplete({ category: "", values: { product_name: "Vitamin C 1000 mg Brausetabletten" }, country_prices: [] }, ["pharma", "supplements"], parseProductName).category, "supplements");
 assert.equal(autoComplete({ category: "", values: { product_name: "TSH ELISA kit" }, country_prices: [] }, ["pharma"], parseProductName).category, "", "IVD not approved: no guess");
 assert.equal(autoComplete({ category: "", values: { product_name: "Nitrile examination gloves" }, country_prices: [] }, ["health", "pharma"], parseProductName).category, "health");
