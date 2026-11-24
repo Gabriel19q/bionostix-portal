@@ -24,7 +24,7 @@ export const INCOTERMS = ["EXW", "FCA", "CPT", "CIP", "DAP", "DPU", "DDP", "FAS"
 export const DOCUMENTS = ["CoA", "CPP", "FSC", "GMP certificate", "Registration dossier", "Stability data",
   "Declaration of conformity / CE certificate", "ISO 13485 certificate", "Certificate of origin", "Other"];
 
-export type FieldType = "packaging" | "ingredients" | "text" | "int" | "money" | "select" | "bool" | "expiry" | "date" | "countryRule" | "countries" | "documents";
+export type FieldType = "country" | "packaging" | "ingredients" | "text" | "int" | "money" | "select" | "bool" | "expiry" | "date" | "countryRule" | "countries" | "documents";
 
 export type FieldDef = {
   key: string;
@@ -79,7 +79,8 @@ export const FIELDS: FieldDef[] = [
   { key: "documents_available", label: "Documents available on request", type: "documents", need: all("O"), hints: ["documents", "dokumente", "certificates", "zertifikate"] },
 ];
 
-export const FIELD_BY_KEY = Object.fromEntries(FIELDS.map((f) => [f.key, f])) as Record<string, FieldDef>;
+export const fieldMap = (fields: FieldDef[]) => Object.fromEntries(fields.map((f) => [f.key, f])) as Record<string, FieldDef>;
+export const FIELD_BY_KEY = fieldMap(FIELDS);
 
 export type CountryRule = { mode: "all" | "only" | "except"; countries: string[] };
 
@@ -152,10 +153,10 @@ export function matchCategory(value: unknown): Category | "" {
 }
 
 // Guess which column of the seller's list belongs to which field, by header name.
-export function guessListingMapping(headers: string[]): Record<string, string> {
+export function guessListingMapping(headers: string[], fields: FieldDef[] = FIELDS): Record<string, string> {
   const result: Record<string, string> = {};
   const used = new Set<string>();
-  const usable = [{ key: "category", hints: ["category", "kategorie", "bereich", "produktbereich"] }, ...FIELDS.filter((f) => f.hints.length > 0),
+  const usable = [{ key: "category", hints: ["category", "kategorie", "bereich", "produktbereich"] }, ...fields.filter((f) => f.hints.length > 0),
     { key: "strength", hints: ["strength", "stärke", "staerke", "wirkstärke", "dosierung", "dosage"] }];
   for (const pass of ["exact", "contains"] as const) {
     for (const field of usable) {
@@ -196,6 +197,10 @@ export function cellToText(field: FieldDef, raw: unknown): string {
       const n = parseNumber(raw);
       return n === null ? String(raw).trim() : String(field.type === "int" ? Math.round(n) : n);
     }
+    case "country": {
+      const text = String(raw).trim();
+      return matchCountry(text) || text;
+    }
     case "packaging": {
       const text = String(raw).trim();
       return matchCountry(text) || LANGUAGE_COUNTRY[text.toLowerCase()] || text;
@@ -214,17 +219,18 @@ const LANGUAGE_COUNTRY: Record<string, string> = {
 export const PACKAGING_OPTIONS = ["Custom", ...COUNTRIES];
 
 // Builds mask rows from the seller's sheet and the chosen column mapping.
-export function rowsToDrafts(headers: string[], rows: unknown[][], mapping: Record<string, string>, defaultCategory: Category | ""): Draft[] {
+export function rowsToDrafts(headers: string[], rows: unknown[][], mapping: Record<string, string>, defaultCategory: Category | "", fields: FieldDef[] = FIELDS): Draft[] {
+  const byKey = fieldMap(fields);
   return rows.map((r) => {
     const values: Record<string, string> = {};
     for (const [key, header] of Object.entries(mapping)) {
       if (key === "category" || key === "strength") continue;
-      const field = FIELD_BY_KEY[key];
+      const field = byKey[key];
       const i = headers.indexOf(header);
       if (!field || i < 0) continue;
       let text = cellToText(field, r[i]);
       // "Other: xyz" from a select goes into the field's "– other" companion
-      if (text.startsWith("Other: ") && FIELD_BY_KEY[`${key}_other`]) {
+      if (text.startsWith("Other: ") && byKey[`${key}_other`]) {
         values[`${key}_other`] = text.slice(7);
         text = "Other";
       }
@@ -383,7 +389,8 @@ export function parseDocuments(text: string): { docs: string[]; unknown: string[
 
 
 // Errors per field key for one row. approved: the categories this seller may sell.
-export function validateDraft(d: Draft, approved: Category[], today = new Date().toISOString().slice(0, 10)): Record<string, string> {
+export function validateDraft(d: Draft, approved: Category[], today = new Date().toISOString().slice(0, 10), fields: FieldDef[] = FIELDS): Record<string, string> {
+  const byKey = fieldMap(fields);
   const e: Record<string, string> = {};
   if (!d.category) {
     e.category = "Choose a category";
@@ -391,7 +398,7 @@ export function validateDraft(d: Draft, approved: Category[], today = new Date()
   }
   if (!approved.includes(d.category)) e.category = "Category not approved for you";
   const v = (k: string) => (d.values[k] ?? "").trim();
-  for (const f of FIELDS) {
+  for (const f of fields) {
     const need = f.need[d.category];
     const value = v(f.key);
     if (need === "N") continue;
@@ -403,10 +410,13 @@ export function validateDraft(d: Draft, approved: Category[], today = new Date()
     switch (f.type) {
       case "select":
         if (!f.options?.includes(value)) e[f.key] = "Choose from the list";
-        else if (value === "Other" && FIELD_BY_KEY[`${f.key}_other`] && !v(`${f.key}_other`)) e[`${f.key}_other`] = "Describe “Other”";
+        else if (value === "Other" && byKey[`${f.key}_other`] && !v(`${f.key}_other`)) e[`${f.key}_other`] = "Describe “Other”";
         break;
       case "bool":
         if (!["Yes", "No"].includes(value)) e[f.key] = "Yes or No";
+        break;
+      case "country":
+        if (!COUNTRIES.includes(value)) e[f.key] = "Choose a country";
         break;
       case "int": {
         const n = Number(value);
@@ -448,7 +458,7 @@ export function validateDraft(d: Draft, approved: Category[], today = new Date()
       }
     }
   }
-  if (!e.active_ingredients && v("active_ingredients") && FIELD_BY_KEY.active_ingredients.need[d.category] !== "N") {
+  if (!e.active_ingredients && v("active_ingredients") && byKey.active_ingredients && byKey.active_ingredients.need[d.category] !== "N") {
     const bad = parseIngredients(v("active_ingredients")).find((i) => !i.name || i.name === "?" || !(Number(i.amount) > 0) || !i.unit || i.unit === "…");
     if (bad) e.active_ingredients = bad.name && bad.name !== "?" ? `Add amount and unit for ${bad.name}` : "Add the ingredient name";
   }

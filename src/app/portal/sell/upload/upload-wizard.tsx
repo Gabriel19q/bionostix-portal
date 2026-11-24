@@ -10,18 +10,28 @@ import {
 import { readSheetFile, type Sheet } from "@/lib/sheet";
 import { parseProductName } from "@/lib/product-name";
 import { eur } from "@/lib/format";
-import { adminPrepareListingsAction, saveListingsAction } from "../actions";
+import { COUNTRIES } from "@/lib/countries";
+import { adminPrepareListingsAction, adminPrepareProductRequestsAction, saveListingsAction, saveProductRequestsAction } from "../actions";
+import { WANTED_BY_KEY, WANTED_FIELDS } from "@/lib/wanted";
 
 type Step = "file" | "map" | "mask";
 
 // Fields that make sense to set for all rows at once (often missing in sellers' lists)
+const REQUEST_BULK_KEYS = ["category", "delivery_country", "needed_by", "unit", "dosage_form"];
 const BULK_KEYS = ["category", "incoterm", "incoterm_place", "valid_until", "packaging_language", "expiry", "lead_time_days",
   "buyers", "ship", "documents_available", "unit", "brand"];
 
-export function UploadWizard({ approved, initial, sellerCompanyId }: {
+export function UploadWizard({ approved, initial, sellerCompanyId, mode = "offers", buyerCompanyId }: {
   approved: Category[]; initial: Draft[] | null;
   sellerCompanyId?: string; // set when an admin prepares offers for a seller
+  mode?: "offers" | "requests"; // offers of a seller, or product requests (wanted list) of a buyer
+  buyerCompanyId?: string; // set when an admin prepares product requests for a buyer
 }) {
+  const isRequests = mode === "requests";
+  const fields = isRequests ? WANTED_FIELDS : FIELDS;
+  const byKey = isRequests ? WANTED_BY_KEY : FIELD_BY_KEY;
+  const bulkKeys = isRequests ? REQUEST_BULK_KEYS : BULK_KEYS;
+  const noun = isRequests ? "product request" : "offer";
   const router = useRouter();
   const [step, setStep] = useState<Step>(initial ? "mask" : "file");
   const [sheet, setSheet] = useState<Sheet | null>(null);
@@ -38,7 +48,7 @@ export function UploadWizard({ approved, initial, sellerCompanyId }: {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const errors = useMemo(() => drafts.map((d) => validateDraft(d, approved)), [drafts, approved]);
+  const errors = useMemo(() => drafts.map((d) => validateDraft(d, approved, undefined, fields)), [drafts, approved, fields]);
   const problemCount = errors.filter((e) => Object.keys(e).length > 0).length;
 
   async function onFile(file: File | undefined) {
@@ -56,7 +66,7 @@ export function UploadWizard({ approved, initial, sellerCompanyId }: {
       if (s.rows.length > 2000) throw new Error("Please upload at most 2,000 rows at once.");
       setSheet(s);
       setFileName(file.name);
-      setMapping(guessListingMapping(s.headers));
+      setMapping(guessListingMapping(s.headers, fields));
       setStep("map");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not read this file.");
@@ -65,11 +75,11 @@ export function UploadWizard({ approved, initial, sellerCompanyId }: {
 
   function toMask() {
     if (!sheet) return;
-    const rows = rowsToDrafts(sheet.headers, sheet.rows, mapping, defaultCategory)
+    const rows = rowsToDrafts(sheet.headers, sheet.rows, mapping, defaultCategory, fields)
       .map((d) => autoComplete(d, approved, parseProductName));
     setDrafts(rows);
     setOpen(null);
-    setOnlyProblems(rows.some((d) => Object.keys(validateDraft(d, approved)).length > 0));
+    setOnlyProblems(rows.some((d) => Object.keys(validateDraft(d, approved, undefined, fields)).length > 0));
     setStep("mask");
   }
 
@@ -92,13 +102,17 @@ export function UploadWizard({ approved, initial, sellerCompanyId }: {
   async function onSave() {
     setBusy(true);
     setError(null);
-    const res = sellerCompanyId ? await adminPrepareListingsAction(sellerCompanyId, drafts) : await saveListingsAction(drafts);
+    const res = isRequests
+      ? (buyerCompanyId ? await adminPrepareProductRequestsAction(buyerCompanyId, drafts) : await saveProductRequestsAction(drafts))
+      : sellerCompanyId ? await adminPrepareListingsAction(sellerCompanyId, drafts) : await saveListingsAction(drafts);
     setBusy(false);
     if (!res.ok) {
       setError(res.error);
       return;
     }
-    router.push(sellerCompanyId ? `/admin/import?seller=${sellerCompanyId}&done=${res.saved}` : "/portal/sell");
+    router.push(isRequests
+      ? (buyerCompanyId ? `/admin/import-requests?buyer=${buyerCompanyId}&done=${res.saved}` : "/portal/sourcing")
+      : sellerCompanyId ? `/admin/import?seller=${sellerCompanyId}&done=${res.saved}` : "/portal/sell");
     router.refresh();
   }
 
@@ -106,8 +120,9 @@ export function UploadWizard({ approved, initial, sellerCompanyId }: {
     return (
       <div className="card max-w-3xl space-y-5">
         <p className="text-sm text-slate-600">
-          Upload your own stock list as it is (Excel or CSV). The portal reads your columns, fills in the offer form and
-          shows what is still missing. Nothing is published before you confirm.
+          {isRequests
+            ? "Upload your list of wanted products as it is (Excel or CSV). The portal reads your columns, fills in the form and shows what is still missing. We then show you matching offers."
+            : "Upload your own stock list as it is (Excel or CSV). The portal reads your columns, fills in the offer form and shows what is still missing. Nothing is published before you confirm."}
         </p>
         {approved.length > 1 && (
           <div className="max-w-sm">
@@ -133,10 +148,10 @@ export function UploadWizard({ approved, initial, sellerCompanyId }: {
           </label>
           <p className="text-xs text-slate-500">Excel (.xlsx, .xls) or CSV · first sheet · up to 2,000 rows</p>
         </div>
-        <p className="text-sm text-slate-600">
+        {!isRequests && <p className="text-sm text-slate-600">
           Optional: <a href="/templates/Bionostix-Offer-Upload-Template.xlsx" className="text-brand-600 underline">download our
           template</a> to see which information we need for each category.
-        </p>
+        </p>}
         {error && <p className="text-sm text-danger">{error}</p>}
       </div>
     );
@@ -149,7 +164,7 @@ export function UploadWizard({ approved, initial, sellerCompanyId }: {
       return v === undefined ? "" : String(v).slice(0, 40);
     };
     // Only the fields of the categories this seller may sell
-    const relevant = FIELDS.filter((f) => f.hints.length > 0 && approved.some((c) => f.need[c] !== "N"));
+    const relevant = fields.filter((f) => f.hints.length > 0 && approved.some((c) => f.need[c] !== "N"));
     const withStrength = approved.some((c) => c === "pharma" || c === "supplements");
     const mappable = [
       ...(approved.length > 1 ? [{ key: "category", label: "Category" }] : []),
@@ -196,21 +211,21 @@ export function UploadWizard({ approved, initial, sellerCompanyId }: {
         <div className="card space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm">
-              <strong>{drafts.length}</strong> offer(s) ·{" "}
+              <strong>{drafts.length}</strong> {noun}(s) ·{" "}
               {problemCount === 0
                 ? <span className="font-bold text-success">all complete</span>
                 : <span className="font-bold text-danger">{problemCount} with missing or invalid information</span>}
             </p>
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={onlyProblems} onChange={(e) => setOnlyProblems(e.target.checked)} />
-              Show only offers with problems
+              Show only {noun}s with problems
             </label>
           </div>
           <div className="flex flex-wrap items-end gap-2 border-t border-slate-100 pt-3 text-sm">
             <div>
               <label className="label" htmlFor="bulk-key">Set for all offers</label>
               <select id="bulk-key" className="input py-1" value={bulkKey} onChange={(e) => { setBulkKey(e.target.value); setBulkValue(""); }}>
-                {BULK_KEYS.map((k) => <option key={k} value={k}>{k === "category" ? "Category" : FIELD_BY_KEY[k].label}</option>)}
+                {bulkKeys.map((k) => <option key={k} value={k}>{k === "category" ? "Category" : byKey[k].label}</option>)}
               </select>
             </div>
             <div className="min-w-56 flex-1">
@@ -220,7 +235,7 @@ export function UploadWizard({ approved, initial, sellerCompanyId }: {
                   {approved.map((c) => <option key={c} value={c}>{CATEGORY_LABEL[c]}</option>)}
                 </select>
               ) : (
-                <FieldInput field={FIELD_BY_KEY[bulkKey]} value={bulkValue} onChange={setBulkValue} id="bulk-value" />
+                <FieldInput field={byKey[bulkKey]} value={bulkValue} onChange={setBulkValue} id="bulk-value" />
               )}
             </div>
             <button className="btn-secondary" onClick={applyBulk}>Apply to all</button>
@@ -228,7 +243,7 @@ export function UploadWizard({ approved, initial, sellerCompanyId }: {
         </div>
       )}
 
-      {visible.length === 0 && <div className="card text-sm text-slate-600">No offers with problems.</div>}
+      {visible.length === 0 && <div className="card text-sm text-slate-600">No {noun}s with problems.</div>}
 
       {visible.map(({ d, i }) => {
         const e = errors[i];
@@ -240,9 +255,9 @@ export function UploadWizard({ approved, initial, sellerCompanyId }: {
           <div key={i} className={`card space-y-4 ${n > 0 ? "border-danger" : ""}`}>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <button type="button" className="min-w-0 flex-1 text-left" onClick={() => setOpen(isOpen ? null : i)}>
-                <span className="font-bold">{d.values.product_name || "Untitled offer"}</span>
+                <span className="font-bold">{d.values.product_name || `Untitled ${noun}`}</span>
                 <span className="text-sm text-slate-500">
-                  {d.category ? ` · ${CATEGORY_LABEL[d.category]}` : ""}{d.values.price && Number(d.values.price) > 0 ? ` · ${eur(Number(d.values.price))}` : ""}
+                  {d.category ? ` · ${CATEGORY_LABEL[d.category]}` : ""}{d.values.price && Number(d.values.price) > 0 ? ` · ${eur(Number(d.values.price))}` : ""}{d.values.quantity && isRequests ? ` · ${d.values.quantity} packs` : ""}
                 </span>
               </button>
               <div className="flex items-center gap-3">
@@ -270,7 +285,7 @@ export function UploadWizard({ approved, initial, sellerCompanyId }: {
                 </div>
                 {d.category && (
                   <div className="grid gap-4 md:grid-cols-3">
-                    {FIELDS.filter((f) => f.need[d.category as Category] !== "N")
+                    {fields.filter((f) => f.need[d.category as Category] !== "N")
                       .filter((f) => !f.key.endsWith("_other") || d.values[f.key.replace(/_other$/, "")] === "Other")
                       // Only what is unclear: missing, invalid or filled in by the portal. "Show all fields" for the rest.
                       .filter((f) => full || e[f.key] || suggested.has(f.key) || (f.key.endsWith("_other") && e[f.key]))
@@ -294,7 +309,7 @@ export function UploadWizard({ approved, initial, sellerCompanyId }: {
                     {full ? "Show only fields to check" : "Show all fields"}
                   </button>
                 )}
-                {d.category && full && (
+                {d.category && full && !isRequests && (
                   <div className="space-y-2">
                     <h3 className="text-sm font-medium">Prices for single countries (optional)</h3>
                     <p className="text-xs text-slate-500">Buyers in these countries see this price instead of the standard price.</p>
@@ -326,10 +341,13 @@ export function UploadWizard({ approved, initial, sellerCompanyId }: {
       <div className="flex flex-wrap items-center gap-3">
         {!initial && <button className="btn-secondary" onClick={() => setStep(sheet ? "map" : "file")}>Back</button>}
         <button className="btn-primary" disabled={busy || problemCount > 0 || drafts.length === 0} onClick={onSave}>
-          {busy ? "Saving…" : sellerCompanyId ? `Send ${drafts.length} offer(s) to the seller`
+          {busy ? "Saving…"
+            : buyerCompanyId ? `Send ${drafts.length} product request(s) to the buyer`
+            : isRequests ? (drafts.length === 1 ? "Save product request" : `Save ${drafts.length} product requests`)
+            : sellerCompanyId ? `Send ${drafts.length} offer(s) to the seller`
             : drafts.length === 1 ? "Save offer" : `Publish ${drafts.length} offers`}
         </button>
-        {problemCount > 0 && <span className="text-sm text-slate-600">Please complete the offers marked in red first.</span>}
+        {problemCount > 0 && <span className="text-sm text-slate-600">Please complete the {noun}s marked in red first.</span>}
       </div>
       {error && <p className="text-sm text-danger">{error}</p>}
     </div>
@@ -346,6 +364,14 @@ function FieldInput({ field, value, onChange, invalid, id }: {
       <select id={id} className={cls} value={options.includes(value) ? value : ""} onChange={(e) => onChange(e.target.value)}>
         <option value="">{value && !options.includes(value) ? `“${value}” – please choose` : "Select…"}</option>
         {options.map((o) => <option key={o} value={o}>{o}</option>)}
+      </select>
+    );
+  }
+  if (field.type === "country") {
+    return (
+      <select id={id} className={cls} value={COUNTRIES.includes(value) ? value : ""} onChange={(e) => onChange(e.target.value)}>
+        <option value="">{value && !COUNTRIES.includes(value) ? `“${value}” – please choose` : "Select…"}</option>
+        {COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
       </select>
     );
   }

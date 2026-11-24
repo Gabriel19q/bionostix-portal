@@ -1,7 +1,8 @@
 // Sourcing requests: products a customer looks for that are not in the catalog.
-export type SourcingStatus = "open" | "in_progress" | "offered" | "closed";
+export type SourcingStatus = "draft" | "open" | "in_progress" | "offered" | "closed";
 
 export const SOURCING_STATUS: Record<SourcingStatus, { label: string; tag: string; hint: string }> = {
+  draft: { label: "To confirm", tag: "tag-attention", hint: "Prepared by Bionostix. Please check and confirm." },
   open: { label: "Received", tag: "tag-attention", hint: "We have your request and will check availability." },
   in_progress: { label: "Searching", tag: "tag-info", hint: "We are asking our manufacturers." },
   offered: { label: "Offer available", tag: "tag-success", hint: "See our message below." },

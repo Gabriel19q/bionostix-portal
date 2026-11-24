@@ -41,6 +41,10 @@ export function isApprovedSeller(account: MyAccount) {
   return !!account?.company && account.company.status === "approved" && account.company.wants_sell && account.company.sell_status === "approved";
 }
 
+export function isApprovedBuyer(account: MyAccount) {
+  return !!account?.company && account.company.status === "approved" && account.company.wants_buy && account.company.buy_status === "approved";
+}
+
 // Who is signed in, their profile and (for customers) their company.
 // - cache(): layout, admin layout and page share ONE lookup per request instead of three.
 // - getClaims(): checks the signed login token locally (Supabase's recommended way) instead of

@@ -2,10 +2,15 @@ import Link from "next/link";
 import { getSession } from "@/lib/session";
 import { displayDate } from "@/lib/format";
 import { SOURCING_STATUS, type SourcingRequest } from "@/lib/sourcing";
+import { CATEGORY_LABEL, type Category } from "@/lib/categories";
+import { eur } from "@/lib/format";
 import { SubmitButton } from "@/components/submit-button";
 import { updateSourcingAction } from "./actions";
 
 type Row = SourcingRequest & {
+  category: Category | null; active_ingredients: string | null; dosage_form: string | null; test_parameter: string | null;
+  method: string | null; product_type: string | null; size_variant: string | null; units_per_pack: number | null;
+  unit: string | null; quantity_packs: number | null; target_price_eur: number | null;
   internal_note: string | null;
   companies: { name: string; country: string } | null;
   profiles: { email: string; full_name: string | null } | null;
@@ -67,9 +72,12 @@ export default async function AdminSourcingPage({
               <span className={st.tag}>{st.label}</span>
             </div>
 
+            {r.status === "draft" && <p className="notice-attention">Prepared by Bionostix: waiting for the buyer to confirm.</p>}
             <dl className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2 md:grid-cols-4">
-              <div><dt className="text-xs font-bold text-slate-600">Quantity</dt><dd>{r.quantity ?? "–"}</dd></div>
-              <div><dt className="text-xs font-bold text-slate-600">Target price</dt><dd>{r.target_price ?? "–"}</dd></div>
+              {r.category && <div><dt className="text-xs font-bold text-slate-600">Category</dt><dd>{CATEGORY_LABEL[r.category]}</dd></div>}
+              {specs(r) && <div className="sm:col-span-3"><dt className="text-xs font-bold text-slate-600">Specification</dt><dd>{specs(r)}</dd></div>}
+              <div><dt className="text-xs font-bold text-slate-600">Quantity</dt><dd>{r.quantity_packs ? `${r.quantity_packs} packs` : r.quantity ?? "–"}</dd></div>
+              <div><dt className="text-xs font-bold text-slate-600">Target price</dt><dd>{r.target_price_eur ? `${eur(r.target_price_eur)} / pack` : r.target_price ?? "–"}</dd></div>
               <div><dt className="text-xs font-bold text-slate-600">Needed by</dt><dd>{r.needed_by ? displayDate(r.needed_by) : "–"}</dd></div>
               <div><dt className="text-xs font-bold text-slate-600">Delivery country</dt><dd>{r.delivery_country}</dd></div>
             </dl>
@@ -84,7 +92,7 @@ export default async function AdminSourcingPage({
               <div>
                 <label className="label" htmlFor={`status-${r.id}`}>Status</label>
                 <select id={`status-${r.id}`} name="status" className="input" defaultValue={r.status}>
-                  {Object.entries(SOURCING_STATUS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+                  {Object.entries(SOURCING_STATUS).filter(([k]) => k !== "draft" || r.status === "draft").map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
                 </select>
               </div>
               <div className="md:col-span-2">
@@ -109,4 +117,10 @@ export default async function AdminSourcingPage({
       })}
     </div>
   );
+}
+
+function specs(r: Row) {
+  const pack = r.units_per_pack ? `${r.units_per_pack} ${r.unit ?? ""}`.trim() : null;
+  return [r.active_ingredients, r.dosage_form, r.test_parameter, r.method, r.product_type, r.size_variant, pack]
+    .filter(Boolean).join(" · ");
 }

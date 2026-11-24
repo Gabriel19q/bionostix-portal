@@ -91,6 +91,12 @@ export const emails = {
       `Bionostix Germany uploaded your stock list for you and prepared ${count} offer(s). They are not visible to buyers yet.\n\n` +
       `Please check them and publish: ${SITE}/portal/sell${footer}`,
   }),
+  requestsPrepared: (count: number) => ({
+    subject: `Bionostix prepared ${count} product request(s) for you – please confirm`,
+    text:
+      `Bionostix Germany uploaded your list of wanted products and prepared ${count} product request(s).\n\n` +
+      `Please check and confirm them: ${SITE}/portal/sourcing${footer}`,
+  }),
   newsletterConfirm: (name: string, token: string) => ({
     subject: "Please confirm your newsletter subscription – Bionostix Germany",
     text:

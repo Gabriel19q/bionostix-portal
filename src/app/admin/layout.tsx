@@ -8,6 +8,7 @@ const tabs = [
   { href: "/admin", label: "Companies" },
   { href: "/admin/catalog", label: "Product offering" },
   { href: "/admin/import", label: "Import stock for seller" },
+  { href: "/admin/import-requests", label: "Import product requests for buyer" },
   { href: "/admin/activity", label: "Activity" },
 ];
 

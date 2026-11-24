@@ -505,3 +505,41 @@ select pg_temp.as_user('00000000-0000-0000-0000-0000000000f1');
 select pg_temp.expect(public.save_listings(jsonb_build_array((select o from good_offer) || jsonb_build_object('id', (select l ->> 'id' from jsonb_array_elements(public.get_my_listings()) l where l ->> 'product_name' = 'Draft offer'), 'product_name', 'Draft offer'))) = 1, 'seller publishes the draft');
 reset role;
 select pg_temp.expect((select status from public.listings where product_name = 'Draft offer') = 'active', 'draft is now active');
+
+-- Stage 2a: buyer catalog, product requests, matches -------------------------------
+update public.companies set status = 'approved', buy_status = 'approved' where name = 'Buyer Two';
+update public.company_categories set status = 'approved' where company_id = (select id from public.companies where name = 'Buyer Two');
+insert into public.listings (seller_company_id, category, product_name, brand, active_ingredients, dosage_form, units_per_pack, unit,
+  packaging_language, quantity, price, expiry_date, incoterm, incoterm_place, valid_until, buyers_mode, buyers_countries)
+select id, 'pharma', 'Germany-only offer', 'X', 'Paracetamol 500 mg', 'Tablet', 20, 'tablets', 'Germany', 10, 2, current_date + 400,
+  'EXW', 'Hamburg', current_date + 30, 'only', '{Germany}' from public.companies where name = 'Seller Co';
+create temp table buyer_req as select '{"category":"pharma","product_name":"Paracetamol 500 mg tablets","active_ingredients":"Paracetamol 500 mg","dosage_form":"Tablet","units_per_pack":20,"quantity":500,"delivery_country":"Iraq"}'::jsonb as o;
+grant select on buyer_req to authenticated;
+create temp table buyer_co as select id from public.companies where name = 'Buyer Two';
+grant select on buyer_co to authenticated;
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f2');
+select pg_temp.expect(jsonb_array_length(public.get_market_catalog()) >= 1, 'approved buyer sees offers');
+select pg_temp.expect(not exists (select 1 from jsonb_array_elements(public.get_market_catalog()) x where x ->> 'product_name' = 'Germany-only offer'), 'offer for German buyers hidden from Iraqi buyer');
+select pg_temp.expect(not exists (select 1 from jsonb_array_elements(public.get_market_catalog()) x where x ? 'seller_company_id' or x ? 'buyers_countries' or x ? 'ship_countries'), 'no seller id or country lists for buyers');
+select pg_temp.expect((select (x ->> 'price')::numeric from jsonb_array_elements(public.get_market_catalog()) x where x ->> 'product_name' = 'Paracetamol 500 mg tablets' limit 1) = 1.1, 'buyer sees the price for Iraq');
+select pg_temp.expect((select x ->> 'seller_code' from jsonb_array_elements(public.get_market_catalog()) x limit 1) like 'S-%', 'seller shown only by code');
+select pg_temp.expect(public.save_product_requests(jsonb_build_array((select o from buyer_req),
+  (select o from buyer_req) || '{"product_name":"Paracetamol 1000","active_ingredients":"Paracetamol 1000 mg"}')) = 2, 'buyer saves product requests');
+select pg_temp.expect((select count(*) from jsonb_array_elements(public.get_my_request_matches()) x where x ->> 'kind' = 'exact') >= 1, 'exact match found');
+select pg_temp.expect((select count(*) from jsonb_array_elements(public.get_my_request_matches()) x where x ->> 'kind' = 'similar') >= 1, 'similar match (other strength) found');
+select pg_temp.expect_error($$select public.save_product_requests(jsonb_build_array((select o from buyer_req) - 'active_ingredients'))$$, 'pharma request needs ingredients');
+select pg_temp.expect(public.close_product_requests(array[(select (x ->> 'id')::uuid from jsonb_array_elements(public.get_my_product_requests()) x limit 1)]) = 1, 'buyer closes a request');
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f3');
+select pg_temp.expect(jsonb_array_length(public.get_market_catalog()) = 0, 'seller-only company sees no buyer catalog');
+select pg_temp.expect_error($$select public.save_product_requests(jsonb_build_array((select o from buyer_req)))$$, 'seller-only company cannot request');
+select pg_temp.expect_error($$select public.admin_prepare_product_requests((select id from buyer_co), jsonb_build_array((select o from buyer_req)))$$, 'non-admin cannot prepare requests');
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000a');
+select pg_temp.expect(public.admin_prepare_product_requests((select id from buyer_co), jsonb_build_array((select o from buyer_req) || '{"product_name":"Prepared request"}')) = 1, 'admin prepares a request for the buyer');
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f2');
+select pg_temp.expect((select x ->> 'status' from jsonb_array_elements(public.get_my_product_requests()) x where x ->> 'product_name' = 'Prepared request') = 'draft', 'buyer sees prepared draft');
+select pg_temp.expect(not exists (select 1 from jsonb_array_elements(public.get_my_request_matches()) m
+  join jsonb_array_elements(public.get_my_product_requests()) r on r ->> 'id' = m ->> 'request_id' where r ->> 'status' = 'draft'), 'drafts get no matches yet');
+select pg_temp.expect(public.save_product_requests(jsonb_build_array((select o from buyer_req) || jsonb_build_object('id', (select x ->> 'id' from jsonb_array_elements(public.get_my_product_requests()) x where x ->> 'product_name' = 'Prepared request'), 'product_name', 'Prepared request'))) = 1, 'buyer confirms the draft');
+select pg_temp.expect((select x ->> 'status' from jsonb_array_elements(public.get_my_product_requests()) x where x ->> 'product_name' = 'Prepared request') = 'open', 'confirmed request is open');
+reset role;
