@@ -1,12 +1,12 @@
 import "server-only";
 import { COMPANY } from "@/content/company";
 
-// Sends plain-text emails through Resend (https://resend.com).
-// Without RESEND_API_KEY nothing is sent and the portal keeps working.
+import nodemailer from "nodemailer";
+
+// Sends plain-text emails through the IONOS mailbox, like the contact form of the website (decision 25.11.2026).
+// SMTP_USER / SMTP_PASS only in the hosting settings. Without them nothing is sent and the portal keeps working.
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://portal.bionostix-germany.de";
-// Sender: a separate portal address; replies go to the info mailbox (decision 25.11.2026).
-// The domain bionostix-germany.de must be verified at Resend (DNS records on the "send" subdomain and DKIM only).
-const FROM = process.env.EMAIL_FROM ?? "Bionostix Germany Partner Portal <portal@bionostix-germany.de>";
+const FROM_NAME = "Bionostix Germany Partner Portal";
 const REPLY_TO = process.env.EMAIL_REPLY_TO ?? "info@bionostix-germany.de";
 
 export function adminEmails() {
@@ -18,18 +18,21 @@ export function adminEmails() {
 
 export async function sendEmail({ to, subject, text }: { to: string[]; subject: string; text: string }) {
   const recipients = [...new Set(to.filter(Boolean))];
-  const key = process.env.RESEND_API_KEY;
-  if (!key || recipients.length === 0) {
-    console.info(`[email skipped${key ? "" : ": no RESEND_API_KEY"}] ${subject} -> ${recipients.join(", ")}`);
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+  if (!user || !pass || recipients.length === 0) {
+    console.info(`[email skipped${user && pass ? "" : ": no SMTP_USER/SMTP_PASS"}] ${subject} -> ${recipients.join(", ")}`);
     return;
   }
   try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: FROM, reply_to: REPLY_TO, to: recipients, subject, text }),
+    const port = Number(process.env.SMTP_PORT ?? 587);
+    const transport = nodemailer.createTransport({
+      host: process.env.SMTP_HOST ?? "smtp.ionos.de", port, secure: port === 465, auth: { user, pass },
     });
-    if (!res.ok) console.error(`[email failed ${res.status}] ${subject}: ${await res.text()}`);
+    // The mailbox sends; each recipient gets the mail separately, so nobody sees the other addresses
+    for (const recipient of recipients) {
+      await transport.sendMail({ from: `${FROM_NAME} <${user}>`, replyTo: REPLY_TO, to: recipient, subject: subject.replace(/[\r\n]+/g, " "), text });
+    }
   } catch (err) {
     // A failed email must never break the action the user took
     console.error(`[email failed] ${subject}`, err);

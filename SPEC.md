@@ -92,7 +92,7 @@ Bisher Rechnungen per Word-Vorlage als PDF. Künftig erstellt das Portal alle Re
 
 ### Allgemein
 Alle Uploads per Drag & Drop oder Dateiauswahl.
-E-Mails des Portals (Entscheidung 25.11.2026): Absender „Bionostix Germany Partner Portal <portal@bionostix-germany.de>“, Antworten gehen an info@bionostix-germany.de (Reply-To). Die Domain muss bei Resend verifiziert sein (nur DNS-Einträge für die Subdomain „send“ und DKIM, MX/SPF der Hauptdomain bleiben unberührt).
+E-Mails des Portals (Entscheidung 25.11.2026): Versand wie beim Kontaktformular der Website über das IONOS-Postfach info@bionostix-germany.de (SMTP, kein Resend), Absendername „Bionostix Germany Partner Portal“, Antworten an info@. Später ggf. eigenes Postfach portal@. Auch Supabase (Anmelde-Bestätigung, Passwort zurücksetzen) verschickt über dieses Postfach (Custom SMTP).
 
 ### Etappen Marktplatz
 1. Registrierung mit Rollen, Bereichen, Standorten und Nachweisen; Verkäufer-Freigabe; Upload mit Prüfansicht.
@@ -105,7 +105,7 @@ Jede Etappe zuerst als Vorschau (Pull Request), Freigabe durch die Inhaber.
 - **Dokumente je Angebot** („Documents available on request“): Excel „Bionostix-Dokumente-je-Bereich.xlsx“ durchgehen (x je Bereich), danach zeigt das Portal je Bereich nur die passenden.
 - Screenshot-PDF Etappe 1 durchsehen und Änderungswünsche sammeln.
 - **IVD bei der Anmeldung prüfen:** Was soll das Häkchen „Händlerpflichten nach IVDR“ genau bestätigen, und welche Dokumente müssen IVD-Käufer und IVD-Verkäufer vorlegen (EUDAMED, ISO 13485 usw.)?
-- **Vor dem Livegang:** in Netlify `SUPABASE_SERVICE_ROLE_KEY` eintragen (Wert aus Supabase, nie in den Chat) und prüfen, ob `RESEND_API_KEY` gesetzt und die Domain bionostix-germany.de bei Resend verifiziert ist.
+- **Vor dem Livegang:** in Netlify `SUPABASE_SERVICE_ROLE_KEY` eintragen (Wert aus Supabase, nie in den Chat) `SMTP_USER`/`SMTP_PASS` (IONOS-Postfach info@) eintragen, `EMAIL_FROM` löschen; in Supabase Custom SMTP mit demselben Postfach einrichten.
 - **Mollie-Konto** für Bionostix Germany anlegen (für Etappe 3); Test-Schlüssel dann selbst in Netlify eintragen (Claude sagt, wo).
 - Portal-Reserveprojekt bei Vercel löschen; danach in Supabase (Authentication → URL Configuration) die Redirect URL `https://bionostix-portal.vercel.app/**` entfernen.
 
@@ -188,7 +188,7 @@ AGB-Seite /terms ist ein Platzhalter, bis der Anwalt die AGB liefert.
 - **Hosting:** Pilot läuft auf Netlify (kostenlos, Funktionen in US East, deshalb etwas langsamer). Bei Ausbau: Vercel Pro (fra1) oder Netlify Pro (Frankfurt).
 
 ## Technik
-Next.js (App Router, TypeScript, Tailwind) · Supabase (Postgres, Auth, Storage; Frankfurt) · Netlify (Pilot; vorher Vercel fra1) · Resend (E-Mail) · Domain portal.bionostix-germany.de (DNS bei IONOS, CNAME portal → bionostix-portal.netlify.app).
+Next.js (App Router, TypeScript, Tailwind) · Supabase (Postgres, Auth, Storage; Frankfurt) · Netlify (Pilot; vorher Vercel fra1) · E-Mail über IONOS-Postfach (SMTP) · Domain portal.bionostix-germany.de (DNS bei IONOS, CNAME portal → bionostix-portal.netlify.app).
 
 ## Etappen
 1. Konten (GitHub, Supabase, Vercel, Resend)
