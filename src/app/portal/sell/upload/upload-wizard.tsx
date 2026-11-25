@@ -17,7 +17,8 @@ import { WANTED_BY_KEY, WANTED_FIELDS } from "@/lib/wanted";
 type Step = "file" | "map" | "mask";
 
 // Fields that make sense to set for all rows at once (often missing in sellers' lists)
-const REQUEST_BULK_KEYS = ["category", "delivery_country", "needed_by", "unit", "dosage_form"];
+const REQUEST_BULK_KEYS = ["category", "order_type", "delivery_schedule", "needed_by", "delivery_country", "registration_planned",
+  "required_documents", "unit", "dosage_form"];
 const BULK_KEYS = ["category", "incoterm", "incoterm_place", "valid_until", "packaging_language", "expiry", "lead_time_days",
   "buyers", "ship", "documents_available", "unit", "brand"];
 
@@ -67,16 +68,17 @@ export function UploadWizard({ approved, initial, sellerCompanyId, mode = "offer
       if (s.rows.length > 2000) throw new Error("Please upload at most 2,000 rows at once.");
       setSheet(s);
       setFileName(file.name);
-      setMapping(guessListingMapping(s.headers, fields));
-      setStep("map");
+      const guessed = guessListingMapping(s.headers, fields);
+      setMapping(guessed);
+      toMask(s, guessed); // straight to the form; the column matching can be changed there if needed
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not read this file.");
     }
   }
 
-  function toMask() {
-    if (!sheet) return;
-    const rows = rowsToDrafts(sheet.headers, sheet.rows, mapping, defaultCategory, fields)
+  function toMask(sh: Sheet | null = sheet, map: Record<string, string> = mapping) {
+    if (!sh) return;
+    const rows = rowsToDrafts(sh.headers, sh.rows, map, defaultCategory, fields)
       .map((d) => autoComplete(d, approved, parseProductName));
     setDrafts(rows);
     setOpen(null);
@@ -175,10 +177,10 @@ export function UploadWizard({ approved, initial, sellerCompanyId, mode = "offer
     return (
       <div className="card space-y-4">
         <div>
-          <h2 className="font-bold">Which column is which?</h2>
+          <h2 className="font-bold">Change which column is which</h2>
           <p className="text-sm text-slate-600">
-            {fileName}: {sheet.rows.length} row(s). We matched your columns where we could. Check the matches and choose
-            “not in my list” for anything your list does not contain – you can add it in the next step.
+            {fileName}: {sheet.rows.length} row(s). Only needed if we read a column wrongly. Changes you made in the form
+            are replaced when you apply.
           </p>
         </div>
         <div className="grid gap-x-6 gap-y-2 md:grid-cols-2">
@@ -197,8 +199,8 @@ export function UploadWizard({ approved, initial, sellerCompanyId, mode = "offer
           ))}
         </div>
         <div className="flex gap-2">
-          <button className="btn-secondary" onClick={() => setStep("file")}>Back</button>
-          <button className="btn-primary" onClick={toMask}>Continue</button>
+          <button className="btn-secondary" onClick={() => setStep("mask")}>Cancel</button>
+          <button className="btn-primary" onClick={() => toMask()}>Apply</button>
         </div>
       </div>
     );
@@ -206,8 +208,23 @@ export function UploadWizard({ approved, initial, sellerCompanyId, mode = "offer
 
   // Mask
   const visible = drafts.map((d, i) => ({ d, i })).filter(({ i }) => !onlyProblems || Object.keys(errors[i]).length > 0);
+  const labelOf = (k: string) => (k === "category" ? "Category" : k === "strength" ? "Strength" : byKey[k]?.label ?? k);
+  const used = Object.entries(mapping).filter(([, h]) => h);
+  const unused = sheet ? sheet.headers.filter((h) => h && !used.some(([, x]) => x === h)) : [];
   return (
     <div className="space-y-4">
+      {sheet && !initial && (
+        <div className="card space-y-1 text-sm">
+          <p>
+            <strong>{fileName}</strong>: {sheet.rows.length} row(s) read.{" "}
+            <button type="button" className="text-brand-600 underline" onClick={() => setStep("map")}>Change column matching</button>
+          </p>
+          <p className="text-xs text-slate-600">
+            We read: {used.map(([k, h]) => `${h} → ${labelOf(k)}`).join(" · ") || "no columns"}
+            {unused.length > 0 && <> · Not used: {unused.join(", ")}</>}
+          </p>
+        </div>
+      )}
       {drafts.length > 1 && (
         <div className="card space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -294,20 +311,20 @@ export function UploadWizard({ approved, initial, sellerCompanyId, mode = "offer
                 </div>
                 {d.category && (
                   <div className="grid gap-4 md:grid-cols-3">
-                    {fields.filter((f) => f.need[d.category as Category] !== "N")
+                    {fields.filter((f) => f.need[d.category as Category] !== "N" && (!f.when || f.when(d.values)))
                       .filter((f) => !f.key.endsWith("_other") || d.values[f.key.replace(/_other$/, "")] === "Other")
                       // Only what is unclear: missing, invalid or filled in by the portal. "Show all fields" for the rest.
                       .filter((f) => full || e[f.key] || suggested.has(f.key) || (f.key.endsWith("_other") && e[f.key]))
                       .map((f) => (
                         <div key={f.key} className={f.type === "documents" ? "md:col-span-3" : ""}>
                           <label className="label" htmlFor={`f-${i}-${f.key}`}>
-                            {f.label} {f.need[d.category as Category] === "R" && <span className="text-danger">*</span>}
+                            {f.labelFor ? f.labelFor(d.values) : f.label} {f.need[d.category as Category] === "R" && <span className="text-danger">*</span>}
                           </label>
                           <FieldInput field={f} value={d.values[f.key] ?? ""} invalid={!!e[f.key]}
                             onChange={(v) => setValue(i, f.key, v)} id={`f-${i}-${f.key}`} />
                           {e[f.key] ? <p className="field-error">{e[f.key]}</p>
-                            : suggested.has(f.key) ? <p className="mt-1 text-xs font-bold text-attention">Suggested – please check</p>
-                            : f.help && <p className="mt-1 text-xs text-slate-500">{f.help}</p>}
+                            : suggested.has(f.key) && <p className="mt-1 text-xs font-bold text-attention">Suggested – please check</p>}
+                          {f.help && <p className="mt-1 text-xs text-slate-500">{f.help}</p>}
                         </div>
                       ))}
                   </div>
@@ -348,7 +365,7 @@ export function UploadWizard({ approved, initial, sellerCompanyId, mode = "offer
       })}
 
       <div className="flex flex-wrap items-center gap-3">
-        {!initial && <button className="btn-secondary" onClick={() => setStep(sheet ? "map" : "file")}>Back</button>}
+        {!initial && <button className="btn-secondary" onClick={() => setStep("file")}>Back</button>}
         <button className="btn-primary" disabled={busy || problemCount > 0 || drafts.length === 0} onClick={onSave}>
           {busy ? "Saving…"
             : buyerCompanyId ? `Send ${drafts.length} product request(s) to the buyer`

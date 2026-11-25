@@ -7,7 +7,7 @@ import {
   guessListingMapping, rowsToDrafts, validateDraft, draftToPayload, parseCountryRule, parseExpiry, listingToDraft,
   autoComplete, parseIngredients, serializeIngredients, matchOption, DOSAGE_FORMS,
 } from "../src/lib/listing.ts";
-import { WANTED_FIELDS } from "../src/lib/wanted.ts";
+import { WANTED_FIELDS, wantedToPayload, requestToDraft } from "../src/lib/wanted.ts";
 import { parseProductName } from "../src/lib/product-name.ts";
 
 const ALL = ["pharma", "ivd", "supplements", "health"];
@@ -112,4 +112,27 @@ assert.equal(matchOption("Hartkapseln", DOSAGE_FORMS), "Capsule");
   assert.equal(m.quantity, "Qty");
   assert.equal(m.delivery_country, "Delivery");
   console.log("wanted list tests passed");
+}
+
+// Order terms of product requests: schedule only for annual quantities, codes in the payload
+{
+  const base = { category: "pharma", country_prices: [], values: { product_name: "Amoxicillin 500 mg capsules", active_ingredients: "Amoxicillin 500 mg",
+    quantity: "8000", needed_by: "2099-01-31", delivery_country: "Iraq", order_type: "One-time order", registration_planned: "No" } };
+  assert.deepEqual(validateDraft(base, ["pharma"], "2026-11-25", WANTED_FIELDS), {});
+  const annual = { ...base, values: { ...base.values, order_type: "Annual quantity with partial deliveries" } };
+  assert.equal(validateDraft(annual, ["pharma"], "2026-11-25", WANTED_FIELDS).delivery_schedule, "Required");
+  annual.values.delivery_schedule = "Quarterly (4 deliveries)";
+  annual.values.required_documents = "CoA, GMP certificate";
+  annual.values.partial_deliveries = "Yes";
+  const p = wantedToPayload(annual);
+  assert.equal(p.order_type, "annual");
+  assert.equal(p.delivery_schedule, "quarterly");
+  assert.equal(p.partial_deliveries, null);
+  assert.equal(p.registration_planned, false);
+  assert.deepEqual(p.required_documents, ["CoA", "GMP certificate"]);
+  const back = requestToDraft({ ...p, id: "x", quantity: 8000 });
+  assert.equal(back.values.delivery_schedule, "Quarterly (4 deliveries)");
+  assert.equal(back.values.registration_planned, "No");
+  assert.equal(validateDraft({ ...base, values: { ...base.values, needed_by: "" } }, ["pharma"], "2026-11-25", WANTED_FIELDS).needed_by, "Required");
+  console.log("order terms tests passed");
 }

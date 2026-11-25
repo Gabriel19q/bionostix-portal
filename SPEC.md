@@ -33,7 +33,7 @@ Pharmaceuticals, IVD, Food supplements, Health products.
 2. Später: **Registration & supply**: Verkäufer stellt die Unterlagen bereit, damit der Käufer das Produkt in seinem Markt registrieren lassen kann, und beliefert ihn danach. Unverbindliche Anfrage mit anonymem Austausch; Provision dafür separat im Provisionsvertrag.
 
 ### Angebote hochladen (Verkäufer)
-- Verkäufer laden **ihre eigene, unformatierte Excel/CSV-Liste** hoch. Das Portal ordnet die Spalten automatisch den Portal-Feldern zu (Verkäufer kann die Zuordnung korrigieren) und füllt damit die **Eingabemaske im Portal** (Tabelle mit allen Portal-Feldern, eine Zeile je Angebot).
+- Verkäufer laden **ihre eigene, unformatierte Excel/CSV-Liste** hoch. Das Portal ordnet die Spalten automatisch den Portal-Feldern zu und füllt damit direkt die **Eingabemaske im Portal** (eine Zeile je Angebot). Seit 25.11.2026 **ohne eigenen Zuordnungs-Schritt**: oben in der Maske steht, welche Spalte wie gelesen wurde und welche nicht verwendet wurden; „Change column matching“ nur bei Bedarf. Schwer verständliche Felder haben ein Beispiel bzw. eine kurze Erklärung darunter.
 - In der Maske sind fehlende oder ungültige Angaben markiert (mit Begründung); der Verkäufer ergänzt sie direkt in der Maske im Browser und bestätigt dann. Danach sind die Angebote sofort im Katalog. **Keine Prüfung durch Bionostix**; der Verkäufer ist für seine Angaben verantwortlich.
 - Die Excel-Vorlage („Bionostix-Offer-Upload-Template.xlsx“) ist nur optional zum Herunterladen; sie zeigt die Felder je Bereich.
 - Portal-Felder (Pflicht/freiwillig je Bereich wie in der Vorlage): Category, Your item no., Product name, Brand, Active ingredients with strength (mehrere mit „;“), Dosage form (Tablet, Effervescent tablet, Capsule, Powder, Effervescent powder, Solution for injection, Gummies, Lozenge, Drops, Spray, Cream, Other + Freifeld), IVD: Test/parameter, Method, CE marking, IVDR class, Sample type; Health products: Product type, Size/variant, Material; Units per pack + Unit; National code, MA holder, EAN; Packaging language; Quantity available; MOQ; Price per pack (EUR); Expiry (Datum, Monat/Jahr oder „min X months“); Incoterm + Ort; Lead time; Offer valid until; Buyers based in; Ship to (destination); Registered in; Documents available on request (CoA, CPP, FSC, GMP certificate, Registration dossier, Stability data, Declaration of conformity/CE, ISO 13485, Certificate of origin, Other). Keine Charge, keine Kennzeichen Kühlware/Rx/BtM.
@@ -65,7 +65,14 @@ Niemand kann eigene Angebote anfragen. Kommunikation über das Portal.
 Standardsatz in der Provisionsvereinbarung; abweichender Satz je Verkäufer (eigener Vertrag), optional je Bereich; der gültige Satz wird bei Annahme in der Bestellung gespeichert. Fällig **bei Annahme** (Zahlungsmoral des Käufers ist nicht Sache von Bionostix). Der Satz steht in der Provisionsvereinbarung bei der Registrierung, wird danach im Portal nicht aktiv angezeigt; Admin-Übersicht fälliger Provisionen je Verkäufer und Monat. Käufer sehen nirgends eine Provision.
 
 ### Abo für Käufer
-9,99 € netto pro Monat (Entscheidung 23.11.2026; Preis bei Stripe änderbar), die ersten 3 Monate kostenlos, Kreditkarte bei der Anmeldung, automatische Verlängerung, monatlich kündbar zum Monatsende (auch im kostenlosen Zeitraum); nach dem kostenlosen Zeitraum wird ohne Kündigung automatisch abgebucht, ohne gesonderten Hinweis. Abwicklung über Stripe (Rechnungen, Reverse Charge für EU-Firmen mit USt-IdNr.). Verkäufer zahlen kein Abo; Firmen, die auch kaufen, brauchen es. Keine Zahlung per Überweisung (Entscheidung 23.11.2026).
+9,99 € netto pro Monat (Entscheidung 23.11.2026), die ersten 3 Monate kostenlos, automatische Verlängerung, monatlich kündbar zum Monatsende (auch im kostenlosen Zeitraum); nach dem kostenlosen Zeitraum wird ohne Kündigung automatisch abgebucht, ohne gesonderten Hinweis. Verkäufer zahlen kein Abo; Firmen, die auch kaufen, brauchen es. Keine Zahlung per Überweisung (Entscheidung 23.11.2026).
+- **Kreditkarte bei der Anmeldung, für alle Käufer** (Entscheidung 25.11.2026): Am Ende der Registrierung hinterlegt jeder Käufer seine Karte (Prüfzahlung 0,00 €). Grund: Bereiche wie Nahrungsergänzung werden oft sofort freigegeben, andere erst nach Prüfung; der Käufer soll ohne weiteren Bezahlschritt loslegen. Die 3 Gratismonate beginnen mit der ersten Freigabe eines Bereichs. Abgelehnte Firmen: nie Abbuchung, Karte wird gelöscht.
+- **Zahlungsanbieter: Mollie** (Entscheidung 25.11.2026; günstiger als Stripe, EU-Anbieter). Mollie belastet nur die Karte; Abo-Logik, Rechnungen und Sperre liegen im Portal.
+- **Nicht bezahlt** (Entscheidung 25.11.2026): Schlägt die Abbuchung nach mehreren Versuchen fehl, wird der **Zugang gesperrt, die Zahlungspflicht bleibt**: Abo läuft weiter, Rechnungen bleiben offen, jeden Monat kommt eine neue dazu. Nach neuer Karte werden die offenen Beträge abgebucht und der Zugang ist sofort wieder frei. Kündigung nur regulär zum Monatsende; offene Rechnungen bleiben fällig. Admin-Liste „Unpaid subscriptions“. Muss in die Abo-Bedingungen (Anwalt).
+- In „My account“: „Update card“ und „Cancel subscription“.
+
+### Rechnungsmodul im Portal (Entscheidung 25.11.2026, Etappe 3)
+Bisher Rechnungen per Word-Vorlage als PDF. Künftig erstellt das Portal alle Rechnungen selbst als PDF: **Abo-Rechnungen** (monatlich, Abbuchung per Karte über Mollie) und **Provisionsrechnungen** an Verkäufer (automatisch bei Annahme einer Anfrage, **Zahlung per Überweisung binnen 14 Tagen**). Fortlaufende Rechnungsnummern, Steuer je Fall (19 % für deutsche Firmen, Reverse Charge für EU-Firmen mit USt-IdNr., nicht steuerbar außerhalb der EU), nach Erstellung nicht änderbar, Storno per Stornorechnung, 10 Jahre gespeichert. Admin: Liste aller Rechnungen (offen/bezahlt, „bezahlt“ von Hand setzen), Monatsexport (Excel + PDFs) für den Steuerberater. Muster-Abo- und Muster-Provisionsrechnung vorher vom Steuerberater absegnen lassen.
 
 ### Admin-Hilfe und Product requests (Feedback 24.11.2026)
 - **Import stock for seller:** Admin lädt die Liste eines Verkäufers für ihn hoch (gleiche Maske); die Angebote landen beim Verkäufer als Entwurf („Prepared – not published“), er bekommt eine E-Mail, prüft und veröffentlicht sie selbst. Umgesetzt.
@@ -75,6 +82,7 @@ Standardsatz in der Provisionsvereinbarung; abweichender Satz je Verkäufer (eig
   - **Exact match:** gleicher Wirkstoff bzw. gleiche Wirkstoffe mit gleicher Stärke und Darreichungsform (bei IVD: gleicher Test und Methode; bei Gesundheitsprodukten: gleiche Produktart und Größe).
   - **Similar:** gleicher Wirkstoff, aber andere Packungsgröße, andere Stärke/Konzentration oder andere Darreichungsform.
   - Nur Angebote, die der Käufer kaufen darf (Länderregeln); Verkäufer bleiben anonym. Neue passende Angebote später auch per E-Mail-Hinweis.
+- **Bestellbedingungen je Gesuch (Entscheidung 25.11.2026, nur Auswahllisten):** Order type (One-time order / Annual quantity with partial deliveries); bei Einmalbestellung Menge, spätestes Lieferdatum und „Partial deliveries allowed“ (Yes/No); bei Jahresmenge Jahresmenge, Lieferrhythmus (Monthly / Every 2 months / Quarterly / Twice a year / On call) und erste Lieferung bis; „Registration in the destination country planned?“ (Yes/No, durch Käufer oder Verkäufer); „Required documents“ zum Ankreuzen (gleiche Liste wie bei Angeboten). Ob ein Angebot schon im Zielland registriert ist, wird nicht angezeigt.
 
 ### Menü
 „For buyers“: Catalog, My requests (Suche, Statusfilter, Archived), Sourcing requests. „For sellers“: My offers (+ Add offers), Incoming requests, Commissions. Wer nur kauft, sieht nur „For buyers“.
@@ -85,7 +93,7 @@ Alle Uploads per Drag & Drop oder Dateiauswahl.
 ### Etappen Marktplatz
 1. Registrierung mit Rollen, Bereichen, Standorten und Nachweisen; Verkäufer-Freigabe; Upload mit Prüfansicht.
 2. Katalog neu, Anfrage → Annahme mit Anonymisierung, Offenlegung nach Annahme, Provisionsübersicht.
-3. Dokumente je Schritt, Zahlung/Versand melden, Erinnerungen; Abo (Stripe); Newsletter-Double-Opt-in.
+3. Dokumente je Schritt, Zahlung/Versand melden, Erinnerungen; Abo mit Karte bei der Anmeldung (Mollie) und Rechnungsmodul (Abo- und Provisionsrechnungen); Newsletter-Double-Opt-in.
 Jede Etappe zuerst als Vorschau (Pull Request), Freigabe durch die Inhaber.
 
 ### To-dos für Gabriel (Stand 24.11.2026; Jan fragt danach)
@@ -93,6 +101,7 @@ Jede Etappe zuerst als Vorschau (Pull Request), Freigabe durch die Inhaber.
 - **Dokumente je Angebot** („Documents available on request“): Excel „Bionostix-Dokumente-je-Bereich.xlsx“ durchgehen (x je Bereich), danach zeigt das Portal je Bereich nur die passenden.
 - Screenshot-PDF Etappe 1 durchsehen und Änderungswünsche sammeln.
 - **IVD bei der Anmeldung prüfen:** Was soll das Häkchen „Händlerpflichten nach IVDR“ genau bestätigen, und welche Dokumente müssen IVD-Käufer und IVD-Verkäufer vorlegen (EUDAMED, ISO 13485 usw.)?
+- **Mollie-Konto** für Bionostix Germany anlegen (für Etappe 3); Test-Schlüssel dann selbst in Netlify eintragen (Claude sagt, wo).
 - Portal-Reserveprojekt bei Vercel löschen; danach in Supabase (Authentication → URL Configuration) die Redirect URL `https://bionostix-portal.vercel.app/**` entfernen.
 
 ### Vom Anwalt zu klären

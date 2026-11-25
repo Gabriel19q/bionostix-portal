@@ -513,7 +513,8 @@ insert into public.listings (seller_company_id, category, product_name, brand, a
   packaging_language, quantity, price, expiry_date, incoterm, incoterm_place, valid_until, buyers_mode, buyers_countries)
 select id, 'pharma', 'Germany-only offer', 'X', 'Paracetamol 500 mg', 'Tablet', 20, 'tablets', 'Germany', 10, 2, current_date + 400,
   'EXW', 'Hamburg', current_date + 30, 'only', '{Germany}' from public.companies where name = 'Seller Co';
-create temp table buyer_req as select '{"category":"pharma","product_name":"Paracetamol 500 mg tablets","active_ingredients":"Paracetamol 500 mg","dosage_form":"Tablet","units_per_pack":20,"quantity":500,"delivery_country":"Iraq"}'::jsonb as o;
+create temp table buyer_req as select '{"category":"pharma","product_name":"Paracetamol 500 mg tablets","active_ingredients":"Paracetamol 500 mg","dosage_form":"Tablet","units_per_pack":20,"quantity":500,"delivery_country":"Iraq","order_type":"one_time","registration_planned":false}'::jsonb
+  || jsonb_build_object('needed_by', current_date + 60) as o;
 grant select on buyer_req to authenticated;
 create temp table buyer_co as select id from public.companies where name = 'Buyer Two';
 grant select on buyer_co to authenticated;
@@ -529,6 +530,14 @@ select pg_temp.expect(public.save_product_requests(jsonb_build_array((select o f
 select pg_temp.expect((select count(*) from jsonb_array_elements(public.get_my_request_matches()) x where x ->> 'kind' = 'exact') >= 1, 'exact match found');
 select pg_temp.expect((select count(*) from jsonb_array_elements(public.get_my_request_matches()) x where x ->> 'kind' = 'similar') >= 1, 'similar match (other strength) found');
 select pg_temp.expect_error($$select public.save_product_requests(jsonb_build_array((select o from buyer_req) - 'active_ingredients'))$$, 'pharma request needs ingredients');
+select pg_temp.expect_error($$select public.save_product_requests(jsonb_build_array((select o from buyer_req) - 'order_type'))$$, 'request needs order type');
+select pg_temp.expect_error($$select public.save_product_requests(jsonb_build_array((select o from buyer_req) || '{"order_type":"annual"}'))$$, 'annual quantity needs delivery schedule');
+select pg_temp.expect_error($$select public.save_product_requests(jsonb_build_array((select o from buyer_req) - 'registration_planned'))$$, 'request needs registration answer');
+select pg_temp.expect_error($$select public.save_product_requests(jsonb_build_array((select o from buyer_req) - 'needed_by'))$$, 'request needs delivery date');
+select pg_temp.expect_error($$select public.save_product_requests(jsonb_build_array((select o from buyer_req) || '{"required_documents":["Secret file"]}'))$$, 'unknown required document refused');
+select pg_temp.expect(public.save_product_requests(jsonb_build_array((select o from buyer_req) || '{"product_name":"Annual tender","order_type":"annual","delivery_schedule":"quarterly","registration_planned":true,"required_documents":["CoA","GMP certificate"]}')) = 1, 'annual request with documents saved');
+select pg_temp.expect((select x ->> 'delivery_schedule' = 'quarterly' and (x -> 'required_documents') ? 'GMP certificate'
+  from jsonb_array_elements(public.get_my_product_requests()) x where x ->> 'product_name' = 'Annual tender'), 'buyer reads order terms back');
 select pg_temp.expect(public.close_product_requests(array[(select (x ->> 'id')::uuid from jsonb_array_elements(public.get_my_product_requests()) x limit 1)]) = 1, 'buyer closes a request');
 select pg_temp.as_user('00000000-0000-0000-0000-0000000000f3');
 select pg_temp.expect(jsonb_array_length(public.get_market_catalog()) = 0, 'seller-only company sees no buyer catalog');

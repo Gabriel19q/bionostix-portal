@@ -33,7 +33,9 @@ export type FieldDef = {
   options?: string[];
   need: Record<Category, Need>;
   hints: string[]; // header words in sellers' own lists (English and German)
-  help?: string;
+  help?: string; // short explanation or example shown under the field
+  when?: (values: Record<string, string>) => boolean; // field only applies when this is true
+  labelFor?: (values: Record<string, string>) => string; // label that depends on other answers
 };
 
 const all = (n: Need): Record<Category, Need> => ({ pharma: n, ivd: n, supplements: n, health: n });
@@ -41,9 +43,9 @@ const only = (m: Partial<Record<Category, Need>>): Record<Category, Need> => ({ 
 
 export const FIELDS: FieldDef[] = [
   { key: "item_no", label: "Your item no.", type: "text", need: all("O"), hints: ["item no", "article no", "art.-nr", "artikelnummer", "artikelnr", "sku", "item", "ref"] },
-  { key: "product_name", label: "Product name", type: "text", need: all("R"), hints: ["product name", "product", "name", "bezeichnung", "artikelbezeichnung", "handelsname", "description", "produkt", "artikel"] },
+  { key: "product_name", label: "Product name", type: "text", need: all("R"), hints: ["product name", "product", "name", "bezeichnung", "artikelbezeichnung", "handelsname", "description", "produkt", "artikel"], help: "e.g. Paracetamol 500 mg tablets" },
   { key: "name_on_pack", label: "Name on pack (original)", type: "text", need: all("O"), hints: [], help: "Original name as printed on the pack" },
-  { key: "brand", label: "Brand", type: "text", need: all("R"), hints: ["brand", "marke", "manufacturer", "hersteller", "trade name"] },
+  { key: "brand", label: "Brand", type: "text", need: all("R"), hints: ["brand", "marke", "manufacturer", "hersteller", "trade name"], help: "Brand or manufacturer as on the pack" },
   { key: "active_ingredients", label: "Active ingredients", type: "ingredients", need: only({ pharma: "R", supplements: "R" }), hints: ["active ingredient", "ingredients", "wirkstoff", "inhaltsstoffe", "inn", "substance", "composition"], help: "Each ingredient with amount and unit per unit" },
   { key: "dosage_form", label: "Dosage form", type: "select", options: DOSAGE_FORMS, need: only({ pharma: "R", supplements: "R" }), hints: ["dosage form", "darreichungsform", "darreichung", "form"] },
   { key: "dosage_form_other", label: "Dosage form – other", type: "text", need: only({ pharma: "O", supplements: "O" }), hints: [] },
@@ -59,23 +61,23 @@ export const FIELDS: FieldDef[] = [
   { key: "size_variant", label: "Size / variant", type: "select", options: SIZES, need: only({ health: "R" }), hints: ["size", "größe", "groesse", "variant", "variante"] },
   { key: "size_variant_other", label: "Size – other", type: "text", need: only({ health: "O" }), hints: [] },
   { key: "material", label: "Material", type: "text", need: only({ health: "O" }), hints: ["material"] },
-  { key: "units_per_pack", label: "Units per pack", type: "int", need: all("R"), hints: ["units per pack", "pack size", "packungsgröße", "packungsgroesse", "inhalt", "units", "stück pro packung", "pcs per pack", "tests per kit"] },
+  { key: "units_per_pack", label: "Units per pack", type: "int", need: all("R"), hints: ["units per pack", "pack size", "packungsgröße", "packungsgroesse", "inhalt", "units", "stück pro packung", "pcs per pack", "tests per kit"], help: "e.g. 20 for a pack of 20 tablets" },
   { key: "unit", label: "Unit", type: "select", options: UNITS, need: all("R"), hints: ["unit", "einheit"], help: "What one unit is" },
-  { key: "national_code", label: "National code (e.g. PZN)", type: "text", need: only({ pharma: "O" }), hints: ["pzn", "national code", "nationale nummer"] },
-  { key: "ma_holder", label: "MA holder", type: "text", need: only({ pharma: "O" }), hints: ["ma holder", "zulassungsinhaber", "marketing authorisation holder", "pharmazeutischer unternehmer"] },
+  { key: "national_code", label: "National code (e.g. PZN)", type: "text", need: only({ pharma: "O" }), hints: ["pzn", "national code", "nationale nummer"], help: "e.g. 01234567" },
+  { key: "ma_holder", label: "MA holder", type: "text", need: only({ pharma: "O" }), hints: ["ma holder", "zulassungsinhaber", "marketing authorisation holder", "pharmazeutischer unternehmer"], help: "Marketing authorisation holder" },
   { key: "ean", label: "EAN / GTIN", type: "text", need: all("O"), hints: ["ean", "gtin", "barcode"] },
   { key: "packaging_language", label: "Packaging (country / language)", type: "packaging", need: all("R"), hints: ["packaging language", "packaging", "language", "sprache", "origin", "herkunft", "pack country"], help: "Country of the pack, or Custom for e.g. “German, English”" },
-  { key: "quantity", label: "Quantity available (packs)", type: "int", need: all("R"), hints: ["quantity", "qty", "menge", "stock", "bestand", "available", "verfügbar", "verfuegbar", "anzahl"] },
-  { key: "moq", label: "MOQ (packs)", type: "int", need: all("O"), hints: ["moq", "minimum order", "mindestmenge", "mindestabnahme"] },
-  { key: "price", label: "Price per pack (EUR)", type: "money", need: all("R"), hints: ["price", "preis", "unit price", "eur", "€", "netto"] },
+  { key: "quantity", label: "Quantity available (packs)", type: "int", need: all("R"), hints: ["quantity", "qty", "menge", "stock", "bestand", "available", "verfügbar", "verfuegbar", "anzahl"], help: "Number of packs you can deliver, e.g. 5000" },
+  { key: "moq", label: "MOQ (packs)", type: "int", need: all("O"), hints: ["moq", "minimum order", "mindestmenge", "mindestabnahme"], help: "Minimum order quantity, e.g. 100" },
+  { key: "price", label: "Price per pack (EUR)", type: "money", need: all("R"), hints: ["price", "preis", "unit price", "eur", "€", "netto"], help: "Net price for one pack, e.g. 1.20" },
   { key: "expiry", label: "Expiry", type: "expiry", need: all("R"), hints: ["expiry", "exp", "verfall", "mhd", "shelf life", "haltbarkeit", "haltbar", "verwendbar"], help: "Date, MM/YYYY or 'min 24 months'" },
-  { key: "incoterm", label: "Incoterm", type: "select", options: INCOTERMS, need: all("R"), hints: ["incoterm", "incoterms", "lieferbedingung", "delivery terms"] },
-  { key: "incoterm_place", label: "Incoterm place", type: "text", need: all("R"), hints: ["incoterm place", "place", "ort", "location", "lagerort", "warehouse", "lager"] },
-  { key: "lead_time_days", label: "Lead time (days)", type: "int", need: all("O"), hints: ["lead time", "lieferzeit", "dispatch"] },
+  { key: "incoterm", label: "Incoterm", type: "select", options: INCOTERMS, need: all("R"), hints: ["incoterm", "incoterms", "lieferbedingung", "delivery terms"], help: "e.g. EXW = buyer collects at your warehouse" },
+  { key: "incoterm_place", label: "Incoterm place", type: "text", need: all("R"), hints: ["incoterm place", "place", "ort", "location", "lagerort", "warehouse", "lager"], help: "City of the warehouse, e.g. Hamburg" },
+  { key: "lead_time_days", label: "Lead time (days)", type: "int", need: all("O"), hints: ["lead time", "lieferzeit", "dispatch"], help: "Days until the goods are ready, e.g. 7" },
   { key: "valid_until", label: "Offer valid until", type: "date", need: all("R"), hints: ["valid until", "gültig bis", "gueltig bis", "offer valid", "validity"] },
   { key: "buyers", label: "Buyers based in", type: "countryRule", need: all("O"), hints: ["buyers based in", "sell to", "verkauf an", "käuferland"], help: "Empty = all countries · 'DE, AT' · 'all except RU'" },
   { key: "ship", label: "Ship to (destination)", type: "countryRule", need: all("O"), hints: ["ship to", "destination", "zielland", "lieferland"], help: "Same format" },
-  { key: "registered_in", label: "Registered in", type: "countries", need: all("O"), hints: ["registered in", "registriert in", "registration", "zulassung"] },
+  { key: "registered_in", label: "Registered in", type: "countries", need: all("O"), hints: ["registered in", "registriert in", "registration", "zulassung"], help: "Countries with a marketing authorisation, e.g. DE, AT" },
   { key: "documents_available", label: "Documents available on request", type: "documents", need: all("O"), hints: ["documents", "dokumente", "certificates", "zertifikate"] },
 ];
 
@@ -404,7 +406,7 @@ export function validateDraft(d: Draft, approved: Category[], today = new Date()
   for (const f of fields) {
     const need = f.need[d.category];
     const value = v(f.key);
-    if (need === "N") continue;
+    if (need === "N" || (f.when && !f.when(d.values))) continue;
     if (need === "R" && !value) {
       e[f.key] = "Required";
       continue;

@@ -6,6 +6,7 @@ import { displayDate, eur } from "@/lib/format";
 import { CATEGORY_LABEL, type Category } from "@/lib/categories";
 import { SOURCING_STATUS, type SourcingStatus } from "@/lib/sourcing";
 import { SubmitButton } from "@/components/submit-button";
+import { orderTerms } from "@/lib/wanted";
 import { closeProductRequestsAction } from "../sell/actions";
 
 type Request = {
@@ -14,6 +15,8 @@ type Request = {
   active_ingredients: string | null; dosage_form: string | null; test_parameter: string | null; method: string | null;
   product_type: string | null; size_variant: string | null; units_per_pack: number | null; unit: string | null;
   quantity: number | null; quantity_text: string | null; target_price: number | null; target_price_text: string | null;
+  order_type: string | null; delivery_schedule: string | null; partial_deliveries: boolean | null;
+  registration_planned: boolean | null; required_documents: string[] | null;
   created_at: string;
 };
 type Offer = {
@@ -131,11 +134,11 @@ function RequestCard({ r, matches }: { r: Request; matches: Match[] }) {
             {spec(r) && <span className="block text-sm text-slate-700">{spec(r)}</span>}
             <span className="block text-xs text-slate-600">
               {r.number} · {r.category ? `${CATEGORY_LABEL[r.category]} · ` : ""}
-              {r.quantity ? `${r.quantity} packs` : r.quantity_text ?? ""}
+              {r.quantity ? `${r.quantity} packs${r.order_type === "annual" ? " per year" : ""}` : r.quantity_text ?? ""}
               {r.target_price ? ` · target ${eur(r.target_price)} / pack` : r.target_price_text ? ` · target ${r.target_price_text}` : ""}
               {` · to ${r.delivery_country}`}
-              {r.needed_by && ` · needed by ${displayDate(r.needed_by)}`}
             </span>
+            {orderTerms(r) && <span className="block text-xs text-slate-600">{orderTerms(r)}</span>}
           </span>
         </label>
         <div className="flex items-center gap-2">
