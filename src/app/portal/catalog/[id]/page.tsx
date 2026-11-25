@@ -25,7 +25,7 @@ export default async function SendRequestPage({ params, searchParams }: {
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
         <Link href="/portal/catalog" className="text-sm text-brand-600 underline">← Product offering</Link>
-        <h1 className="mt-2 text-2xl font-bold">Send a binding request</h1>
+        <h1 className="mt-2 text-2xl font-bold">Send a request</h1>
       </div>
       {error && <div className="notice-error">{error}</div>}
       <div className="card space-y-1 text-sm">
@@ -82,7 +82,11 @@ export default async function SendRequestPage({ params, searchParams }: {
         </div>
         <label className="flex items-start gap-2 text-sm">
           <input type="checkbox" required className="mt-1" />
-          <span>I understand that this request is <strong>binding</strong>: when the seller accepts it, a contract is concluded directly between my company and the seller. I can withdraw it until the seller accepts.</span>
+          <span>
+            I understand that this request is <strong>binding</strong>: when the seller accepts it, a contract is concluded directly
+            between my company and the seller according to the{" "}
+            <Link href="/terms" target="_blank" className="text-brand-600 underline">terms and conditions</Link>. I can withdraw it until the seller accepts.
+          </span>
         </label>
         <SubmitButton pendingText="Sending…">Send binding request</SubmitButton>
       </form>

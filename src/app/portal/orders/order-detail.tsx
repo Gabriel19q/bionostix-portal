@@ -49,7 +49,10 @@ export async function OrderDetail({ id, side, sent, error }: { id: string; side:
             {" "}(your request: {o.quantity} packs at {eur(o.unit_price)})
           </p>
           {o.counter_note && <p className="text-sm whitespace-pre-line text-slate-700">“{o.counter_note}”</p>}
-          <p className="text-xs text-slate-600">If you accept, the contract is concluded on these terms.</p>
+          <p className="text-xs text-slate-600">
+            If you accept, the contract is concluded on these terms and according to the{" "}
+            <Link href="/terms" target="_blank" className="text-brand-600 underline">terms and conditions</Link>.
+          </p>
           <div className="flex flex-wrap gap-2">
             <form action={answerCounterAction}><input type="hidden" name="id" value={o.id} /><input type="hidden" name="accept" value="yes" />
               <SubmitButton pendingText="Accepting…">Accept counter-offer</SubmitButton></form>
@@ -62,7 +65,9 @@ export async function OrderDetail({ id, side, sent, error }: { id: string; side:
         <div className="card space-y-4 bg-sand">
           <h2 className="font-bold">Answer this binding request</h2>
           <p className="text-sm text-slate-600">
-            If you accept, the contract is concluded and you receive the buyer&apos;s company name, address and licences.
+            If you accept, the contract is concluded according to the{" "}
+            <Link href="/terms" target="_blank" className="text-brand-600 underline">terms and conditions</Link> and you receive the
+            buyer&apos;s company name, address and licences.
             Please then issue your invoice or order confirmation to this company and upload it here.
           </p>
           <form action={respondOrderAction}>
