@@ -100,12 +100,13 @@ E-Mails des Portals (Entscheidung 25.11.2026): Versand wie beim Kontaktformular 
 3. Dokumente je Schritt, Zahlung/Versand melden, Erinnerungen; Abo mit Karte bei der Anmeldung (Mollie) und Rechnungsmodul (Abo- und Provisionsrechnungen); Newsletter-Double-Opt-in.
 Jede Etappe zuerst als Vorschau (Pull Request), Freigabe durch die Inhaber.
 
-### To-dos für Gabriel (Stand 24.11.2026; Jan fragt danach)
+### To-dos für Gabriel (Stand 25.11.2026; Jan fragt danach)
 - **Registrierung: Nachweise und Anforderungen je Rolle und Bereich festlegen** (welche Dokumente Pflicht/freiwillig sind, Bezeichnungen). Die Liste der eingereichten Dokumente auf der Seite „Application is being reviewed“ bleibt; ein Nachreichen dort gibt es nicht mehr.
 - **Dokumente je Angebot** („Documents available on request“): Excel „Bionostix-Dokumente-je-Bereich.xlsx“ durchgehen (x je Bereich), danach zeigt das Portal je Bereich nur die passenden.
 - Screenshot-PDF Etappe 1 durchsehen und Änderungswünsche sammeln.
 - **IVD bei der Anmeldung prüfen:** Was soll das Häkchen „Händlerpflichten nach IVDR“ genau bestätigen, und welche Dokumente müssen IVD-Käufer und IVD-Verkäufer vorlegen (EUDAMED, ISO 13485 usw.)?
-- **Vor dem Livegang:** in Netlify `SUPABASE_SERVICE_ROLE_KEY` eintragen (Wert aus Supabase, nie in den Chat) `SMTP_USER`/`SMTP_PASS` (IONOS-Postfach info@) eintragen, `EMAIL_FROM` löschen; in Supabase Custom SMTP mit demselben Postfach einrichten.
+- Erledigt 25.11.2026: Netlify `SUPABASE_SERVICE_ROLE_KEY`, `SMTP_USER`, `SMTP_PASS` eingetragen, `EMAIL_FROM` gelöscht; Supabase Custom SMTP mit info@ eingerichtet. E-Mail-Versand noch testen.
+- **Testen** nach der Übergabe-Seite (Testanleitung), Testfirmen mit „TEST“ im Namen; danach Testdaten löschen lassen.
 - **Mollie-Konto** für Bionostix Germany anlegen (für Etappe 3); Test-Schlüssel dann selbst in Netlify eintragen (Claude sagt, wo).
 - Portal-Reserveprojekt bei Vercel löschen; danach in Supabase (Authentication → URL Configuration) die Redirect URL `https://bionostix-portal.vercel.app/**` entfernen.
 
