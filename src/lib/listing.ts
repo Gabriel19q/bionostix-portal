@@ -71,7 +71,7 @@ export const FIELDS: FieldDef[] = [
   { key: "moq", label: "MOQ (packs)", type: "int", need: all("O"), hints: ["moq", "minimum order", "mindestmenge", "mindestabnahme"], help: "Minimum order quantity, e.g. 100" },
   { key: "price", label: "Price per pack (EUR)", type: "money", need: all("R"), hints: ["price", "preis", "unit price", "eur", "€", "netto"], help: "Net price for one pack, e.g. 1.20" },
   { key: "expiry", label: "Expiry", type: "expiry", need: all("R"), hints: ["expiry", "exp", "verfall", "mhd", "shelf life", "haltbarkeit", "haltbar", "verwendbar"], help: "Date, MM/YYYY or 'min 24 months'" },
-  { key: "incoterm", label: "Incoterm", type: "select", options: INCOTERMS, need: all("R"), hints: ["incoterm", "incoterms", "lieferbedingung", "delivery terms"], help: "e.g. EXW = buyer collects at your warehouse" },
+  { key: "incoterm", label: "Incoterm (2020)", type: "select", options: INCOTERMS, need: all("R"), hints: ["incoterm", "incoterms", "lieferbedingung", "delivery terms"] },
   { key: "incoterm_place", label: "Incoterm place", type: "text", need: all("R"), hints: ["incoterm place", "place", "ort", "location", "lagerort", "warehouse", "lager"], help: "City of the warehouse, e.g. Hamburg" },
   { key: "lead_time_days", label: "Lead time (days)", type: "int", need: all("O"), hints: ["lead time", "lieferzeit", "dispatch"], help: "Days until the goods are ready, e.g. 7" },
   { key: "valid_until", label: "Offer valid until", type: "date", need: all("R"), hints: ["valid until", "gültig bis", "gueltig bis", "offer valid", "validity"] },
