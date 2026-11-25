@@ -13,7 +13,9 @@ create table auth.users (
   id uuid primary key,
   email text,
   raw_user_meta_data jsonb default '{}'::jsonb,
-  last_sign_in_at timestamptz
+  last_sign_in_at timestamptz,
+  email_confirmed_at timestamptz,
+  created_at timestamptz default now()
 );
 create function auth.uid() returns uuid language sql stable as $$
   select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid
@@ -25,6 +27,7 @@ create table storage.buckets (id text primary key, name text, public boolean);
 create table storage.objects (id uuid primary key default gen_random_uuid(), bucket_id text, name text);
 alter table storage.objects enable row level security;
 grant all on storage.objects to authenticated;
+grant insert on storage.objects to anon;
 create function storage.foldername(name text) returns text[] language sql immutable as $$
   select (string_to_array(name, '/'))[1:array_length(string_to_array(name, '/'), 1) - 1]
 $$;

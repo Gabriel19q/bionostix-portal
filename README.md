@@ -19,5 +19,7 @@ B2B-Portal für lizenzierte Großhändler und Importeure. Anforderungen: `SPEC.m
 - `NEXT_PUBLIC_SITE_URL` – Basisadresse für Links in E-Mails (https://portal.bionostix-germany.de)
 - `NEXT_PUBLIC_CONTACT_EMAIL` – Kontaktadresse, die Kunden im Portal sehen
 - `ADMIN_NOTIFY_EMAILS` – wer bei neuen Anfragen/Anträgen eine E-Mail bekommt (Komma-getrennt)
-- `EMAIL_FROM` – Absender, Domain muss bei Resend verifiziert sein
-- `RESEND_API_KEY` – geheim, nur in Netlify eintragen (als „Contains secret values“). Ohne Key werden keine E-Mails verschickt, das Portal läuft trotzdem.
+- `SUPABASE_SERVICE_ROLE_KEY` – geheim, nur in Netlify eintragen (Supabase → Project Settings → API Keys → service_role). Nur für E-Mails an die jeweils andere Seite einer Bestellung; ohne Key werden diese E-Mails übersprungen.
+- `SMTP_USER` – IONOS-Postfach, über das das Portal E-Mails verschickt (info@bionostix-germany.de); Absendername „Bionostix Germany Partner Portal“
+- `SMTP_PASS` – Passwort dieses Postfachs, geheim (als „Contains secret values“). Ohne `SMTP_USER`/`SMTP_PASS` werden keine E-Mails verschickt, das Portal läuft trotzdem.
+- `SMTP_HOST`, `SMTP_PORT` – optional (Standard `smtp.ionos.de`, `587`); `EMAIL_REPLY_TO` – optional (Standard `info@bionostix-germany.de`)

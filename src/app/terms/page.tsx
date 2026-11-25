@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { COMPANY } from "@/content/company";
+import { COMPANY, IMPRINT_URL } from "@/content/company";
 
 export const metadata: Metadata = { title: "Terms & conditions · Bionostix Germany" };
 
@@ -43,8 +42,17 @@ export default function TermsPage() {
         </ol>
       </section>
 
+      <section id="confidentiality" className="space-y-2">
+        <h2 className="text-lg font-bold">Confidentiality and non-circumvention – in short</h2>
+        <p className="text-sm">
+          Part of these terms of use. Both buyers and sellers keep information about other members, their offers and
+          their identities confidential, and do not use the platform to contact each other in order to do business
+          around it.
+        </p>
+      </section>
+
       <p className="text-sm">
-        <Link href="/legal-notice" className="text-brand-600 underline">Legal notice</Link>
+        <a href={IMPRINT_URL} className="text-brand-600 underline">Legal notice</a>
       </p>
     </div>
   );

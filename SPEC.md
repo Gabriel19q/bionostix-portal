@@ -7,6 +7,115 @@ Schlankes Kundenportal unter **Bionostix Germany**. Geprüfte Großhändler und 
 
 Erfolg: ≥ 3 Anfragen von Sanicura über das Portal, Anfrage → Proforma < 1 Arbeitstag, Sanicura will weiter nutzen.
 
+## Marktplatz-Modell (Entscheidungen 20.–23.11.2026, ersetzt das Händlermodell)
+Das Portal wird ein **Marktplatz**: Verkäufer stellen eigene Angebote ein, der Kaufvertrag entsteht direkt zwischen Käufer und Verkäufer. Bionostix ist nicht Vertragspartei, verdient über **Provision der Verkäufer** und **Abo der Käufer**. Keine Zahlungsabwicklung zwischen Käufer und Verkäufer über das Portal. Sanicura und Bionostix bekommen eigene Verkäufer-Konten. Aufschläge und Kundengruppen entfallen: Der Käufer sieht den Preis des Verkäufers. Oberfläche nur **Englisch**.
+
+### Bereiche
+Pharmaceuticals, IVD, Food supplements, Health products.
+
+### Registrierung und Freigabe
+- Rollen pro Firma: „I want to buy“ und/oder „I want to sell“; Admin schaltet beides getrennt frei. Verkäufer wählen ihre Bereiche, Admin schaltet je Bereich frei (Nahrungsergänzung und Gesundheitsprodukte ohne besonderen Nachweis).
+- Ein Standort je Firma (Firmensitz mit Land; Entscheidung 24.11.2026, mehrere Standorte zu kompliziert). Ansprechpartner mit Vor- und Nachname. Adresse mit Straße, Hausnummer, Adresszusatz, PLZ, Ort, Land. USt-IdNr. nur bei EU-Ländern, dann Pflicht. EUDAMED-Nummer nur für IVD-Verkäufer in der EU (freiwillig). Pflichtfelder mit * gekennzeichnet, Hinweis „* Mandatory“. Kein Hinweis „Firma hat schon Zugang“.
+- Nachweise (Upload, Drag & Drop oder Dateiauswahl):
+  - Alle: Handelsregisterauszug oder Gewerbeanmeldung, USt-IdNr.
+  - Pharma: Verkäufer Großhandels- oder Herstellungserlaubnis (Pflicht), GDP-Zertifikat (freiwillig); Käufer Großhandelserlaubnis bzw. Importlizenz (Pflicht).
+  - IVD: Verkäufer Häkchen „Händlerpflichten nach IVDR erfüllt“ (Pflicht), EUDAMED-SRN falls Hersteller/Importeur, ISO 13485 (freiwillig); Käufer: kein zusätzlicher Nachweis (Importregeln im Zielland sind Sache des Käufers; deutsche Verkäufer müssen bei IVD keine Abnahmeberechtigung prüfen, Abgabebeschränkung der MPAV seit 20.02.2025 aufgehoben).
+  - Nahrungsergänzung: Registrierung als Lebensmittelunternehmen (freiwillig).
+  - Gesundheitsprodukte: keine zusätzlichen Nachweise.
+  - (Vom Anwalt bzw. der Behörde zu bestätigen.)
+- Registrierung auf **einer Seite** (Feedback 23.11.2026): E-Mail, Passwort, Firma, Ansprechpartner, Rollen, Bereiche, Standorte, Nachweise, Zustimmungen; danach nur noch E-Mail bestätigen, dann ist der Antrag eingereicht (auch bei Bestätigung auf einem anderen Gerät). Keine anonyme Firmenbeschreibung für Verkäufer.
+- Zustimmung per Häkchen (seit 24.11.2026 zwei statt drei): „Terms of use, including the confidentiality and non-circumvention agreement“ (beide Rollen; Vertraulichkeit/Nichtumgehung ist Teil der Nutzungsbedingungen, ein Klick speichert beide Zustimmungen) und „Seller terms, including the commission“ (nur Verkäufer). Gespeichert wird, wer wann welche Fassung angenommen hat; automatische E-Mail mit den vereinbarten Bedingungen als PDF. Neue Fassung → erneute Zustimmung beim nächsten Login.
+- Newsletter: eigenes, freiwilliges, nicht vorausgewähltes Häkchen, Double-Opt-in (eigene Bestätigungs-E-Mail), Nachweis mit Zeitpunkt und Text, Abmeldung im Konto; Admin-Export der bestätigten Empfänger. Absatz in der Datenschutzerklärung.
+- Vor der Freigabe nur „Pending approval“. Banner nach der Freigabe nur bei: Lizenz läuft ab/abgelaufen, fehlender Nachweis für einen Bereich. Kein Hinweis zum Ende des kostenlosen Zeitraums (Käufer hat mit Kreditkarte zugestimmt).
+
+### Angebotsarten („Available for“, je Angebot eine oder beide)
+1. **Supply** (zuerst umsetzen): Käufer kauft die Ware und verkauft sie weiter. Keine Aussage, ob das Produkt im Zielland registriert ist. Verbindliche Anfrage.
+2. Später: **Registration & supply**: Verkäufer stellt die Unterlagen bereit, damit der Käufer das Produkt in seinem Markt registrieren lassen kann, und beliefert ihn danach. Unverbindliche Anfrage mit anonymem Austausch; Provision dafür separat im Provisionsvertrag.
+
+### Angebote hochladen (Verkäufer)
+- Verkäufer laden **ihre eigene, unformatierte Excel/CSV-Liste** hoch. Das Portal ordnet die Spalten automatisch den Portal-Feldern zu und füllt damit direkt die **Eingabemaske im Portal** (eine Zeile je Angebot). Seit 25.11.2026 **ohne eigenen Zuordnungs-Schritt**: oben in der Maske steht, welche Spalte wie gelesen wurde und welche nicht verwendet wurden; „Change column matching“ nur bei Bedarf. Schwer verständliche Felder haben ein Beispiel bzw. eine kurze Erklärung darunter.
+- In der Maske sind fehlende oder ungültige Angaben markiert (mit Begründung); der Verkäufer ergänzt sie direkt in der Maske im Browser und bestätigt dann. Danach sind die Angebote sofort im Katalog. **Keine Prüfung durch Bionostix**; der Verkäufer ist für seine Angaben verantwortlich.
+- Die Excel-Vorlage („Bionostix-Offer-Upload-Template.xlsx“) ist nur optional zum Herunterladen; sie zeigt die Felder je Bereich.
+- Portal-Felder (Pflicht/freiwillig je Bereich wie in der Vorlage): Category, Your item no., Product name, Brand, Active ingredients with strength (mehrere mit „;“), Dosage form (Tablet, Effervescent tablet, Capsule, Powder, Effervescent powder, Solution for injection, Gummies, Lozenge, Drops, Spray, Cream, Other + Freifeld), IVD: Test/parameter, Method, CE marking, IVDR class, Sample type; Health products: Product type, Size/variant, Material; Units per pack + Unit; National code, MA holder, EAN; Packaging language; Quantity available; MOQ; Price per pack (EUR); Expiry (Datum, Monat/Jahr oder „min X months“); Incoterm + Ort; Lead time; Offer valid until; Buyers based in; Ship to (destination); Registered in; Documents available on request (CoA, CPP, FSC, GMP certificate, Registration dossier, Stability data, Declaration of conformity/CE, ISO 13485, Certificate of origin, Other). Keine Charge, keine Kennzeichen Kühlware/Rx/BtM.
+- Upload erkennt selbst (ohne KI, Regeln): Bereich aus dem Produktnamen (z. B. Ibuprofen → Arzneimittel, Vitamin C → Nahrungsergänzung) sowie Wirkstoff, Stärke, Darreichungsform und Packungsgröße aus dem Namen; so ergänzte Werte sind als „Suggested – please check“ markiert. Zuordnung und Maske zeigen nur die Felder der freigeschalteten Bereiche; in der Maske je Angebot zuerst nur unklare oder fehlende Felder („Show all fields“ für den Rest). Keine kostenpflichtige KI (Entscheidung 24.11.2026): eingebautes Wörterbuch übersetzt deutsche Produktnamen und Wirkstoffe ins Englische (z. B. Filmtabletten → film-coated tablets, Ascorbinsäure → Ascorbic acid); der Originalname bleibt als „Name on pack“ gespeichert; übersetzte Werte sind als „Suggested – please check“ markiert.
+- Wirkstoffe: je Wirkstoff Name, Menge und Einheit getrennt (Einheit aus Liste mg, g, µg, IU, mg/ml, µg/ml, %, mmol, CFU, ml oder frei), mehrere mit „+ Add ingredient“.
+- Packaging: Auswahlliste mit Ländern, „Custom“ (Freitext, z. B. „German, English“) ganz oben.
+- Länderpreise: in der Maske je Angebot zusätzlich Preise für einzelne Länder eintragbar; Käufer sieht nur den Preis für sein Land, sonst den Standardpreis.
+- Der bisherige Test-Katalog (Produkte, Angebote, Testbestellungen) wird gelöscht; neue Beispielangebote werden über die neue Maske angelegt.
+
+### Länder
+Je Angebot (Standard je Verkäufer): „Buyers based in“ (Sitz/Standort des Käufers) und „Ship to“ (Liefer- und Endmarkt), jeweils alle / nur / alle außer. Die Datenbank prüft beides; in der Anfrage gibt der Käufer verbindlich das Endbestimmungsland an (vorausgefüllt mit dem Lieferland). Länderlisten bleiben für Käufer unsichtbar; Käufer sehen nur Angebote, die sie kaufen dürfen.
+
+### Katalog
+- Karten nach Vorbild Pipelinepharma: Überschrift Wirkstoffe, darunter Form, Stärke, Packungsgröße; Angaben zu Brand, Sprache, Haltbarkeit, Menge, MOQ, Preis für meinen Markt, Lieferbedingung, gültig bis, verfügbare Dokumente, Registered in; anonymer Verkäufer („Seller S-12345 · Verified by Bionostix“, Land und Firmenart, typische Antwortzeit ab 3 Anfragen); Knopf „Send request“.
+- Filter links (lange Listen mit Suchfeld): Bereich, Suche Produkt/Wirkstoff, Darreichungsform, Sprache der Packung, Restlaufzeit mindestens X Monate, Menge mindestens, Lieferbedingung. Nur Angebote, die in mein Land dürfen.
+- Leere Suche: Suchtipps und Knopf zum Gesuch.
+
+### Anfrage und Vertrag (Supply)
+1. Käufer sendet zu einem Supply-Angebot eine **verbindliche** Anfrage (Menge, Lieferland, Endbestimmungsland, Lieferdeadline, Kommentar) und kreuzt nur die Dokumente an, die er wirklich braucht (Hinweis „Please select only documents you strictly need“); weitere Wünsche als Freitext. Bis zur Annahme kann er zurückziehen.
+2. Verkäufer sieht nur einen Steckbrief: „Licence verified by Bionostix, valid until …“, Land, Firmenart, Lieferland, abgeschlossene Geschäfte, sowie den Hinweis, welche Daten er nach der Annahme erhält (Firmenname, Adresse, Lizenzdokumente).
+3. Verkäufer: annehmen, ablehnen oder Gegenvorschlag (Menge/Preis; Käufer muss zustimmen). Bei Änderung von Menge oder Preis fragt ein Fenster, ob das Angebot im Katalog mit angepasst werden soll.
+4. **Annahme = Vertrag**; Provision wird fällig. Verkäufer erhält die Käuferdaten und -lizenzen mit der Bitte, die Rechnung bzw. Auftragsbestätigung auf diese Adresse auszustellen.
+5. Verkäufer lädt Rechnung/Auftragsbestätigung hoch → Käufer erhält sie über das Portal und erfährt damit den Verkäufer.
+6. Käufer zahlt direkt an den Verkäufer; Verkäufer meldet „Payment received“.
+7. Versand: Verkäufer lädt die angefragten Dokumente, Rechnung, Lieferschein, Sendungsnummer hoch → „Shipped“ → „Completed“.
+Niemand kann eigene Angebote anfragen. Kommunikation über das Portal.
+
+**Umsetzung (25.11.2026):** Katalog „Product offering“ mit Filtern (Suche, Bereich, Form, Packung, Restlaufzeit, Menge, Lieferbedingung) und Karten; „Send request“ öffnet das Anfrageformular (Menge innerhalb MOQ/Bestand, Lieferland, Endbestimmungsland, spätestes Lieferdatum, Dokumente aus der Liste des Verkäufers, Kommentar, Häkchen „binding“). Käufer: „My orders“; Verkäufer: „Incoming orders“ (Annehmen, Gegenvorschlag mit Häkchen „Angebot im Katalog anpassen“, Ablehnen mit Grund; danach „Payment received“, „Shipped“ mit Sendungsnummer, „Completed“). Bei Annahme sinkt die verfügbare Menge im Angebot. Dokumente erst nach Annahme; Rechnung oder Auftragsbestätigung des Verkäufers zeigt dem Käufer Name und Adresse des Verkäufers. Admin-Reiter „Orders“ mit Provision je Bestellung und Monatsübersicht je Verkäufer. E-Mails an die Gegenseite ohne deren Adresse preiszugeben (serverseitig, braucht `SUPABASE_SERVICE_ROLE_KEY` in Netlify). Startseite „Overview“: To-dos (Gegenvorschlag beantworten, Anfrage beantworten, Rechnung hochladen, vorbereitete Gesuche/Angebote, abgelaufene Angebote) und Übersicht Kaufen/Verkaufen.
+
+### Provision
+Standardsatz in der Provisionsvereinbarung; abweichender Satz je Verkäufer (eigener Vertrag), optional je Bereich; der gültige Satz wird bei Annahme in der Bestellung gespeichert. Fällig **bei Annahme** (Zahlungsmoral des Käufers ist nicht Sache von Bionostix). Der Satz steht in der Provisionsvereinbarung bei der Registrierung, wird danach im Portal nicht aktiv angezeigt; Admin-Übersicht fälliger Provisionen je Verkäufer und Monat. Käufer sehen nirgends eine Provision.
+
+### Abo für Käufer
+9,99 € netto pro Monat (Entscheidung 23.11.2026), die ersten 3 Monate kostenlos, automatische Verlängerung, monatlich kündbar zum Monatsende (auch im kostenlosen Zeitraum); nach dem kostenlosen Zeitraum wird ohne Kündigung automatisch abgebucht, ohne gesonderten Hinweis. Verkäufer zahlen kein Abo; Firmen, die auch kaufen, brauchen es. Keine Zahlung per Überweisung (Entscheidung 23.11.2026).
+- **Start ohne Karte** (Entscheidung 25.11.2026): Das Portal geht zuerst ohne Kartenabfrage live; Karte, Abo und Rechnungen kommen mit Etappe 3. Bestehende Käufer werden dann beim nächsten Login einmalig nach der Karte gefragt, bevor die erste Abbuchung fällig ist.
+- **Kreditkarte bei der Anmeldung, für alle Käufer** (Entscheidung 25.11.2026, ab Etappe 3): Am Ende der Registrierung hinterlegt jeder Käufer seine Karte (Prüfzahlung 0,00 €). Grund: Bereiche wie Nahrungsergänzung werden oft sofort freigegeben, andere erst nach Prüfung; der Käufer soll ohne weiteren Bezahlschritt loslegen. Die 3 Gratismonate beginnen mit der ersten Freigabe eines Bereichs. Abgelehnte Firmen: nie Abbuchung, Karte wird gelöscht.
+- **Zahlungsanbieter: Mollie** (Entscheidung 25.11.2026; günstiger als Stripe, EU-Anbieter). Mollie belastet nur die Karte; Abo-Logik, Rechnungen und Sperre liegen im Portal.
+- **Nicht bezahlt** (Entscheidung 25.11.2026): Schlägt die Abbuchung nach mehreren Versuchen fehl, wird der **Zugang gesperrt, die Zahlungspflicht bleibt**: Abo läuft weiter, Rechnungen bleiben offen, jeden Monat kommt eine neue dazu. Nach neuer Karte werden die offenen Beträge abgebucht und der Zugang ist sofort wieder frei. Kündigung nur regulär zum Monatsende; offene Rechnungen bleiben fällig. Admin-Liste „Unpaid subscriptions“. Muss in die Abo-Bedingungen (Anwalt).
+- In „My account“: „Update card“ und „Cancel subscription“.
+
+### Rechnungsmodul im Portal (Entscheidung 25.11.2026, Etappe 3)
+Bisher Rechnungen per Word-Vorlage als PDF. Künftig erstellt das Portal alle Rechnungen selbst als PDF: **Abo-Rechnungen** (monatlich, Abbuchung per Karte über Mollie) und **Provisionsrechnungen** an Verkäufer (automatisch bei Annahme einer Anfrage, **Zahlung per Überweisung binnen 14 Tagen**). Fortlaufende Rechnungsnummern, Steuer je Fall (19 % für deutsche Firmen, Reverse Charge für EU-Firmen mit USt-IdNr., nicht steuerbar außerhalb der EU), nach Erstellung nicht änderbar, Storno per Stornorechnung, 10 Jahre gespeichert. Admin: Liste aller Rechnungen (offen/bezahlt, „bezahlt“ von Hand setzen), Monatsexport (Excel + PDFs) für den Steuerberater. Muster-Abo- und Muster-Provisionsrechnung vorher vom Steuerberater absegnen lassen.
+
+### Admin-Hilfe und Product requests (Feedback 24.11.2026)
+- **Import stock for seller:** Admin lädt die Liste eines Verkäufers für ihn hoch (gleiche Maske); die Angebote landen beim Verkäufer als Entwurf („Prepared – not published“), er bekommt eine E-Mail, prüft und veröffentlicht sie selbst. Umgesetzt.
+- **Admin-Reiter:** Orders · Product requests · Companies · Product offering (alle Angebote aller Verkäufer) · Import stock for seller · Import product requests for buyer (Etappe 2) · Activity. „Customer groups“ entfällt. Käufer-Menü: Product offering, My orders, Product requests. (Kaufanfragen und Bestellungen laufen unter „Orders“; der Status zeigt, ob angefragt oder angenommen.)
+- **Product requests als Liste (Etappe 2):** Käufer können ihre Gesuche auch als eigene, unformatierte Excel-Liste hochladen (gleiches Prinzip wie beim Verkäufer: Spalten erkennen, Maske, Fehlendes markieren). Analog zu „Import stock for seller“ kann der Admin eine Gesuchsliste für einen Käufer hochladen; sie landet beim Käufer zur Bestätigung.
+- **Matches zu Product requests (Etappe 2):** Zu jedem Gesuch schlägt das Portal passende Angebote vor:
+  - **Exact match:** gleicher Wirkstoff bzw. gleiche Wirkstoffe mit gleicher Stärke und Darreichungsform (bei IVD: gleicher Test und Methode; bei Gesundheitsprodukten: gleiche Produktart und Größe).
+  - **Similar:** gleicher Wirkstoff, aber andere Packungsgröße, andere Stärke/Konzentration oder andere Darreichungsform.
+  - Nur Angebote, die der Käufer kaufen darf (Länderregeln); Verkäufer bleiben anonym. Neue passende Angebote später auch per E-Mail-Hinweis.
+- **Bestellbedingungen je Gesuch (Entscheidung 25.11.2026, nur Auswahllisten):** Order type (One-time order / Annual quantity with partial deliveries); bei Einmalbestellung Menge, spätestes Lieferdatum und „Partial deliveries allowed“ (Yes/No); bei Jahresmenge Jahresmenge, Lieferrhythmus (Monthly / Every 2 months / Quarterly / Twice a year / On call) und erste Lieferung bis; „Registration in the destination country planned?“ (Yes/No, durch Käufer oder Verkäufer); „Required documents“ zum Ankreuzen (gleiche Liste wie bei Angeboten). Ob ein Angebot schon im Zielland registriert ist, wird nicht angezeigt.
+
+### Menü
+„For buyers“: Catalog, My requests (Suche, Statusfilter, Archived), Sourcing requests. „For sellers“: My offers (+ Add offers), Incoming requests, Commissions. Wer nur kauft, sieht nur „For buyers“.
+
+### Allgemein
+Alle Uploads per Drag & Drop oder Dateiauswahl.
+E-Mails des Portals (Entscheidung 25.11.2026): Versand wie beim Kontaktformular der Website über das IONOS-Postfach info@bionostix-germany.de (SMTP, kein Resend), Absendername „Bionostix Germany Partner Portal“, Antworten an info@. Später ggf. eigenes Postfach portal@. Auch Supabase (Anmelde-Bestätigung, Passwort zurücksetzen) verschickt über dieses Postfach (Custom SMTP).
+
+### Etappen Marktplatz
+1. Registrierung mit Rollen, Bereichen, Standorten und Nachweisen; Verkäufer-Freigabe; Upload mit Prüfansicht.
+2. Katalog neu, Anfrage → Annahme mit Anonymisierung, Offenlegung nach Annahme, Provisionsübersicht.
+3. Dokumente je Schritt, Zahlung/Versand melden, Erinnerungen; Abo mit Karte bei der Anmeldung (Mollie) und Rechnungsmodul (Abo- und Provisionsrechnungen); Newsletter-Double-Opt-in.
+Jede Etappe zuerst als Vorschau (Pull Request), Freigabe durch die Inhaber.
+
+### To-dos für Gabriel (Stand 25.11.2026; Jan fragt danach)
+- **Registrierung: Nachweise und Anforderungen je Rolle und Bereich festlegen** (welche Dokumente Pflicht/freiwillig sind, Bezeichnungen). Die Liste der eingereichten Dokumente auf der Seite „Application is being reviewed“ bleibt; ein Nachreichen dort gibt es nicht mehr.
+- **Dokumente je Angebot** („Documents available on request“): Excel „Bionostix-Dokumente-je-Bereich.xlsx“ durchgehen (x je Bereich), danach zeigt das Portal je Bereich nur die passenden.
+- Screenshot-PDF Etappe 1 durchsehen und Änderungswünsche sammeln.
+- **IVD bei der Anmeldung prüfen:** Was soll das Häkchen „Händlerpflichten nach IVDR“ genau bestätigen, und welche Dokumente müssen IVD-Käufer und IVD-Verkäufer vorlegen (EUDAMED, ISO 13485 usw.)?
+- Erledigt 25.11.2026: Netlify `SUPABASE_SERVICE_ROLE_KEY`, `SMTP_USER`, `SMTP_PASS` eingetragen, `EMAIL_FROM` gelöscht; Supabase Custom SMTP mit info@ eingerichtet. E-Mail-Versand noch testen.
+- **Testen** nach der Übergabe-Seite (Testanleitung), Testfirmen mit „TEST“ im Namen; danach Testdaten löschen lassen.
+- **Mollie-Konto** für Bionostix Germany anlegen (für Etappe 3); Test-Schlüssel dann selbst in Netlify eintragen (Claude sagt, wo).
+- Portal-Reserveprojekt bei Vercel löschen; danach in Supabase (Authentication → URL Configuration) die Redirect URL `https://bionostix-portal.vercel.app/**` entfernen.
+
+### Vom Anwalt zu klären
+Nutzungsbedingungen inkl. Vertraulichkeit/Nichtumgehung als Teil davon (Vertragsschluss, Bindung der Anfrage, Nichtumgehung mit angemessener Vertragsstrafe, Haftung für Endbestimmungsland, anwendbares Recht/Gerichtsstand), Verkäuferbedingungen mit Provision, eigenes Häkchen (Vorlage folgt von Jan; prüfen, ob Nichtumgehung und Provision so in AGB wirksam sind), Abo-Bedingungen, Datenschutz (Weitergabe der Käuferdaten nach Annahme, Newsletter), Nachweisliste je Bereich. § 52c-AMG-Registrierung ist beantragt.
+
+---
+**Bisheriges Händlermodell (gilt bis zur Umstellung, wird durch den Marktplatz abgelöst):**
+
 ## Umfang MVP
 - Zugang beantragen (Konto + Firmendaten + Upload Großhandelserlaubnis/Importlizenz), Freigabe durch Admin
 - Login nur für freigegebene Kunden; nicht freigegebene sehen „pending approval“
@@ -80,7 +189,7 @@ AGB-Seite /terms ist ein Platzhalter, bis der Anwalt die AGB liefert.
 - **Hosting:** Pilot läuft auf Netlify (kostenlos, Funktionen in US East, deshalb etwas langsamer). Bei Ausbau: Vercel Pro (fra1) oder Netlify Pro (Frankfurt).
 
 ## Technik
-Next.js (App Router, TypeScript, Tailwind) · Supabase (Postgres, Auth, Storage; Frankfurt) · Netlify (Pilot; vorher Vercel fra1) · Resend (E-Mail) · Domain portal.bionostix-germany.de (DNS bei IONOS, CNAME portal → bionostix-portal.netlify.app).
+Next.js (App Router, TypeScript, Tailwind) · Supabase (Postgres, Auth, Storage; Frankfurt) · Netlify (Pilot; vorher Vercel fra1) · E-Mail über IONOS-Postfach (SMTP) · Domain portal.bionostix-germany.de (DNS bei IONOS, CNAME portal → bionostix-portal.netlify.app).
 
 ## Etappen
 1. Konten (GitHub, Supabase, Vercel, Resend)

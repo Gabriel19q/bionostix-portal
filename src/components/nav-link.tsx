@@ -8,6 +8,7 @@ export function NavLink({
   href,
   exact = false,
   match,
+  not,
   className = "",
   children,
 }: {
@@ -15,12 +16,14 @@ export function NavLink({
   exact?: boolean;
   /** Path prefix that counts as "current"; defaults to href. */
   match?: string;
+  /** Path prefix that never counts as "current" (a sub-page with its own link). */
+  not?: string;
   className?: string;
   children: React.ReactNode;
 }) {
   const path = usePathname();
   const base = match ?? href;
-  const active = exact ? path === base : path === base || path.startsWith(base + "/");
+  const active = (exact ? path === base : path === base || path.startsWith(base + "/")) && !(not && path.startsWith(not));
   return (
     <Link
       href={href}

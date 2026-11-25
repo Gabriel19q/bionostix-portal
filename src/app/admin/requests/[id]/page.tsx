@@ -1,339 +1,74 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getSession } from "@/lib/session";
-import { displayDate, displayDateTime, eur, today } from "@/lib/format";
-import {
-  DOC_TYPE_LABEL, SELLER_LABEL, STATUS_FLOW, STATUS_LABEL, StatusBadge, type RequestStatus,
-} from "@/lib/status";
-import { changeStatus, saveMeta, sendCounterOffer, updateCatalogFromRequest } from "../actions";
-import { RequestDocumentUpload } from "./request-document-upload";
-import { SubmitButton } from "@/components/submit-button";
+import { displayDate, displayDateTime, eur } from "@/lib/format";
+import { EVENT_LABEL, ORDER_DOC_KIND, ORDER_STATUS, productLine, type OrderProduct, type OrderStatus } from "@/lib/orders";
 
-type Item = {
-  id: string;
-  requested_qty: number;
-  min_expiry_date: string | null;
-  unit_price_snapshot: number | null;
-  confirmed_qty: number | null;
-  confirmed_unit_price: number | null;
-  request_item_costs: { purchase_price_snapshot: number | null } | null;
-  offers: {
-    id: string;
-    purchase_price: number | null;
-    batch: string;
-    expiry_date: string | null;
-    available_qty: number | null;
-    coa_available: boolean | null;
-    products: { trade_name: string; strength: string | null; pack_size: string | null; is_narcotic: boolean; manufacturers: { name: string } | null };
-  };
-};
-type Req = {
-  id: string; number: string; status: RequestStatus; seller: string | null; customer_comment: string | null;
-  delivery_country: string | null; delivery_deadline: string | null; payment_due_date: string | null; internal_note: string | null; created_at: string;
-  companies: { id: string; name: string; country: string; contact_name: string | null; contact_email: string | null; contact_phone: string | null };
+type Row = {
+  id: string; number: string; status: OrderStatus; quantity: number; unit_price: number; created_at: string;
+  delivery_country: string; final_destination: string; needed_by: string | null; required_documents: string[];
+  comment: string | null; counter_quantity: number | null; counter_price: number | null; counter_note: string | null;
+  decline_reason: string | null; accepted_at: string | null; commission_pct: number | null; commission_eur: number | null;
+  tracking: string | null; product: OrderProduct;
+  buyer: { name: string; country: string; contact_email: string | null } | null;
+  seller: { name: string; seller_code: string | null; contact_email: string | null } | null;
+  market_order_events: { id: number; actor: string; event: string; note: string | null; created_at: string }[];
+  market_order_documents: { id: string; kind: string; file_name: string; storage_path: string; created_at: string }[];
 };
 
-// Suggested next step; "Changes to accept" is only chosen on purpose, so it is skipped here.
-function nextStatus(s: RequestStatus): RequestStatus {
-  // Changes are only proposed on purpose; from "in review" the usual next step is the proforma
-  const flow = STATUS_FLOW.filter((x) => x !== "changes_proposed" && x !== "changes_accepted");
-  const i = flow.indexOf(s === "changes_proposed" || s === "changes_accepted" ? "in_review" : s);
-  return i >= 0 && i < flow.length - 1 ? flow[i + 1] : s;
-}
-
-export default async function AdminRequestPage({
-  params, searchParams,
-}: {
-  params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string; updated?: string; saved?: string }>;
-}) {
+export default async function AdminOrderPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { error: pageError, updated, saved } = await searchParams;
   const { supabase } = await getSession();
-  const [{ data: req }, { data: items }, { data: history }, { data: docs }] = await Promise.all([
-    supabase.from("requests")
-      .select("id, number, status, seller, customer_comment, delivery_country, delivery_deadline, payment_due_date, internal_note, created_at, companies(id, name, country, contact_name, contact_email, contact_phone)")
-      .eq("id", id).maybeSingle<Req>(),
-    supabase.from("request_items")
-      .select("id, requested_qty, min_expiry_date, unit_price_snapshot, confirmed_qty, confirmed_unit_price, request_item_costs(purchase_price_snapshot), offers(id, batch, expiry_date, available_qty, purchase_price, coa_available, products(trade_name, strength, pack_size, is_narcotic, manufacturers(name)))")
-      .eq("request_id", id).returns<Item[]>(),
-    supabase.from("request_status_history").select("id, new_status, note, created_at, changed_by").eq("request_id", id).order("created_at").order("id"),
-    supabase.from("documents").select("id, storage_path, file_name, doc_type, created_at").eq("request_id", id).order("created_at"),
-  ]);
-  if (!req) notFound();
-  const overdue = req.status === "proforma_sent" && !!req.payment_due_date && req.payment_due_date < today();
-  const lines = items ?? [];
-  const files = docs ?? [];
-  const { data: signed } = files.length
-    ? await supabase.storage.from("documents").createSignedUrls(files.map((d) => d.storage_path), 600)
-    : { data: [] };
-  const urlByPath = new Map((signed ?? []).map((s) => [s.path, s.signedUrl]));
-
-  // Margin only where both sale and purchase price are known
-  let value = 0, cost = 0, marginValue = 0;
-  for (const l of lines) {
-    const qty = l.confirmed_qty ?? l.requested_qty;
-    const price = l.confirmed_unit_price ?? l.unit_price_snapshot;
-    const purchase = l.request_item_costs?.purchase_price_snapshot ?? null;
-    if (price !== null) value += qty * Number(price);
-    if (price !== null && purchase !== null) {
-      cost += qty * Number(purchase);
-      marginValue += qty * Number(price);
-    }
-  }
-  const openPrices = lines.some((l) => (l.confirmed_unit_price ?? l.unit_price_snapshot) === null);
-  const c = req.companies;
+  const { data } = await supabase.from("market_orders")
+    .select("*, buyer:companies!market_orders_buyer_company_id_fkey(name, country, contact_email), seller:companies!market_orders_seller_company_id_fkey(name, seller_code, contact_email), market_order_events(id, actor, event, note, created_at), market_order_documents(id, kind, file_name, storage_path, created_at)")
+    .eq("id", id).maybeSingle<Row>();
+  if (!data) notFound();
+  const o = data;
+  const docs = o.market_order_documents;
+  const { data: signed } = docs.length ? await supabase.storage.from("documents").createSignedUrls(docs.map((d) => d.storage_path), 600) : { data: [] };
+  const url = new Map((signed ?? []).map((s) => [s.path, s.signedUrl]));
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <Link href="/admin/requests" className="text-sm text-slate-500 hover:underline">← Requests</Link>
-          <h1 className="text-2xl font-bold">Request {req.number}</h1>
-          <p className="text-sm text-slate-600">
-            {c.name} ({c.country}) · {c.contact_name} · {c.contact_email}{c.contact_phone && ` · ${c.contact_phone}`}
-          </p>
-          <p className="text-sm text-slate-600">
-            Received {displayDateTime(req.created_at)}{req.delivery_country && ` · delivery to ${req.delivery_country}`}
-          </p>
-          <p className="mt-1 text-sm">
-            <span className="font-bold">Seller:</span> {req.seller ? SELLER_LABEL[req.seller] ?? req.seller : "not set (older request)"}
-          </p>
-          {req.delivery_deadline && (
-            <p className="mt-1 text-sm"><span className="font-bold">Delivery deadline:</span> {displayDate(req.delivery_deadline)}</p>
-          )}
-          {req.payment_due_date && (
-            <p className="mt-1 text-sm">
-              <span className="font-bold">Reserved until / payment due:</span>{" "}
-              {overdue ? (
-                <span className="font-bold text-danger">{displayDate(req.payment_due_date)} · Payment overdue: cancel the proforma?</span>
-              ) : displayDate(req.payment_due_date)}
-            </p>
-          )}
+          <Link href="/admin/requests" className="text-sm text-brand-600 underline">← Orders</Link>
+          <h1 className="mt-2 text-2xl font-bold">{o.number} · {o.product.product_name}</h1>
+          <p className="text-sm text-slate-600">{productLine(o.product)} · sent {displayDate(o.created_at)}</p>
         </div>
-        <StatusBadge status={req.status} viewer="admin" />
+        <span className={ORDER_STATUS[o.status].tag}>{ORDER_STATUS[o.status].label}</span>
       </div>
-      {updated && updated in STATUS_LABEL && updated === req.status && (
-        <div className="notice-success" role="status">
-          Status changed to <strong>{STATUS_LABEL[updated as RequestStatus]}</strong>.
-        </div>
-      )}
-      {saved === "catalog" && (
-        <div className="notice-success" role="status">
-          Catalog updated. Check the confirmed packs and prices below, then send the counter-offer.
-        </div>
-      )}
-      {pageError === "prices" && (
-        <div className="notice-error">
-          Some lines have no price yet (“on request”). Enter a confirmed price for every line and save first.
-        </div>
-      )}
-      {pageError === "changes" && (
-        <div className="notice-error">
-          Confirmed quantities or prices differ from the order request. Set “Changes to accept” first, so the customer
-          can accept the changes. Send the proforma after they accepted.
-        </div>
-      )}
-      {pageError === "nochanges" && (
-        <div className="notice-error">
-          Nothing differs from the order request. Upload the proforma and set “Proforma sent” instead.
-        </div>
-      )}
-      {pageError === "counterstatus" && (
-        <div className="notice-error">A counter-offer is only possible before the proforma is sent.</div>
-      )}
-      {pageError === "due" && (
-        <div className="notice-error">
-          Enter the date until which the manufacturer reserves the goods. It is the payment deadline on the proforma.
-        </div>
-      )}
-      {pageError === "proforma" && (
-        <div className="notice-error">Upload the proforma invoice below (type “Proforma invoice”) before setting “Proforma sent”.</div>
-      )}
-      {req.customer_comment && (
-        <div className="card text-sm"><span className="font-medium">Customer comment:</span> {req.customer_comment}</div>
-      )}
-
-      <form action={updateCatalogFromRequest} className="space-y-3">
-        <input type="hidden" name="request_id" value={req.id} />
-        <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
-          <table className="min-w-full text-sm">
-            <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
-              <tr>
-                <th className="px-3 py-2">Product</th><th className="px-3 py-2">Batch</th>
-                <th className="px-3 py-2 text-right">Requested</th><th className="px-3 py-2 text-right">Stock now</th>
-                <th className="px-3 py-2 text-right">Updated purchase price</th>
-                <th className="px-3 py-2 text-right">Confirmed packs</th><th className="px-3 py-2 text-right">Requested at</th>
-                <th className="px-3 py-2 text-right">Confirmed price</th><th className="px-3 py-2 text-right">Line margin</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {lines.map((l) => {
-                const p = l.offers.products;
-                const qty = l.confirmed_qty ?? l.requested_qty;
-                const price = l.confirmed_unit_price ?? l.unit_price_snapshot;
-                const purchase = l.request_item_costs?.purchase_price_snapshot ?? null;
-                return (
-                  <tr key={l.id}>
-                    <td className="px-3 py-2">
-                      <input type="hidden" name="item_id" value={l.id} />
-                      <div className="font-medium">{p.trade_name}</div>
-                      <div className="text-xs text-slate-500">
-                        {[p.strength, p.pack_size, p.manufacturers?.name].filter(Boolean).join(" · ")}
-                        {p.is_narcotic && <span className="ml-1 font-bold text-slate-900">· BtM: check permits</span>}
-                      </div>
-                    </td>
-                    <td className="px-3 py-2 font-mono text-xs">
-                      {l.offers.batch || "–"}<div className="font-sans text-slate-500">exp. {displayDate(l.offers.expiry_date)}</div>
-                      {l.min_expiry_date && (
-                        <div className="font-sans"><span className="mark-attention">min. exp. {displayDate(l.min_expiry_date)}</span></div>
-                      )}
-                      <div className="font-sans text-slate-500">
-                        COA: {l.offers.coa_available === true ? "yes" : l.offers.coa_available === false ? "no" : "not specified"}
-                      </div>
-                    </td>
-                    <td className="px-3 py-2 text-right">{l.requested_qty}</td>
-                    <td className="px-3 py-2 text-right">
-                      <input name={`stock_${l.id}`} aria-label={`Stock now for ${p.trade_name}`}
-                        className={`input w-24 py-1 text-right ${l.offers.available_qty !== null && l.offers.available_qty < l.requested_qty ? "input-error" : ""}`}
-                        defaultValue={l.offers.available_qty ?? ""} placeholder="on request" />
-                    </td>
-                    <td className="px-3 py-2 text-right">
-                      <input name={`purchase_${l.id}`} aria-label={`Updated purchase price for ${p.trade_name}`}
-                        className="input w-24 py-1 text-right" defaultValue={l.offers.purchase_price ?? ""} placeholder="open" />
-                      {purchase !== null && l.offers.purchase_price !== null && Number(purchase) !== Number(l.offers.purchase_price) && (
-                        <div className="text-xs text-slate-500">at request {eur(purchase)}</div>
-                      )}
-                    </td>
-                    <td className="px-3 py-2 text-right">
-                      <input name={`qty_${l.id}`} className="input w-24 py-1 text-right" defaultValue={l.confirmed_qty ?? ""}
-                        placeholder={String(l.requested_qty)} aria-label={`Confirmed packs for ${p.trade_name}`} />
-                    </td>
-                    <td className="px-3 py-2 text-right">{l.unit_price_snapshot === null ? "on request" : eur(l.unit_price_snapshot)}</td>
-                    <td className="px-3 py-2 text-right">
-                      <input name={`price_${l.id}`} className="input w-28 py-1 text-right" defaultValue={l.confirmed_unit_price ?? ""}
-                        placeholder={l.unit_price_snapshot === null ? "enter price" : String(l.unit_price_snapshot)} />
-                    </td>
-                    <td className={`px-3 py-2 text-right ${price !== null && purchase !== null && Number(price) < Number(purchase) ? "font-bold text-danger" : ""}`}>{price === null || purchase === null ? "–" : eur(qty * (Number(price) - Number(purchase)))}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-            <tfoot className="text-sm">
-              <tr>
-                <td colSpan={7} className="px-3 py-2 text-right">
-                  Value {eur(value)}{openPrices && <> · <span className="mark-attention">some prices still open</span></>}
-                </td>
-                <td colSpan={2} className={`px-3 py-2 text-right font-bold ${marginValue - cost < 0 ? "text-danger" : ""}`}>
-                  Margin {eur(marginValue - cost)}{marginValue > 0 && ` (${Math.round(((marginValue - cost) / marginValue) * 100)}%)`}
-                </td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <SubmitButton className="btn-secondary" pendingText="Updating…">Update catalog</SubmitButton>
-          <p className="max-w-2xl text-xs text-slate-500">
-            Enter what the manufacturer reports in “Stock now” and “Updated purchase price”, then update the catalog: the batch
-            changes for all customers. For this order the confirmed price is set to the new sell price and the packs to
-            the new stock; you can still overwrite both. Nothing is sent to the customer until you send a counter-offer
-            or the proforma.
-          </p>
-        </div>
-        {["new", "in_review", "changes_proposed"].includes(req.status) && (
-          <div className="card space-y-3">
-            <h2 className="font-bold">Counter-offer</h2>
-            <p className="text-sm text-slate-600">
-              Change confirmed packs or prices above if stock or price differ from the request, then send them to the
-              customer. They accept or cancel in the portal; after acceptance you send the proforma.
-            </p>
-            <div>
-              <label className="label" htmlFor="counter_message">Message to the customer (optional)</label>
-              <textarea id="counter_message" name="counter_message" rows={2} className="input"
-                placeholder="e.g. Only 80 pens available now, the rest in 3 weeks." />
-            </div>
-            <SubmitButton formAction={sendCounterOffer} pendingText="Sending…">Send counter-offer</SubmitButton>
-          </div>
-        )}
-      </form>
-
-      <div className="grid gap-6 md:grid-cols-2">
-        <form action={changeStatus} className="card space-y-3">
-          <input type="hidden" name="request_id" value={req.id} />
-          <h2 className="font-bold">Change status</h2>
-          <div>
-            <label className="label">New status</label>
-            <select key={req.status} name="status" className="input" defaultValue={nextStatus(req.status)}>
-              {(Object.keys(STATUS_LABEL) as RequestStatus[]).map((s) => (
-                <option key={s} value={s}>{STATUS_LABEL[s]}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="label" htmlFor="payment_due">Reserved until = payment deadline (for “Proforma sent”)</label>
-            <input id="payment_due" name="payment_due" type="date" className="input" min={today()}
-              defaultValue={req.payment_due_date ?? ""} />
-            <p className="mt-1 text-xs text-slate-600">
-              Date until which the manufacturer reserves the goods (e.g. 3 days). The customer sees it only as payment
-              deadline: without payment by then, the proforma is cancelled. State the same deadline on the proforma PDF.
-            </p>
-          </div>
-          <div>
-            <label className="label">Message to the customer (optional, visible to them)</label>
-            <textarea name="message" rows={3} className="input" placeholder="e.g. Batch B2 only 80 packs available, confirmed 80." />
-          </div>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" name="notify" defaultChecked /> Email the customer
-          </label>
-          <SubmitButton>Update status</SubmitButton>
-          <p className="text-xs text-slate-500">
-            The proforma is the order confirmation (it forms the contract). If you changed quantities or prices, set
-            “Changes to accept” first and send the proforma once the customer accepted. Upload the proforma below and enter
-            the payment deadline before setting “Proforma sent”.
-          </p>
-        </form>
-
-        <div className="space-y-6">
-          <form action={saveMeta} className="card space-y-3">
-            <input type="hidden" name="request_id" value={req.id} />
-            <h2 className="font-bold">Internal</h2>
-            <div>
-              <label className="label">Internal note (only admins)</label>
-              <textarea name="internal_note" rows={2} className="input" defaultValue={req.internal_note ?? ""} />
-            </div>
-            <button className="btn-secondary">Save</button>
-          </form>
-
-          <div className="card space-y-3">
-            <h2 className="font-bold">Documents</h2>
-            {files.length === 0 ? (
-              <p className="text-sm text-slate-500">No documents yet.</p>
-            ) : (
-              <ul className="space-y-1 text-sm">
-                {files.map((d) => (
-                  <li key={d.id}>
-                    <a href={urlByPath.get(d.storage_path) ?? "#"} target="_blank" rel="noreferrer" className="text-brand-600 underline">{d.file_name}</a>
-                    <span className="text-slate-500"> · {DOC_TYPE_LABEL[d.doc_type] ?? d.doc_type} · {displayDate(d.created_at)}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <RequestDocumentUpload requestId={req.id} />
-          </div>
-        </div>
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="card text-sm"><h2 className="font-bold">Buyer</h2><p>{o.buyer?.name}</p><p className="text-slate-600">{o.buyer?.country} · {o.buyer?.contact_email}</p></div>
+        <div className="card text-sm"><h2 className="font-bold">Seller</h2><p>{o.seller?.name} ({o.seller?.seller_code})</p><p className="text-slate-600">{o.seller?.contact_email}</p></div>
+        <div className="card text-sm"><h2 className="font-bold">Commission</h2>
+          <p>{o.commission_eur !== null ? `${eur(o.commission_eur)} (${o.commission_pct} %)` : "Not concluded yet"}</p>
+          {o.accepted_at && <p className="text-slate-600">due since {displayDate(o.accepted_at)}</p>}</div>
       </div>
-
-      <div className="card space-y-2">
-        <h2 className="font-bold">History</h2>
-        <ol className="space-y-2 text-sm">
-          {(history ?? []).map((h) => (
-            <li key={h.id}>
-              <span className="font-medium">{STATUS_LABEL[h.new_status as RequestStatus]}</span>
-              <span className="text-slate-500"> · {displayDateTime(h.created_at)}</span>
-              {h.note && <p className="mt-0.5 whitespace-pre-line text-slate-600">{h.note}</p>}
-            </li>
-          ))}
-        </ol>
+      <div className="card">
+        <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2 md:grid-cols-4">
+          <div><dt className="text-xs font-bold text-slate-600">Quantity</dt><dd>{o.quantity} packs</dd></div>
+          <div><dt className="text-xs font-bold text-slate-600">Price / total</dt><dd>{eur(o.unit_price)} / {eur(o.quantity * o.unit_price)}</dd></div>
+          <div><dt className="text-xs font-bold text-slate-600">Delivery / final destination</dt><dd>{o.delivery_country} / {o.final_destination}</dd></div>
+          <div><dt className="text-xs font-bold text-slate-600">Needed by</dt><dd>{o.needed_by ? displayDate(o.needed_by) : "–"}</dd></div>
+          <div><dt className="text-xs font-bold text-slate-600">Documents required</dt><dd>{o.required_documents.join(", ") || "–"}</dd></div>
+          {o.counter_quantity && <div><dt className="text-xs font-bold text-slate-600">Counter-offer</dt><dd>{o.counter_quantity} × {eur(o.counter_price ?? 0)}{o.counter_note ? ` – ${o.counter_note}` : ""}</dd></div>}
+          {o.decline_reason && <div><dt className="text-xs font-bold text-slate-600">Decline reason</dt><dd>{o.decline_reason}</dd></div>}
+          {o.tracking && <div><dt className="text-xs font-bold text-slate-600">Tracking</dt><dd>{o.tracking}</dd></div>}
+          {o.comment && <div className="md:col-span-4"><dt className="text-xs font-bold text-slate-600">Comment from the buyer</dt><dd className="whitespace-pre-line">{o.comment}</dd></div>}
+        </dl>
+      </div>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="card space-y-2"><h2 className="font-bold">Documents</h2>
+          {docs.length === 0 ? <p className="text-sm text-slate-600">No documents.</p> : (
+            <ul className="text-sm">{docs.map((d) => <li key={d.id}><a href={url.get(d.storage_path) ?? "#"} target="_blank" rel="noreferrer" className="text-brand-600 underline">{d.file_name}</a>
+              <span className="text-xs text-slate-500"> · {ORDER_DOC_KIND[d.kind] ?? d.kind} · {displayDate(d.created_at)}</span></li>)}</ul>)}
+        </div>
+        <div className="card space-y-2"><h2 className="font-bold">History</h2>
+          <ol className="space-y-1 text-sm">{[...o.market_order_events].sort((a, b) => a.id - b.id).map((e) => (
+            <li key={e.id}>{EVENT_LABEL[e.event] ?? e.event} <span className="text-xs text-slate-500">· {e.actor} · {displayDateTime(e.created_at)}</span>
+              {e.note && <span className="block text-xs text-slate-600">{e.note}</span>}</li>))}</ol>
+        </div>
       </div>
     </div>
   );

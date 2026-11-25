@@ -1,10 +1,13 @@
 import "server-only";
 import { COMPANY } from "@/content/company";
 
-// Sends plain-text emails through Resend (https://resend.com).
-// Without RESEND_API_KEY nothing is sent and the portal keeps working.
+import nodemailer from "nodemailer";
+
+// Sends plain-text emails through the IONOS mailbox, like the contact form of the website (decision 25.11.2026).
+// SMTP_USER / SMTP_PASS only in the hosting settings. Without them nothing is sent and the portal keeps working.
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://portal.bionostix-germany.de";
-const FROM = process.env.EMAIL_FROM ?? "Bionostix Germany <portal@bionostix.de>";
+const FROM_NAME = "Bionostix Germany Partner Portal";
+const REPLY_TO = process.env.EMAIL_REPLY_TO ?? "info@bionostix-germany.de";
 
 export function adminEmails() {
   return (process.env.ADMIN_NOTIFY_EMAILS ?? "")
@@ -15,18 +18,21 @@ export function adminEmails() {
 
 export async function sendEmail({ to, subject, text }: { to: string[]; subject: string; text: string }) {
   const recipients = [...new Set(to.filter(Boolean))];
-  const key = process.env.RESEND_API_KEY;
-  if (!key || recipients.length === 0) {
-    console.info(`[email skipped${key ? "" : ": no RESEND_API_KEY"}] ${subject} -> ${recipients.join(", ")}`);
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+  if (!user || !pass || recipients.length === 0) {
+    console.info(`[email skipped${user && pass ? "" : ": no SMTP_USER/SMTP_PASS"}] ${subject} -> ${recipients.join(", ")}`);
     return;
   }
   try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: FROM, to: recipients, subject, text }),
+    const port = Number(process.env.SMTP_PORT ?? 587);
+    const transport = nodemailer.createTransport({
+      host: process.env.SMTP_HOST ?? "smtp.ionos.de", port, secure: port === 465, auth: { user, pass },
     });
-    if (!res.ok) console.error(`[email failed ${res.status}] ${subject}: ${await res.text()}`);
+    // The mailbox sends; each recipient gets the mail separately, so nobody sees the other addresses
+    for (const recipient of recipients) {
+      await transport.sendMail({ from: `${FROM_NAME} <${user}>`, replyTo: REPLY_TO, to: recipient, subject: subject.replace(/[\r\n]+/g, " "), text });
+    }
   } catch (err) {
     // A failed email must never break the action the user took
     console.error(`[email failed] ${subject}`, err);
@@ -34,6 +40,55 @@ export async function sendEmail({ to, subject, text }: { to: string[]; subject: 
 }
 
 const footer = `\n\nBionostix Germany · The European trading arm of the Bionostix Group\n${COMPANY.owner}, trading as ${COMPANY.name} · ${COMPANY.street}, ${COMPANY.city}, ${COMPANY.country}\n${SITE}`;
+
+// Marketplace orders. Texts never name the other side: buyers and sellers stay anonymous until acceptance / invoice.
+const orderLink = (side: "buyer" | "seller", id: string) => `${SITE}${side === "buyer" ? "/portal/requests/" : "/portal/sell/orders/"}${id}`;
+export const orderEmails = {
+  requested: (n: string, product: string, qty: number, id: string) => ({
+    subject: `New binding request ${n}: ${qty} × ${product}`,
+    text: `A verified buyer sent you a binding request for ${qty} packs of ${product}.\n\nPlease accept, decline or make a counter-offer: ${orderLink("seller", id)}${footer}`,
+  }),
+  countered: (n: string, product: string, id: string) => ({
+    subject: `Counter-offer for your request ${n}`,
+    text: `The seller made a counter-offer for your request ${n} (${product}).\n\nPlease accept or decline it: ${orderLink("buyer", id)}${footer}`,
+  }),
+  acceptedBuyer: (n: string, product: string, id: string) => ({
+    subject: `Your request ${n} was accepted`,
+    text: `Good news: the seller accepted your request ${n} (${product}). The contract is concluded.\n\nThe seller will now send you the invoice or order confirmation through the portal: ${orderLink("buyer", id)}${footer}`,
+  }),
+  acceptedSeller: (n: string, product: string, id: string) => ({
+    subject: `Order ${n} concluded – buyer details available`,
+    text: `The order ${n} (${product}) is concluded. You can now see the buyer's company details and licences in the portal.\n\nPlease issue your invoice or order confirmation to this company and upload it there: ${orderLink("seller", id)}${footer}`,
+  }),
+  acceptedAdmin: (n: string, product: string, total: string, commission: string) => ({
+    subject: `Order ${n} concluded – commission ${commission}`,
+    text: `Order ${n} (${product}) was concluded. Order value ${total}, commission ${commission}.\n\n${SITE}/admin/requests${footer}`,
+  }),
+  declined: (n: string, product: string, id: string) => ({
+    subject: `Your request ${n} was declined`,
+    text: `The seller declined your request ${n} (${product}).\n\nDetails: ${orderLink("buyer", id)}\nLooking for alternatives? ${SITE}/portal/catalog${footer}`,
+  }),
+  counterDeclined: (n: string, product: string, id: string) => ({
+    subject: `Counter-offer for ${n} declined`,
+    text: `The buyer declined your counter-offer for ${n} (${product}).\n\n${orderLink("seller", id)}${footer}`,
+  }),
+  withdrawn: (n: string, product: string, id: string) => ({
+    subject: `Request ${n} withdrawn`,
+    text: `The buyer withdrew the request ${n} (${product}). No action needed.\n\n${orderLink("seller", id)}${footer}`,
+  }),
+  document: (n: string, kind: string, id: string) => ({
+    subject: `New document for order ${n}: ${kind}`,
+    text: `A new document (${kind}) was added to order ${n}.\n\n${orderLink("buyer", id)}${footer}`,
+  }),
+  documentForSeller: (n: string, kind: string, id: string) => ({
+    subject: `New document for order ${n}: ${kind}`,
+    text: `The buyer added a document (${kind}) to order ${n}.\n\n${orderLink("seller", id)}${footer}`,
+  }),
+  progress: (n: string, status: string, tracking: string | null, id: string) => ({
+    subject: `Order ${n}: ${status}`,
+    text: `Your order ${n} has a new status: ${status}.${tracking ? `\nTracking: ${tracking}` : ""}\n\n${orderLink("buyer", id)}${footer}`,
+  }),
+};
 
 export const emails = {
   newRequest: (number: string, company: string, lines: number, id: string) => ({
@@ -70,8 +125,37 @@ export const emails = {
     subject: `Sourcing request ${number}: ${statusLabel}`,
     text: `Your sourcing request ${number} (${product}) is now: ${statusLabel}.${reply ? `\n\nMessage from Bionostix Germany:\n${reply}` : ""}\n\nView it: ${SITE}/portal/sourcing${footer}`,
   }),
-  newApplication: (company: string, country: string) => ({
+  newApplication: (company: string, country: string, roles = "buyer") => ({
     subject: `New access request: ${company}`,
-    text: `${company} (${country}) requested access and uploaded its licence.\n\nReview it: ${SITE}/admin${footer}`,
+    text: `${company} (${country}) requested access as ${roles} and uploaded its documents.\n\nReview it: ${SITE}/admin${footer}`,
+  }),
+  // Copy of what the applicant accepted (proof of consent, SPEC.md Registrierung)
+  agreementsAccepted: (name: string, version: string, acceptedAt: string, seller: boolean) => ({
+    subject: "Your application and accepted agreements – Bionostix Germany partner portal",
+    text:
+      `Dear ${name},\n\nthank you for your application. We are now verifying your company and will inform you by email.\n\n` +
+      `On ${acceptedAt} you accepted the following agreements (version ${version}):\n` +
+      `- Terms of use, including the confidentiality and non-circumvention agreement: ${SITE}/terms\n` +
+      (seller ? `- Seller terms, including the commission: ${SITE}/commission-agreement\n` : "") +
+      `\nPlease keep this email for your records.${footer}`,
+  }),
+  offersPrepared: (count: number) => ({
+    subject: `Bionostix prepared ${count} offer(s) for you – please check and publish`,
+    text:
+      `Bionostix Germany uploaded your stock list for you and prepared ${count} offer(s). They are not visible to buyers yet.\n\n` +
+      `Please check them and publish: ${SITE}/portal/sell${footer}`,
+  }),
+  requestsPrepared: (count: number) => ({
+    subject: `Bionostix prepared ${count} product request(s) for you – please confirm`,
+    text:
+      `Bionostix Germany uploaded your list of wanted products and prepared ${count} product request(s).\n\n` +
+      `Please check and confirm them: ${SITE}/portal/sourcing${footer}`,
+  }),
+  newsletterConfirm: (name: string, token: string) => ({
+    subject: "Please confirm your newsletter subscription – Bionostix Germany",
+    text:
+      `Dear ${name},\n\nyou asked to receive news and offers from Bionostix Germany by email. ` +
+      `Please confirm with this link (you may be asked to sign in):\n\n${SITE}/newsletter/confirm?token=${token}\n\n` +
+      `If you did not ask for this, simply ignore this email: you will not receive any newsletter.${footer}`,
   }),
 };

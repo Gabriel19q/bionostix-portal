@@ -24,7 +24,9 @@ export default function LoginPage() {
       return;
     }
     await logLoginAction();
-    router.push("/portal");
+    // Return to the page that sent the user here (e.g. the newsletter confirmation link)
+    const next = new URLSearchParams(window.location.search).get("next") ?? "";
+    router.push(next.startsWith("/") && !next.startsWith("//") ? next : "/portal");
     router.refresh();
   }
 

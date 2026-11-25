@@ -1,13 +1,15 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
+import { sendApplicationEmails } from "@/lib/application-emails";
+import { CATEGORY_LABEL, DOC_KIND_LABEL, type Category, type DocKind } from "@/lib/categories";
 import { ApplicationForm } from "./application-form";
-import { DocumentUpload } from "./document-upload";
 import { Overview } from "./overview";
 
-const DOC_LABELS: Record<string, string> = {
-  license: "Licence",
-  gdp_certificate: "GDP certificate",
-  other: "Other",
+type Account = {
+  company: { wants_buy: boolean; wants_sell: boolean } | null;
+  sites: { id: string; country: string }[];
+  categories: { role: "buy" | "sell"; category: Category }[];
+  documents: { id: string; file_name: string; kind: DocKind | null; site_id: string | null }[];
 };
 
 export default async function PortalPage() {
@@ -16,37 +18,59 @@ export default async function PortalPage() {
   if (profile?.role === "admin") redirect("/admin/requests");
 
   if (!company) {
+    // Confirmed on another device: the application from the registration page is still waiting
+    const { data: claimed } = await supabase.rpc("claim_pending_application");
+    if (claimed) {
+      if (user.email) await sendApplicationEmails(supabase, user.email);
+      redirect("/portal");
+    }
     return <ApplicationForm defaultName={profile?.full_name ?? ""} />;
   }
 
   if (company.status === "applied") {
-    const { data } = await supabase.rpc("get_my_documents").select("id, file_name, doc_type, created_at").order("created_at");
-    const docs = data as { id: string; file_name: string; doc_type: string; created_at: string }[] | null;
+    const { data } = await supabase.rpc("get_my_account");
+    const account = data as Account | null;
+    const docs = account?.documents ?? [];
+    const sites = account?.sites ?? [];
+    const siteName = (id: string | null) => sites.find((s) => s.id === id)?.country;
 
     return (
       <div className="mx-auto max-w-2xl space-y-6">
         <div className="card space-y-2">
           <h1 className="text-xl font-bold">Your application is being reviewed</h1>
           <p className="text-sm text-slate-600">
-            Thank you, {company.contact_name ?? "there"}. We are verifying the licence of{" "}
-            <strong>{company.name}</strong>. You will receive an email as soon as your access is active.
+            Thank you, {company.contact_name ?? "there"}. We are verifying <strong>{company.name}</strong>. You will
+            receive an email as soon as your access is active.
           </p>
+          {account?.company && (
+            <p className="text-sm text-slate-600">
+              Applied as {[account.company.wants_buy && "buyer", account.company.wants_sell && "seller"].filter(Boolean).join(" and ")}
+              {account.categories.length > 0 && (
+                <> · {account.categories.map((c) => `${c.role === "buy" ? "buy" : "sell"}: ${CATEGORY_LABEL[c.category]}`).join(", ")}</>
+              )}
+            </p>
+          )}
         </div>
         <div className="card space-y-4">
           <h2 className="font-bold">Submitted documents</h2>
-          {docs && docs.length > 0 ? (
+          <p className="text-sm text-slate-600">
+            If we need anything else, we will contact you by email.
+          </p>
+          {docs.length > 0 ? (
             <ul className="divide-y divide-slate-100 text-sm">
               {docs.map((d) => (
-                <li key={d.id} className="flex justify-between py-2">
-                  <span>{d.file_name}</span>
-                  <span className="text-slate-500">{DOC_LABELS[d.doc_type] ?? d.doc_type}</span>
+                <li key={d.id} className="flex justify-between gap-4 py-2">
+                  <span className="truncate">{d.file_name}</span>
+                  <span className="shrink-0 text-right text-slate-500">
+                    {d.kind ? DOC_KIND_LABEL[d.kind] : "Document"}
+                    {siteName(d.site_id) ? ` · ${siteName(d.site_id)}` : ""}
+                  </span>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="notice-attention">No licence uploaded yet. Please add it below.</p>
+            <p className="text-sm text-slate-600">No documents received.</p>
           )}
-          <DocumentUpload companyId={company.id} />
         </div>
       </div>
     );

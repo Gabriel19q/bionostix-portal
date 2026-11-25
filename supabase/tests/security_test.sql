@@ -344,3 +344,268 @@ set role anon;
 select pg_temp.expect_error($$select public.is_admin()$$, 'anon calls is_admin');
 select pg_temp.expect_error($$select public.get_my_company()$$, 'anon calls get_my_company');
 reset role;
+
+-- Marketplace registration (stage 1a) -----------------------------------------
+insert into auth.users (id, email) values
+  ('00000000-0000-0000-0000-0000000000f1', 'seller@example.test'),
+  ('00000000-0000-0000-0000-0000000000f2', 'buyer2@example.test');
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f1');
+select pg_temp.expect_error($$select public.apply_for_access_v2('{"name":"Seller Co","contact_name":"S","phone":"+49 711 123456","wants_sell":true,"version":"t1","sites":[{"country":"Germany"}],"sell_categories":["pharma"],"seller_description":"EU wholesaler with broad portfolio","consents":{"terms":true,"confidentiality":true}}'::jsonb)$$, 'seller without commission consent');
+select pg_temp.expect_error($$select public.apply_for_access_v2('{"name":"Seller Co","contact_name":"S","phone":"+49 711 123456","wants_sell":true,"version":"t1","sites":[{"country":"Germany"}],"sell_categories":["ivd"],"seller_description":"EU wholesaler with broad portfolio","consents":{"terms":true,"confidentiality":true,"commission":true}}'::jsonb)$$, 'IVD seller without IVDR confirmation');
+select pg_temp.expect_error($$select public.apply_for_access_v2('{"name":"Seller Co","contact_name":"S","phone":"+49 711 123456","wants_sell":true,"version":"t1","sites":[],"sell_categories":["pharma"],"seller_description":"EU wholesaler with broad portfolio","consents":{"terms":true,"confidentiality":true,"commission":true}}'::jsonb)$$, 'no site');
+select pg_temp.expect_error($$select public.apply_for_access_v2('{"name":"Seller Co","contact_name":"S","phone":"+49 711 123456","wants_sell":true,"version":"t1","sites":[{"country":"Germany"}],"sell_categories":["weapons"],"seller_description":"EU wholesaler with broad portfolio","consents":{"terms":true,"confidentiality":true,"commission":true}}'::jsonb)$$, 'unknown category');
+select public.apply_for_access_v2('{"name":"Seller Co","contact_name":"S","phone":"+49 711 123456","wants_buy":true,"wants_sell":true,"version":"t1","sites":[{"country":"Germany","address":"A 1"},{"country":"Austria"}],"buy_categories":["pharma"],"sell_categories":["pharma","ivd","supplements"],"ivdr_confirmed":true,"seller_description":"EU wholesaler with broad portfolio","consents":{"terms":true,"confidentiality":true,"commission":true,"newsletter":true}}'::jsonb);
+select pg_temp.expect((public.get_my_account() -> 'company' ->> 'seller_code') like 'S-%', 'seller gets anonymous code');
+select pg_temp.expect(jsonb_array_length(public.get_my_account() -> 'sites') = 2, 'two sites stored');
+select pg_temp.expect(jsonb_array_length(public.get_my_account() -> 'categories') = 4, 'four categories stored (1 buy, 3 sell)');
+select pg_temp.expect(public.get_my_account() ->> 'newsletter' = 'pending', 'newsletter waits for double opt-in');
+select pg_temp.expect(not public.confirm_newsletter('00000000-0000-0000-0000-000000000000'), 'wrong newsletter token does nothing');
+select pg_temp.expect(public.confirm_newsletter(public.get_newsletter_token()), 'newsletter confirmed with token');
+select pg_temp.expect(public.get_my_account() ->> 'newsletter' = 'confirmed', 'newsletter shows confirmed');
+select pg_temp.expect((public.get_my_account() -> 'company' ->> 'commission_pct') is null, 'commission hidden until approved');
+select pg_temp.expect((select count(*) from public.consents) = 0, 'consents table invisible to applicant');
+select pg_temp.expect((select count(*) from public.company_sites) = 0, 'sites table invisible to applicant');
+select pg_temp.expect_error($$select public.add_company_document_v2('company/00000000-0000-0000-0000-000000000000/x.pdf','x.pdf','wholesale_licence')$$, 'document in foreign folder');
+select pg_temp.expect_error($$select public.add_company_document_v2('company/' || public.my_company_id() || '/x.pdf','x.pdf','passport')$$, 'unknown document kind');
+select public.add_company_document_v2('company/' || public.my_company_id() || '/x.pdf', 'x.pdf', 'wholesale_licence',
+  ((public.get_my_account() -> 'sites' -> 0 ->> 'id'))::uuid, 'pharma');
+select pg_temp.expect(jsonb_array_length(public.get_my_account() -> 'documents') = 1, 'document registered');
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f2');
+select public.apply_for_access_v2('{"name":"Buyer Two","contact_name":"B","phone":"+964 770 1234567","wants_buy":true,"version":"t1","sites":[{"country":"Iraq"}],"buy_categories":["pharma","supplements"],"consents":{"terms":true,"confidentiality":true}}'::jsonb);
+select pg_temp.expect((public.get_my_account() -> 'company' ->> 'seller_code') is null, 'buyer has no seller code');
+select pg_temp.expect(public.get_my_account() ->> 'newsletter' is null, 'no newsletter consent without tick');
+select pg_temp.expect_error($$select public.apply_for_access_v2('{"name":"X","contact_name":"B","phone":"+964 770 1234567","wants_buy":true,"version":"t1","sites":[{"country":"Iraq"}],"consents":{"terms":true,"confidentiality":true}}'::jsonb)$$, 'second application of buyer');
+reset role;
+create temp table other_site as select s.id from public.company_sites s join public.companies c on c.id = s.company_id where c.name = 'Seller Co' limit 1;
+grant select on other_site to authenticated;
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f2');
+select pg_temp.expect_error($$select public.add_company_document_v2('company/' || public.my_company_id() || '/y.pdf','y.pdf','import_licence',(select id from other_site))$$, 'site of another company');
+reset role;
+select pg_temp.expect((select count(*) from public.consents where kind = 'commission') = 1, 'commission consent only for seller');
+select pg_temp.expect((select count(*) from public.consents where kind = 'newsletter' and confirmed_at is not null) = 1, 'newsletter consent confirmed once');
+set role anon;
+select pg_temp.expect_error($$select public.get_my_account()$$, 'anon cannot call get_my_account');
+select pg_temp.expect_error($$select public.apply_for_access_v2('{}'::jsonb)$$, 'anon cannot apply');
+reset role;
+update public.consents set confirmed_at = null where kind = 'newsletter';
+create temp table seller_token as select confirm_token from public.consents where kind = 'newsletter';
+grant select on seller_token to authenticated;
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f2');
+select pg_temp.expect(not public.confirm_newsletter((select confirm_token from seller_token)), 'cannot confirm another user''s newsletter');
+reset role;
+select pg_temp.expect((select confirmed_at from public.consents where kind = 'newsletter') is null, 'foreign token left unconfirmed');
+
+-- Marketplace settings (stage 1b) ------------------------------------------------
+insert into public.app_settings (key, value) values ('standard_commission_pct', '3');
+update public.companies set sell_status = 'approved' where name = 'Seller Co';
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f1');
+select pg_temp.expect((public.get_my_account() -> 'company' ->> 'commission_pct')::numeric = 3, 'approved seller sees standard commission');
+select pg_temp.expect((select count(*) from public.app_settings) = 0, 'settings invisible to sellers');
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f2');
+select pg_temp.expect((public.get_my_account() -> 'company' ->> 'commission_pct') is null, 'buyer never sees a commission');
+reset role;
+update public.companies set commission_pct = 2.5 where name = 'Seller Co';
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f1');
+select pg_temp.expect((public.get_my_account() -> 'company' ->> 'commission_pct')::numeric = 2.5, 'own commission rate overrides standard');
+reset role;
+
+-- Marketplace listings (stage 1c) ------------------------------------------------
+update public.companies set status = 'approved' where name = 'Seller Co';
+update public.company_categories set status = 'approved'
+  where role = 'sell' and category in ('pharma', 'supplements') and company_id = (select id from public.companies where name = 'Seller Co');
+create temp table good_offer as select '{"category":"pharma","product_name":"Paracetamol 500 mg tablets","brand":"Examplamol",
+  "active_ingredients":"Paracetamol 500 mg","dosage_form":"Tablet","units_per_pack":20,"unit":"tablets",
+  "packaging_language":"German","quantity":1000,"price":1.2,"expiry_date":"2030-05-31","incoterm":"EXW",
+  "incoterm_place":"Hamburg","valid_until":"2030-01-01","ship_mode":"except","ship_countries":["Russia"],
+  "documents_available":["CoA","CPP"],"country_prices":[{"country":"Iraq","price":1.1}]}'::jsonb as o;
+grant select on good_offer to authenticated;
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f2');
+select pg_temp.expect_error($$select public.save_listings(jsonb_build_array((select o from good_offer)))$$, 'buyer cannot list offers');
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f1');
+select pg_temp.expect(public.save_listings(jsonb_build_array((select o from good_offer))) = 1, 'approved seller saves an offer');
+select pg_temp.expect(jsonb_array_length(public.get_my_listings()) = 1, 'seller sees own offer');
+select pg_temp.expect((public.get_my_listings() -> 0 -> 'country_prices' -> 0 ->> 'price')::numeric = 1.1, 'country price stored');
+select pg_temp.expect_error($$select public.save_listings(jsonb_build_array((select o from good_offer) || '{"category":"ivd"}'))$$, 'category not approved');
+select pg_temp.expect_error($$select public.save_listings(jsonb_build_array((select o from good_offer) - 'active_ingredients'))$$, 'pharma without ingredients');
+select pg_temp.expect_error($$select public.save_listings(jsonb_build_array((select o from good_offer) || '{"dosage_form":"Other"}'))$$, 'Other without description');
+select pg_temp.expect_error($$select public.save_listings(jsonb_build_array((select o from good_offer) || '{"min_shelf_life_months":24}'))$$, 'two expiry values');
+select pg_temp.expect_error($$select public.save_listings(jsonb_build_array((select o from good_offer) || '{"expiry_date":"2020-01-01"}'))$$, 'expired product');
+select pg_temp.expect_error($$select public.save_listings(jsonb_build_array((select o from good_offer) || '{"price":0}'))$$, 'zero price');
+select pg_temp.expect_error($$select public.save_listings(jsonb_build_array((select o from good_offer) || '{"documents_available":["Passport"]}'))$$, 'unknown document');
+select pg_temp.expect_error($$select public.save_listings(jsonb_build_array((select o from good_offer) || '{"buyers_mode":"only","buyers_countries":[]}'))$$, 'only-rule without countries');
+select pg_temp.expect(public.save_listings(jsonb_build_array((select o from good_offer) || jsonb_build_object('id', public.get_my_listings() -> 0 ->> 'id', 'quantity', 500))) = 1, 'seller updates own offer');
+select pg_temp.expect((public.get_my_listings() -> 0 ->> 'quantity')::int = 500 and jsonb_array_length(public.get_my_listings()) = 1, 'update did not duplicate');
+select pg_temp.expect((select count(*) from public.listings) = 0, 'listings table invisible to sellers');
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f2');
+select pg_temp.expect(jsonb_array_length(public.get_my_listings()) = 0, 'buyer sees no seller offers here');
+reset role;
+create temp table seller_offer as select id from public.listings limit 1;
+grant select on seller_offer to authenticated;
+insert into auth.users (id, email) values ('00000000-0000-0000-0000-0000000000f3', 'seller2@example.test');
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f3');
+select public.apply_for_access_v2('{"name":"Seller Two","contact_name":"S2","phone":"+49 711 654321","wants_sell":true,"version":"t1","sites":[{"country":"Germany"}],"sell_categories":["pharma"],"seller_description":"Another EU wholesaler for tests","consents":{"terms":true,"confidentiality":true,"commission":true}}'::jsonb);
+reset role;
+update public.companies set status = 'approved', sell_status = 'approved' where name = 'Seller Two';
+update public.company_categories set status = 'approved' where company_id = (select id from public.companies where name = 'Seller Two');
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f3');
+select pg_temp.expect_error($$select public.save_listings(jsonb_build_array((select o from good_offer) || jsonb_build_object('id', (select id from seller_offer))))$$, 'cannot overwrite another seller''s offer');
+select pg_temp.expect(public.end_listings(array[(select id from seller_offer)]) = 0, 'cannot end another seller''s offer');
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f1');
+select pg_temp.expect(public.end_listings(array[(select id from seller_offer)]) = 1, 'seller ends own offer');
+reset role;
+select pg_temp.expect((select status from public.listings limit 1) = 'ended', 'offer marked ended');
+
+-- Registration on one page: application in metadata, files in pending/<user>/ --------
+insert into auth.users (id, email, raw_user_meta_data) values ('00000000-0000-0000-0000-0000000000f4', 'onepage@example.test',
+  '{"full_name":"One Page","application":{"name":"One Page Co","contact_name":"O","phone":"+49 711 777777","wants_buy":true,"wants_sell":true,"version":"t1","sites":[{"country":"Germany"},{"country":"Iraq"}],"buy_categories":["pharma"],"sell_categories":["supplements"],"consents":{"terms":true,"confidentiality":true,"commission":true}}}');
+insert into auth.users (id, email, email_confirmed_at) values ('00000000-0000-0000-0000-0000000000f5', 'old@example.test', now());
+set role anon;
+insert into storage.objects (bucket_id, name) values ('documents', 'pending/00000000-0000-0000-0000-0000000000f4/wholesale_licence__1__pharma__1700000000-licence.pdf');
+insert into storage.objects (bucket_id, name) values ('documents', 'pending/00000000-0000-0000-0000-0000000000f4/registry_extract__x__x__1700000001-register.pdf');
+select pg_temp.expect_error($$insert into storage.objects (bucket_id, name) values ('documents', 'pending/00000000-0000-0000-0000-0000000000f5/x__x__x__1-a.pdf')$$, 'no pending upload for confirmed accounts');
+select pg_temp.expect_error($$insert into storage.objects (bucket_id, name) values ('documents', 'company/00000000-0000-0000-0000-0000000000f4/a.pdf')$$, 'anon cannot upload into company folders');
+select pg_temp.expect_error($$select public.claim_pending_application()$$, 'anon cannot claim');
+reset role;
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f5');
+select pg_temp.expect(public.claim_pending_application() is null, 'nothing to claim without application');
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f4');
+select pg_temp.expect(public.claim_pending_application() is not null, 'application claimed after sign-in');
+select pg_temp.expect(jsonb_array_length(public.get_my_account() -> 'documents') = 2, 'pending files registered');
+select pg_temp.expect((select count(*) from jsonb_array_elements(public.get_my_account() -> 'documents') d
+  where d ->> 'kind' = 'wholesale_licence' and d ->> 'site_id' = public.get_my_account() -> 'sites' -> 1 ->> 'id') = 1, 'licence linked to second site');
+select pg_temp.expect(public.claim_pending_application() is null, 'claim only once');
+reset role;
+select pg_temp.expect((select raw_user_meta_data ? 'application' from auth.users where id = '00000000-0000-0000-0000-0000000000f4') = false, 'application removed from metadata');
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f1');
+select pg_temp.expect(public.save_listings(jsonb_build_array((select o from good_offer) || '{"product_name":"Paracetamol 500 mg tablets","name_on_pack":"Paracetamol 500 mg Tabletten"}')) = 1, 'offer with name on pack saved');
+select pg_temp.expect(exists (select 1 from jsonb_array_elements(public.get_my_listings()) l where l ->> 'name_on_pack' = 'Paracetamol 500 mg Tabletten'), 'name on pack returned');
+reset role;
+
+-- Admin prepares offers for a seller (drafts) ------------------------------------
+create temp table seller_co as select id from public.companies where name = 'Seller Co';
+grant select on seller_co to authenticated;
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f1');
+select pg_temp.expect_error($$select public.admin_prepare_listings((select id from seller_co), jsonb_build_array((select o from good_offer)))$$, 'seller cannot use admin import');
+select pg_temp.expect_error($$select public.save_listings_for((select id from seller_co), jsonb_build_array((select o from good_offer)), 'active')$$, 'internal save function not callable');
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000a');
+select pg_temp.expect(public.admin_prepare_listings((select id from seller_co), jsonb_build_array((select o from good_offer) || '{"product_name":"Draft offer"}')) = 1, 'admin prepares a draft for the seller');
+select pg_temp.expect((select status from public.listings where product_name = 'Draft offer') = 'draft', 'prepared offer is a draft');
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f1');
+select pg_temp.expect(public.save_listings(jsonb_build_array((select o from good_offer) || jsonb_build_object('id', (select l ->> 'id' from jsonb_array_elements(public.get_my_listings()) l where l ->> 'product_name' = 'Draft offer'), 'product_name', 'Draft offer'))) = 1, 'seller publishes the draft');
+reset role;
+select pg_temp.expect((select status from public.listings where product_name = 'Draft offer') = 'active', 'draft is now active');
+
+-- Stage 2a: buyer catalog, product requests, matches -------------------------------
+update public.companies set status = 'approved', buy_status = 'approved' where name = 'Buyer Two';
+update public.company_categories set status = 'approved' where company_id = (select id from public.companies where name = 'Buyer Two');
+insert into public.listings (seller_company_id, category, product_name, brand, active_ingredients, dosage_form, units_per_pack, unit,
+  packaging_language, quantity, price, expiry_date, incoterm, incoterm_place, valid_until, buyers_mode, buyers_countries)
+select id, 'pharma', 'Germany-only offer', 'X', 'Paracetamol 500 mg', 'Tablet', 20, 'tablets', 'Germany', 10, 2, current_date + 400,
+  'EXW', 'Hamburg', current_date + 30, 'only', '{Germany}' from public.companies where name = 'Seller Co';
+create temp table buyer_req as select '{"category":"pharma","product_name":"Paracetamol 500 mg tablets","active_ingredients":"Paracetamol 500 mg","dosage_form":"Tablet","units_per_pack":20,"quantity":500,"delivery_country":"Iraq","order_type":"one_time","registration_planned":false}'::jsonb
+  || jsonb_build_object('needed_by', current_date + 60) as o;
+grant select on buyer_req to authenticated;
+create temp table buyer_co as select id from public.companies where name = 'Buyer Two';
+grant select on buyer_co to authenticated;
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f2');
+select pg_temp.expect(jsonb_array_length(public.get_market_catalog()) >= 1, 'approved buyer sees offers');
+select pg_temp.expect(not exists (select 1 from jsonb_array_elements(public.get_market_catalog()) x where x ->> 'product_name' = 'Germany-only offer'), 'offer for German buyers hidden from Iraqi buyer');
+select pg_temp.expect(not exists (select 1 from jsonb_array_elements(public.get_market_catalog()) x where x ? 'seller_company_id' or x ? 'buyers_countries' or x ? 'ship_countries'), 'no seller id or country lists for buyers');
+select pg_temp.expect((select (x ->> 'price')::numeric from jsonb_array_elements(public.get_market_catalog()) x where x ->> 'product_name' = 'Paracetamol 500 mg tablets' limit 1) = 1.1, 'buyer sees the price for Iraq');
+select pg_temp.expect((select x ->> 'seller_code' from jsonb_array_elements(public.get_market_catalog()) x limit 1) like 'S-%', 'seller shown only by code');
+select pg_temp.expect(public.save_product_requests(jsonb_build_array((select o from buyer_req),
+  (select o from buyer_req) || '{"product_name":"Paracetamol 1000","active_ingredients":"Paracetamol 1000 mg"}')) = 2, 'buyer saves product requests');
+select pg_temp.expect((select count(*) from jsonb_array_elements(public.get_my_request_matches()) x where x ->> 'kind' = 'exact') >= 1, 'exact match found');
+select pg_temp.expect((select count(*) from jsonb_array_elements(public.get_my_request_matches()) x where x ->> 'kind' = 'similar') >= 1, 'similar match (other strength) found');
+select pg_temp.expect_error($$select public.save_product_requests(jsonb_build_array((select o from buyer_req) - 'active_ingredients'))$$, 'pharma request needs ingredients');
+select pg_temp.expect_error($$select public.save_product_requests(jsonb_build_array((select o from buyer_req) - 'order_type'))$$, 'request needs order type');
+select pg_temp.expect_error($$select public.save_product_requests(jsonb_build_array((select o from buyer_req) || '{"order_type":"annual"}'))$$, 'annual quantity needs delivery schedule');
+select pg_temp.expect_error($$select public.save_product_requests(jsonb_build_array((select o from buyer_req) - 'registration_planned'))$$, 'request needs registration answer');
+select pg_temp.expect_error($$select public.save_product_requests(jsonb_build_array((select o from buyer_req) - 'needed_by'))$$, 'request needs delivery date');
+select pg_temp.expect_error($$select public.save_product_requests(jsonb_build_array((select o from buyer_req) || '{"required_documents":["Secret file"]}'))$$, 'unknown required document refused');
+select pg_temp.expect(public.save_product_requests(jsonb_build_array((select o from buyer_req) || '{"product_name":"Annual tender","order_type":"annual","delivery_schedule":"quarterly","registration_planned":true,"required_documents":["CoA","GMP certificate"]}')) = 1, 'annual request with documents saved');
+select pg_temp.expect((select x ->> 'delivery_schedule' = 'quarterly' and (x -> 'required_documents') ? 'GMP certificate'
+  from jsonb_array_elements(public.get_my_product_requests()) x where x ->> 'product_name' = 'Annual tender'), 'buyer reads order terms back');
+select pg_temp.expect(public.close_product_requests(array[(select (x ->> 'id')::uuid from jsonb_array_elements(public.get_my_product_requests()) x limit 1)]) = 1, 'buyer closes a request');
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f3');
+select pg_temp.expect(jsonb_array_length(public.get_market_catalog()) = 0, 'seller-only company sees no buyer catalog');
+select pg_temp.expect_error($$select public.save_product_requests(jsonb_build_array((select o from buyer_req)))$$, 'seller-only company cannot request');
+select pg_temp.expect_error($$select public.admin_prepare_product_requests((select id from buyer_co), jsonb_build_array((select o from buyer_req)))$$, 'non-admin cannot prepare requests');
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000a');
+select pg_temp.expect(public.admin_prepare_product_requests((select id from buyer_co), jsonb_build_array((select o from buyer_req) || '{"product_name":"Prepared request"}')) = 1, 'admin prepares a request for the buyer');
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f2');
+select pg_temp.expect((select x ->> 'status' from jsonb_array_elements(public.get_my_product_requests()) x where x ->> 'product_name' = 'Prepared request') = 'draft', 'buyer sees prepared draft');
+select pg_temp.expect(not exists (select 1 from jsonb_array_elements(public.get_my_request_matches()) m
+  join jsonb_array_elements(public.get_my_product_requests()) r on r ->> 'id' = m ->> 'request_id' where r ->> 'status' = 'draft'), 'drafts get no matches yet');
+select pg_temp.expect(public.save_product_requests(jsonb_build_array((select o from buyer_req) || jsonb_build_object('id', (select x ->> 'id' from jsonb_array_elements(public.get_my_product_requests()) x where x ->> 'product_name' = 'Prepared request'), 'product_name', 'Prepared request'))) = 1, 'buyer confirms the draft');
+select pg_temp.expect((select x ->> 'status' from jsonb_array_elements(public.get_my_product_requests()) x where x ->> 'product_name' = 'Prepared request') = 'open', 'confirmed request is open');
+reset role;
+
+-- Stage 2c: orders between buyer and seller ---------------------------------------------------
+create temp table order_offer as select id from public.listings
+  where product_name = 'Paracetamol 500 mg tablets' and status = 'active' and quantity >= 100 order by created_at limit 1;
+grant select on order_offer to authenticated;
+create temp table order_req as select jsonb_build_object('listing_id', (select id from order_offer), 'quantity', 100,
+  'delivery_country', 'Iraq', 'needed_by', current_date + 30, 'required_documents', '["CoA"]'::jsonb, 'comment', 'Please ship fast') as o;
+grant select on order_req to authenticated;
+create temp table ord (id uuid);
+grant all on ord to authenticated;
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f2');
+select pg_temp.expect_error($$select public.submit_order((select o from order_req) || '{"delivery_country":"Russia"}')$$, 'no order to a blocked ship-to country');
+select pg_temp.expect_error($$select public.submit_order((select o from order_req) || '{"quantity":999999}')$$, 'no order above available quantity');
+select pg_temp.expect_error($$select public.submit_order((select o from order_req) || '{"required_documents":["Stability data"]}')$$, 'only documents the seller offers');
+insert into ord select public.submit_order((select o from order_req));
+select pg_temp.expect((select count(*) from ord) = 1, 'buyer sends a binding request');
+select pg_temp.expect((public.get_my_order((select id from ord)) ->> 'unit_price')::numeric = 1.1, 'order uses the price for the buyer country');
+select pg_temp.expect((public.get_my_order((select id from ord)) -> 'seller' ->> 'name') is null, 'buyer does not see the seller name before the invoice');
+select pg_temp.expect(not (public.get_my_order((select id from ord)) ? 'commission_pct') and not (public.get_my_order((select id from ord)) ? 'commission_eur'), 'buyer never sees the commission');
+select pg_temp.expect_error($$select public.respond_to_order((select id from ord), 'accept')$$, 'buyer cannot accept own request');
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f3');
+select pg_temp.expect(public.get_my_order((select id from ord)) is null, 'other company cannot read the order');
+select pg_temp.expect_error($$select public.respond_to_order((select id from ord), 'accept')$$, 'other company cannot answer the order');
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f1');
+select pg_temp.expect((public.get_my_order((select id from ord)) -> 'buyer' ->> 'name') is null, 'seller does not see the buyer name before acceptance');
+select pg_temp.expect((public.get_my_order((select id from ord)) -> 'buyer' ->> 'country') = 'Iraq', 'seller sees the buyer country');
+select pg_temp.expect_error($$select public.add_order_document((select id from ord), 'order/' || (select id from ord) || '/x.pdf', 'x.pdf', 'invoice')$$, 'no documents before acceptance');
+select public.respond_to_order((select id from ord), 'counter', '{"quantity":80,"price":1.15,"note":"Only 80 left"}');
+select pg_temp.expect((public.get_my_order((select id from ord)) ->> 'status') = 'countered', 'seller makes a counter-offer');
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f2');
+select public.answer_counter_offer((select id from ord), true);
+select pg_temp.expect((public.get_my_order((select id from ord)) ->> 'status') = 'accepted' and (public.get_my_order((select id from ord)) ->> 'quantity')::int = 80, 'buyer accepts the counter-offer');
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f1');
+select pg_temp.expect((public.get_my_order((select id from ord)) -> 'buyer' ->> 'name') = 'Buyer Two', 'seller sees the buyer after acceptance');
+reset role;
+select pg_temp.expect((select commission_pct = 2.5 and commission_eur = round(80 * 1.15 * 2.5 / 100, 2) from public.market_orders where id = (select id from ord)), 'commission fixed at acceptance');
+insert into storage.objects (bucket_id, name) select 'documents', 'order/' || id || '/1-invoice.pdf' from ord;
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f1');
+select public.add_order_document((select id from ord), 'order/' || (select id from ord) || '/1-invoice.pdf', 'invoice.pdf', 'invoice');
+select public.set_order_progress((select id from ord), 'shipped', 'DHL 123');
+select pg_temp.expect_error($$select public.set_order_progress((select id from ord), 'paid')$$, 'status only moves forward');
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f2');
+select pg_temp.expect((public.get_my_order((select id from ord)) -> 'seller' ->> 'name') = 'Seller Co', 'buyer learns the seller with the invoice');
+select pg_temp.expect(public.is_order_party((select id::text from ord)), 'buyer may read the order files');
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f3');
+select pg_temp.expect(not public.is_order_party((select id::text from ord)), 'other company may not read the order files');
+select pg_temp.expect(not public.can_see_buyer_files((select id::text from buyer_co)), 'other company may not read the buyer licences');
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f1');
+select pg_temp.expect(public.can_see_buyer_files((select id::text from buyer_co)), 'seller of an accepted order may read the buyer licences');
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000f2');
+insert into ord select public.submit_order((select o from order_req));
+select public.withdraw_order((select (x ->> 'id')::uuid from jsonb_array_elements(public.get_my_orders()) x where x ->> 'status' = 'requested'));
+select pg_temp.expect_error($$select public.withdraw_order((select (x ->> 'id')::uuid from jsonb_array_elements(public.get_my_orders()) x where x ->> 'status' = 'shipped'))$$, 'accepted order cannot be withdrawn');
+select pg_temp.expect((select count(*) from jsonb_array_elements(public.get_my_orders())) = 2, 'buyer lists own orders');
+reset role;

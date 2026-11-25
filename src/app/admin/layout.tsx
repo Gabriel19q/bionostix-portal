@@ -3,12 +3,12 @@ import { getSession } from "@/lib/session";
 import { NavLink } from "@/components/nav-link";
 
 const tabs = [
-  { href: "/admin/requests", label: "Requests" },
-  { href: "/admin/sourcing", label: "Sourcing" },
-  { href: "/admin", label: "Customers" },
-  { href: "/admin/catalog", label: "Catalog" },
-  { href: "/admin/import", label: "Import stock list" },
-  { href: "/admin/groups", label: "Customer groups" },
+  { href: "/admin/requests", label: "Orders" },
+  { href: "/admin/sourcing", label: "Product requests" },
+  { href: "/admin", label: "Companies" },
+  { href: "/admin/catalog", label: "Product offering" },
+  { href: "/admin/import", label: "Import stock for seller" },
+  { href: "/admin/import-requests", label: "Import product requests for buyer" },
   { href: "/admin/activity", label: "Activity" },
 ];
 
