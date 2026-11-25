@@ -1,110 +1,92 @@
 import Link from "next/link";
 import { getSession } from "@/lib/session";
-import { displayDate, eur, today } from "@/lib/format";
-import { StatusBadge, type RequestStatus } from "@/lib/status";
+import { displayDate, eur } from "@/lib/format";
+import { ORDER_STATUS, OPEN_STATUSES, type OrderStatus } from "@/lib/orders";
 
 type Row = {
-  id: string;
-  number: string;
-  status: RequestStatus;
-  payment_due_date: string | null;
-  created_at: string;
-  updated_at: string;
-  delivery_country: string | null;
-  companies: { name: string } | null;
-  request_items: {
-    requested_qty: number;
-    unit_price_snapshot: number | null;
-    confirmed_qty: number | null;
-    confirmed_unit_price: number | null;
-    request_item_costs: { purchase_price_snapshot: number | null } | null;
-  }[];
+  id: string; number: string; status: OrderStatus; quantity: number; unit_price: number; created_at: string;
+  accepted_at: string | null; commission_pct: number | null; commission_eur: number | null; product: { product_name: string };
+  buyer: { name: string; country: string } | null; seller: { name: string; seller_code: string | null } | null;
 };
 
-const CLOSED: RequestStatus[] = ["completed", "declined", "cancelled"];
+const DEAL: OrderStatus[] = ["accepted", "paid", "shipped", "completed"];
 
-export default async function AdminRequestsPage({ searchParams }: { searchParams: Promise<{ show?: string }> }) {
+// All orders between buyers and sellers, with the commission per seller and month (due at acceptance)
+export default async function AdminOrdersPage({ searchParams }: { searchParams: Promise<{ show?: string }> }) {
   const { show = "open" } = await searchParams;
   const { supabase } = await getSession();
-  const { data } = await supabase
-    .from("requests")
-    .select("id, number, status, payment_due_date, created_at, updated_at, delivery_country, companies(name), request_items(requested_qty, unit_price_snapshot, confirmed_qty, confirmed_unit_price, request_item_costs(purchase_price_snapshot))")
-    .order("created_at", { ascending: false })
-    .returns<Row[]>();
-
+  const { data } = await supabase.from("market_orders")
+    .select("id, number, status, quantity, unit_price, created_at, accepted_at, commission_pct, commission_eur, product, buyer:companies!market_orders_buyer_company_id_fkey(name, country), seller:companies!market_orders_seller_company_id_fkey(name, seller_code)")
+    .order("created_at", { ascending: false }).limit(1000).returns<Row[]>();
   const all = data ?? [];
-  const rows = all.filter((r) => (show === "all" ? true : show === "closed" ? CLOSED.includes(r.status) : !CLOSED.includes(r.status)));
-  const newCount = all.filter((r) => r.status === "new").length;
+  const rows = show === "all" ? all : all.filter((r) => OPEN_STATUSES.includes(r.status));
+
+  // Commission per month and seller
+  const byMonth = new Map<string, Map<string, { orders: number; value: number; commission: number }>>();
+  for (const r of all.filter((x) => DEAL.includes(x.status) && x.accepted_at)) {
+    const month = r.accepted_at!.slice(0, 7);
+    const seller = `${r.seller?.name ?? "?"} (${r.seller?.seller_code ?? ""})`;
+    const m = byMonth.get(month) ?? new Map();
+    const v = m.get(seller) ?? { orders: 0, value: 0, commission: 0 };
+    v.orders += 1; v.value += r.quantity * r.unit_price; v.commission += Number(r.commission_eur ?? 0);
+    m.set(seller, v); byMonth.set(month, m);
+  }
+  const months = [...byMonth.keys()].sort().reverse();
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">Orders</h1>
-          <p className="text-sm text-slate-600">{newCount === 0 ? "No new requests." : `${newCount} new request(s) waiting.`}</p>
+          <p className="text-sm text-slate-600">Binding requests and concluded orders between buyers and sellers.</p>
         </div>
-        <div className="flex gap-1 text-sm">
-          {[["open", "Open"], ["closed", "Closed"], ["all", "All"]].map(([k, label]) => (
-            <Link key={k} href={`/admin/requests?show=${k}`}
-              className={`rounded-md px-3 py-1.5 ${show === k ? "bg-brand-600 text-white" : "border border-slate-300 bg-white"}`}>
-              {label}
-            </Link>
-          ))}
+        <div className="flex gap-2 text-sm">
+          <Link href="/admin/requests" className={show === "all" ? "btn-secondary" : "btn-primary"}>Open</Link>
+          <Link href="/admin/requests?show=all" className={show === "all" ? "btn-primary" : "btn-secondary"}>All</Link>
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
-        <table className="min-w-full text-sm">
-          <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
-            <tr>
-              <th className="px-3 py-2">Request</th><th className="px-3 py-2">Customer</th><th className="px-3 py-2">Received</th>
-              <th className="px-3 py-2 text-right">Lines</th><th className="px-3 py-2 text-right">Value</th>
-              <th className="px-3 py-2 text-right">Gross margin</th><th className="px-3 py-2">Status</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {rows.length === 0 && (
-              <tr><td colSpan={7} className="px-3 py-6 text-center text-slate-500">Nothing here.</td></tr>
-            )}
-            {rows.map((r) => {
-              let value = 0, cost = 0, marginValue = 0;
-              for (const i of r.request_items) {
-                const qty = i.confirmed_qty ?? i.requested_qty;
-                const price = i.confirmed_unit_price ?? i.unit_price_snapshot;
-                const purchase = i.request_item_costs?.purchase_price_snapshot ?? null;
-                if (price !== null) value += qty * Number(price);
-                if (price !== null && purchase !== null) {
-                  cost += qty * Number(purchase);
-                  marginValue += qty * Number(price);
-                }
-              }
-              return (
-                <tr key={r.id} className={r.status === "new" ? "[&>td]:bg-sand" : ""}>
-                  <td className="px-3 py-2">
-                    <Link href={`/admin/requests/${r.id}`} className="font-medium text-brand-600 hover:underline">{r.number}</Link>
-                  </td>
-                  <td className="px-3 py-2">
-                    {r.companies?.name}
-                    {r.delivery_country && <span className="text-xs text-slate-500"> · {r.delivery_country}</span>}
-                  </td>
-                  <td className="px-3 py-2">{displayDate(r.created_at)}</td>
-                  <td className="px-3 py-2 text-right">{r.request_items.length}</td>
-                  <td className="px-3 py-2 text-right">{eur(value)}</td>
-                  <td className={`px-3 py-2 text-right ${marginValue - cost < 0 ? "font-bold text-danger" : ""}`}>
-                    {eur(marginValue - cost)}
-                    {marginValue > 0 && <span className="text-xs text-slate-500"> ({Math.round(((marginValue - cost) / marginValue) * 100)}%)</span>}
-                  </td>
-                  <td className="px-3 py-2">
-                    <StatusBadge status={r.status} viewer="admin" />
-                    {r.status === "proforma_sent" && r.payment_due_date && r.payment_due_date < today() && (
-                      <div className="mt-1 text-xs font-bold text-danger">Payment overdue since {displayDate(r.payment_due_date)}</div>
-                    )}
-                  </td>
+      {rows.length === 0 ? <div className="card text-sm text-slate-600">No orders here.</div> : (
+        <div className="card overflow-x-auto p-0">
+          <table className="w-full text-sm">
+            <thead className="bg-slate-50 text-left text-xs text-slate-600">
+              <tr><th className="p-3">Order</th><th className="p-3">Product</th><th className="p-3">Buyer</th><th className="p-3">Seller</th>
+                <th className="p-3 text-right">Value</th><th className="p-3 text-right">Commission</th><th className="p-3">Status</th></tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {rows.map((r) => (
+                <tr key={r.id}>
+                  <td className="p-3"><Link href={`/admin/requests/${r.id}`} className="font-bold text-brand-600 underline">{r.number}</Link>
+                    <span className="block text-xs text-slate-500">{displayDate(r.created_at)}</span></td>
+                  <td className="p-3">{r.product.product_name}<span className="block text-xs text-slate-500">{r.quantity} × {eur(r.unit_price)}</span></td>
+                  <td className="p-3">{r.buyer?.name}<span className="block text-xs text-slate-500">{r.buyer?.country}</span></td>
+                  <td className="p-3">{r.seller?.name}<span className="block text-xs text-slate-500">{r.seller?.seller_code}</span></td>
+                  <td className="p-3 text-right">{eur(r.quantity * r.unit_price)}</td>
+                  <td className="p-3 text-right">{r.commission_eur !== null ? <>{eur(r.commission_eur)}<span className="block text-xs text-slate-500">{r.commission_pct} %</span></> : "–"}</td>
+                  <td className="p-3"><span className={ORDER_STATUS[r.status].tag}>{ORDER_STATUS[r.status].label}</span></td>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <div className="card space-y-3">
+        <h2 className="font-bold">Commission due (by month of acceptance)</h2>
+        <p className="text-xs text-slate-600">Due at acceptance, also if the buyer does not pay the seller. Invoice the seller; payment by bank transfer within 14 days.</p>
+        {months.length === 0 ? <p className="text-sm text-slate-600">No concluded orders yet.</p> : months.map((m) => (
+          <div key={m}>
+            <h3 className="text-sm font-bold">{m}</h3>
+            <table className="w-full text-sm">
+              <tbody className="divide-y divide-slate-100">
+                {[...byMonth.get(m)!.entries()].map(([seller, v]) => (
+                  <tr key={seller}><td className="py-1">{seller}</td><td className="py-1 text-right">{v.orders} order(s)</td>
+                    <td className="py-1 text-right">{eur(v.value)}</td><td className="py-1 text-right font-bold">{eur(v.commission)}</td></tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ))}
       </div>
     </div>
   );

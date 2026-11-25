@@ -53,7 +53,8 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
                       <NavLink href="/portal/catalog">Product offering</NavLink>
                       <NavLink href="/portal/requests">My orders</NavLink>
                       <NavLink href="/portal/sourcing">Product requests</NavLink>
-                      {seller && <NavLink href="/portal/sell">My offers</NavLink>}
+                      {seller && <NavLink href="/portal/sell" not="/portal/sell/orders">My offers</NavLink>}
+                      {seller && <NavLink href="/portal/sell/orders">Incoming orders</NavLink>}
                     </>
                   )}
                   <form action="/auth/signout" method="post">

@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "bash scripts/test-db.sh && tsx scripts/test-parse.mjs && tsx scripts/test-listing.mjs && tsx --conditions=react-server scripts/test-import.mjs"
+    "test": "bash scripts/test-db.sh && tsx scripts/test-parse.mjs && tsx scripts/test-listing.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

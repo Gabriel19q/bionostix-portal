@@ -186,7 +186,10 @@ function MatchList({ title, items, hint }: { title: string; items: Match[]; hint
               </div>
               <div className="text-xs text-slate-600">Seller {o.seller_code} · Licence verified by Bionostix</div>
             </div>
-            <div className="text-right font-bold">{eur(o.price)}<span className="block text-xs font-normal text-slate-600">per pack</span></div>
+            <div className="flex flex-col items-end gap-1 text-right font-bold">
+              <span>{eur(o.price)}<span className="block text-xs font-normal text-slate-600">per pack</span></span>
+              <Link href={`/portal/catalog/${o.id}`} className="text-xs font-normal text-brand-600 underline">Send request</Link>
+            </div>
           </li>
         ))}
       </ul>

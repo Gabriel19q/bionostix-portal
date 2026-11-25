@@ -61,12 +61,15 @@ Je Angebot (Standard je Verkäufer): „Buyers based in“ (Sitz/Standort des K�
 7. Versand: Verkäufer lädt die angefragten Dokumente, Rechnung, Lieferschein, Sendungsnummer hoch → „Shipped“ → „Completed“.
 Niemand kann eigene Angebote anfragen. Kommunikation über das Portal.
 
+**Umsetzung (25.11.2026):** Katalog „Product offering“ mit Filtern (Suche, Bereich, Form, Packung, Restlaufzeit, Menge, Lieferbedingung) und Karten; „Send request“ öffnet das Anfrageformular (Menge innerhalb MOQ/Bestand, Lieferland, Endbestimmungsland, spätestes Lieferdatum, Dokumente aus der Liste des Verkäufers, Kommentar, Häkchen „binding“). Käufer: „My orders“; Verkäufer: „Incoming orders“ (Annehmen, Gegenvorschlag mit Häkchen „Angebot im Katalog anpassen“, Ablehnen mit Grund; danach „Payment received“, „Shipped“ mit Sendungsnummer, „Completed“). Bei Annahme sinkt die verfügbare Menge im Angebot. Dokumente erst nach Annahme; Rechnung oder Auftragsbestätigung des Verkäufers zeigt dem Käufer Name und Adresse des Verkäufers. Admin-Reiter „Orders“ mit Provision je Bestellung und Monatsübersicht je Verkäufer. E-Mails an die Gegenseite ohne deren Adresse preiszugeben (serverseitig, braucht `SUPABASE_SERVICE_ROLE_KEY` in Netlify). Startseite „Overview“: To-dos (Gegenvorschlag beantworten, Anfrage beantworten, Rechnung hochladen, vorbereitete Gesuche/Angebote, abgelaufene Angebote) und Übersicht Kaufen/Verkaufen.
+
 ### Provision
 Standardsatz in der Provisionsvereinbarung; abweichender Satz je Verkäufer (eigener Vertrag), optional je Bereich; der gültige Satz wird bei Annahme in der Bestellung gespeichert. Fällig **bei Annahme** (Zahlungsmoral des Käufers ist nicht Sache von Bionostix). Der Satz steht in der Provisionsvereinbarung bei der Registrierung, wird danach im Portal nicht aktiv angezeigt; Admin-Übersicht fälliger Provisionen je Verkäufer und Monat. Käufer sehen nirgends eine Provision.
 
 ### Abo für Käufer
 9,99 € netto pro Monat (Entscheidung 23.11.2026), die ersten 3 Monate kostenlos, automatische Verlängerung, monatlich kündbar zum Monatsende (auch im kostenlosen Zeitraum); nach dem kostenlosen Zeitraum wird ohne Kündigung automatisch abgebucht, ohne gesonderten Hinweis. Verkäufer zahlen kein Abo; Firmen, die auch kaufen, brauchen es. Keine Zahlung per Überweisung (Entscheidung 23.11.2026).
-- **Kreditkarte bei der Anmeldung, für alle Käufer** (Entscheidung 25.11.2026): Am Ende der Registrierung hinterlegt jeder Käufer seine Karte (Prüfzahlung 0,00 €). Grund: Bereiche wie Nahrungsergänzung werden oft sofort freigegeben, andere erst nach Prüfung; der Käufer soll ohne weiteren Bezahlschritt loslegen. Die 3 Gratismonate beginnen mit der ersten Freigabe eines Bereichs. Abgelehnte Firmen: nie Abbuchung, Karte wird gelöscht.
+- **Start ohne Karte** (Entscheidung 25.11.2026): Das Portal geht zuerst ohne Kartenabfrage live; Karte, Abo und Rechnungen kommen mit Etappe 3. Bestehende Käufer werden dann beim nächsten Login einmalig nach der Karte gefragt, bevor die erste Abbuchung fällig ist.
+- **Kreditkarte bei der Anmeldung, für alle Käufer** (Entscheidung 25.11.2026, ab Etappe 3): Am Ende der Registrierung hinterlegt jeder Käufer seine Karte (Prüfzahlung 0,00 €). Grund: Bereiche wie Nahrungsergänzung werden oft sofort freigegeben, andere erst nach Prüfung; der Käufer soll ohne weiteren Bezahlschritt loslegen. Die 3 Gratismonate beginnen mit der ersten Freigabe eines Bereichs. Abgelehnte Firmen: nie Abbuchung, Karte wird gelöscht.
 - **Zahlungsanbieter: Mollie** (Entscheidung 25.11.2026; günstiger als Stripe, EU-Anbieter). Mollie belastet nur die Karte; Abo-Logik, Rechnungen und Sperre liegen im Portal.
 - **Nicht bezahlt** (Entscheidung 25.11.2026): Schlägt die Abbuchung nach mehreren Versuchen fehl, wird der **Zugang gesperrt, die Zahlungspflicht bleibt**: Abo läuft weiter, Rechnungen bleiben offen, jeden Monat kommt eine neue dazu. Nach neuer Karte werden die offenen Beträge abgebucht und der Zugang ist sofort wieder frei. Kündigung nur regulär zum Monatsende; offene Rechnungen bleiben fällig. Admin-Liste „Unpaid subscriptions“. Muss in die Abo-Bedingungen (Anwalt).
 - In „My account“: „Update card“ und „Cancel subscription“.
@@ -89,6 +92,7 @@ Bisher Rechnungen per Word-Vorlage als PDF. Künftig erstellt das Portal alle Re
 
 ### Allgemein
 Alle Uploads per Drag & Drop oder Dateiauswahl.
+E-Mails des Portals (Entscheidung 25.11.2026): Absender „Bionostix Germany Partner Portal <portal@bionostix-germany.de>“, Antworten gehen an info@bionostix-germany.de (Reply-To). Die Domain muss bei Resend verifiziert sein (nur DNS-Einträge für die Subdomain „send“ und DKIM, MX/SPF der Hauptdomain bleiben unberührt).
 
 ### Etappen Marktplatz
 1. Registrierung mit Rollen, Bereichen, Standorten und Nachweisen; Verkäufer-Freigabe; Upload mit Prüfansicht.
@@ -101,6 +105,7 @@ Jede Etappe zuerst als Vorschau (Pull Request), Freigabe durch die Inhaber.
 - **Dokumente je Angebot** („Documents available on request“): Excel „Bionostix-Dokumente-je-Bereich.xlsx“ durchgehen (x je Bereich), danach zeigt das Portal je Bereich nur die passenden.
 - Screenshot-PDF Etappe 1 durchsehen und Änderungswünsche sammeln.
 - **IVD bei der Anmeldung prüfen:** Was soll das Häkchen „Händlerpflichten nach IVDR“ genau bestätigen, und welche Dokumente müssen IVD-Käufer und IVD-Verkäufer vorlegen (EUDAMED, ISO 13485 usw.)?
+- **Vor dem Livegang:** in Netlify `SUPABASE_SERVICE_ROLE_KEY` eintragen (Wert aus Supabase, nie in den Chat) und prüfen, ob `RESEND_API_KEY` gesetzt und die Domain bionostix-germany.de bei Resend verifiziert ist.
 - **Mollie-Konto** für Bionostix Germany anlegen (für Etappe 3); Test-Schlüssel dann selbst in Netlify eintragen (Claude sagt, wo).
 - Portal-Reserveprojekt bei Vercel löschen; danach in Supabase (Authentication → URL Configuration) die Redirect URL `https://bionostix-portal.vercel.app/**` entfernen.
 

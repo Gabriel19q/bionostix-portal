@@ -4,7 +4,10 @@ import { COMPANY } from "@/content/company";
 // Sends plain-text emails through Resend (https://resend.com).
 // Without RESEND_API_KEY nothing is sent and the portal keeps working.
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://portal.bionostix-germany.de";
-const FROM = process.env.EMAIL_FROM ?? "Bionostix Germany <portal@bionostix.de>";
+// Sender: a separate portal address; replies go to the info mailbox (decision 25.11.2026).
+// The domain bionostix-germany.de must be verified at Resend (DNS records on the "send" subdomain and DKIM only).
+const FROM = process.env.EMAIL_FROM ?? "Bionostix Germany Partner Portal <portal@bionostix-germany.de>";
+const REPLY_TO = process.env.EMAIL_REPLY_TO ?? "info@bionostix-germany.de";
 
 export function adminEmails() {
   return (process.env.ADMIN_NOTIFY_EMAILS ?? "")
@@ -24,7 +27,7 @@ export async function sendEmail({ to, subject, text }: { to: string[]; subject: 
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: FROM, to: recipients, subject, text }),
+      body: JSON.stringify({ from: FROM, reply_to: REPLY_TO, to: recipients, subject, text }),
     });
     if (!res.ok) console.error(`[email failed ${res.status}] ${subject}: ${await res.text()}`);
   } catch (err) {
@@ -34,6 +37,55 @@ export async function sendEmail({ to, subject, text }: { to: string[]; subject: 
 }
 
 const footer = `\n\nBionostix Germany · The European trading arm of the Bionostix Group\n${COMPANY.owner}, trading as ${COMPANY.name} · ${COMPANY.street}, ${COMPANY.city}, ${COMPANY.country}\n${SITE}`;
+
+// Marketplace orders. Texts never name the other side: buyers and sellers stay anonymous until acceptance / invoice.
+const orderLink = (side: "buyer" | "seller", id: string) => `${SITE}${side === "buyer" ? "/portal/requests/" : "/portal/sell/orders/"}${id}`;
+export const orderEmails = {
+  requested: (n: string, product: string, qty: number, id: string) => ({
+    subject: `New binding request ${n}: ${qty} × ${product}`,
+    text: `A verified buyer sent you a binding request for ${qty} packs of ${product}.\n\nPlease accept, decline or make a counter-offer: ${orderLink("seller", id)}${footer}`,
+  }),
+  countered: (n: string, product: string, id: string) => ({
+    subject: `Counter-offer for your request ${n}`,
+    text: `The seller made a counter-offer for your request ${n} (${product}).\n\nPlease accept or decline it: ${orderLink("buyer", id)}${footer}`,
+  }),
+  acceptedBuyer: (n: string, product: string, id: string) => ({
+    subject: `Your request ${n} was accepted`,
+    text: `Good news: the seller accepted your request ${n} (${product}). The contract is concluded.\n\nThe seller will now send you the invoice or order confirmation through the portal: ${orderLink("buyer", id)}${footer}`,
+  }),
+  acceptedSeller: (n: string, product: string, id: string) => ({
+    subject: `Order ${n} concluded – buyer details available`,
+    text: `The order ${n} (${product}) is concluded. You can now see the buyer's company details and licences in the portal.\n\nPlease issue your invoice or order confirmation to this company and upload it there: ${orderLink("seller", id)}${footer}`,
+  }),
+  acceptedAdmin: (n: string, product: string, total: string, commission: string) => ({
+    subject: `Order ${n} concluded – commission ${commission}`,
+    text: `Order ${n} (${product}) was concluded. Order value ${total}, commission ${commission}.\n\n${SITE}/admin/requests${footer}`,
+  }),
+  declined: (n: string, product: string, id: string) => ({
+    subject: `Your request ${n} was declined`,
+    text: `The seller declined your request ${n} (${product}).\n\nDetails: ${orderLink("buyer", id)}\nLooking for alternatives? ${SITE}/portal/catalog${footer}`,
+  }),
+  counterDeclined: (n: string, product: string, id: string) => ({
+    subject: `Counter-offer for ${n} declined`,
+    text: `The buyer declined your counter-offer for ${n} (${product}).\n\n${orderLink("seller", id)}${footer}`,
+  }),
+  withdrawn: (n: string, product: string, id: string) => ({
+    subject: `Request ${n} withdrawn`,
+    text: `The buyer withdrew the request ${n} (${product}). No action needed.\n\n${orderLink("seller", id)}${footer}`,
+  }),
+  document: (n: string, kind: string, id: string) => ({
+    subject: `New document for order ${n}: ${kind}`,
+    text: `A new document (${kind}) was added to order ${n}.\n\n${orderLink("buyer", id)}${footer}`,
+  }),
+  documentForSeller: (n: string, kind: string, id: string) => ({
+    subject: `New document for order ${n}: ${kind}`,
+    text: `The buyer added a document (${kind}) to order ${n}.\n\n${orderLink("seller", id)}${footer}`,
+  }),
+  progress: (n: string, status: string, tracking: string | null, id: string) => ({
+    subject: `Order ${n}: ${status}`,
+    text: `Your order ${n} has a new status: ${status}.${tracking ? `\nTracking: ${tracking}` : ""}\n\n${orderLink("buyer", id)}${footer}`,
+  }),
+};
 
 export const emails = {
   newRequest: (number: string, company: string, lines: number, id: string) => ({
